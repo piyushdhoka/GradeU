@@ -1,65 +1,152 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import Link from 'next/link';
+import {
+  BookOpen,
+  Users,
+  TrendingUp,
+  Award,
+  Target,
+  Sparkles,
+  FileText,
+  ArrowUpRight,
+  CheckCircle2
+} from 'lucide-react';
+
+export default function Dashboard() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div className="p-8 space-y-8">
+      {/* Header */}
+      <div>
+        <h1 className="text-4xl font-black text-white tracking-tight">Dashboard</h1>
+        <p className="text-slate-400 mt-2 font-medium">Welcome back! Here's your overview.</p>
+      </div>
+
+      {/* Stats Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {/* Total Courses */}
+        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 hover:border-blue-500/50 transition-all shadow-lg shadow-black/20">
+          <div className="flex items-center justify-between mb-4">
+            <div className="w-12 h-12 bg-blue-500/10 rounded-xl flex items-center justify-center">
+              <BookOpen className="w-6 h-6 text-blue-400" />
+            </div>
+            <TrendingUp className="w-5 h-5 text-green-400" />
+          </div>
+          <p className="text-3xl font-black text-white mb-1">24</p>
+          <p className="text-sm text-slate-400 font-medium">Total Courses</p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+
+        {/* Active Students */}
+        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 hover:border-blue-500/50 transition-all shadow-lg shadow-black/20">
+          <div className="flex items-center justify-between mb-4">
+            <div className="w-12 h-12 bg-blue-500/10 rounded-xl flex items-center justify-center">
+              <Users className="w-6 h-6 text-blue-400" />
+            </div>
+            <TrendingUp className="w-5 h-5 text-green-400" />
+          </div>
+          <p className="text-3xl font-black text-white mb-1">156</p>
+          <p className="text-sm text-slate-400 font-medium">Active Students</p>
         </div>
-      </main>
+
+        {/* Completion Rate */}
+        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 hover:border-blue-500/50 transition-all shadow-lg shadow-black/20">
+          <div className="flex items-center justify-between mb-4">
+            <div className="w-12 h-12 bg-blue-500/10 rounded-xl flex items-center justify-center">
+              <Award className="w-6 h-6 text-blue-400" />
+            </div>
+            <TrendingUp className="w-5 h-5 text-green-400" />
+          </div>
+          <p className="text-3xl font-black text-white mb-1">87%</p>
+          <p className="text-sm text-slate-400 font-medium">Completion Rate</p>
+        </div>
+
+        {/* Avg. Test Score */}
+        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 hover:border-blue-500/50 transition-all shadow-lg shadow-black/20">
+          <div className="flex items-center justify-between mb-4">
+            <div className="w-12 h-12 bg-blue-500/10 rounded-xl flex items-center justify-center">
+              <Target className="w-6 h-6 text-blue-400" />
+            </div>
+            <TrendingUp className="w-5 h-5 text-green-400" />
+          </div>
+          <p className="text-3xl font-black text-white mb-1">92%</p>
+          <p className="text-sm text-slate-400 font-medium">Avg. Test Score</p>
+        </div>
+      </div>
+
+      {/* Quick Actions */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Generate Course Card */}
+        <Link href="/generate" className="group">
+          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-8 hover:border-blue-500 transition-all shadow-lg shadow-black/20">
+            <div className="flex items-start justify-between mb-4">
+              <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/20">
+                <Sparkles className="w-7 h-7 text-white" />
+              </div>
+              <ArrowUpRight className="w-5 h-5 text-slate-500 group-hover:text-blue-400 transition-colors" />
+            </div>
+            <h3 className="text-xl font-black text-white mb-2">Generate New Course</h3>
+            <p className="text-slate-400 text-sm leading-relaxed">Create AI-powered courses with custom modules and topics</p>
+          </div>
+        </Link>
+
+        {/* Upload Document Card */}
+        <Link href="/generate/upload" className="group">
+          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-8 hover:border-blue-500 transition-all shadow-lg shadow-black/20">
+            <div className="flex items-start justify-between mb-4">
+              <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/20">
+                <FileText className="w-7 h-7 text-white" />
+              </div>
+              <ArrowUpRight className="w-5 h-5 text-slate-500 group-hover:text-blue-400 transition-colors" />
+            </div>
+            <h3 className="text-xl font-black text-white mb-2">Upload Document</h3>
+            <p className="text-slate-400 text-sm leading-relaxed">Generate courses from PDF or DOCX files automatically</p>
+          </div>
+        </Link>
+      </div>
+
+      {/* Recent Activity */}
+      <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-8 shadow-lg shadow-black/20">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-2xl font-black text-white">Recent Activity</h2>
+          <Link href="/students" className="text-sm font-bold text-blue-400 hover:text-blue-300 transition-colors">
+            View All →
+          </Link>
+        </div>
+        <div className="space-y-4">
+          {/* Activity Item 1 */}
+          <div className="flex items-center gap-4 p-4 bg-zinc-800/50 rounded-xl border border-zinc-700/50 hover:border-zinc-600 transition-colors">
+            <div className="w-10 h-10 bg-blue-500/10 rounded-full flex items-center justify-center flex-shrink-0">
+              <CheckCircle2 className="w-5 h-5 text-blue-400" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-white font-bold">Sarah Chen completed &quot;Advanced React Patterns&quot;</p>
+              <p className="text-slate-500 text-sm mt-0.5">2 hours ago</p>
+            </div>
+          </div>
+
+          {/* Activity Item 2 */}
+          <div className="flex items-center gap-4 p-4 bg-zinc-800/50 rounded-xl border border-zinc-700/50 hover:border-zinc-600 transition-colors">
+            <div className="w-10 h-10 bg-blue-500/10 rounded-full flex items-center justify-center flex-shrink-0">
+              <Award className="w-5 h-5 text-blue-400" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-white font-bold">John Doe achieved 95% on &quot;TypeScript Fundamentals&quot;</p>
+              <p className="text-slate-500 text-sm mt-0.5">5 hours ago</p>
+            </div>
+          </div>
+
+          {/* Activity Item 3 */}
+          <div className="flex items-center gap-4 p-4 bg-zinc-800/50 rounded-xl border border-zinc-700/50 hover:border-zinc-600 transition-colors">
+            <div className="w-10 h-10 bg-blue-500/10 rounded-full flex items-center justify-center flex-shrink-0">
+              <BookOpen className="w-5 h-5 text-blue-400" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-white font-bold">New course &quot;Web Development Bootcamp&quot; was created</p>
+              <p className="text-slate-500 text-sm mt-0.5">1 day ago</p>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
