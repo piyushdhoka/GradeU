@@ -181,192 +181,89 @@ Return ONLY valid JSON. Do not use markdown formatting.`;
   };
 
   const generateCourse = async () => {
-    const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
-    if (!apiKey || apiKey === 'your_api_key_here') {
-      setError('Please set NEXT_PUBLIC_GEMINI_API_KEY in your .env.local file');
-      return;
-    }
-
     if (!courseTitle || modules.length === 0) {
       setError('Please provide course title, and at least one module');
       return;
     }
 
     setIsGenerating(true);
-    setProgress('Initializing...');
+    setProgress('Initializing Production Pipeline...');
     setGenerationLog([]);
     setError('');
 
     try {
-      addLog('Starting course generation');
+      addLog('🚀 Starting Production-Grade Pipeline');
       addLog(`Course: ${courseTitle}`);
-      addLog(`Modules: ${modules.length}`);
+      addLog(`Sending ${modules.length} modules to secure background queue...`);
 
-      const courseStructure: GeneratedCourse = {
-        courseTitle,
-        description: '',
-        modules: [],
-        totalPages: 0
+      const response = await fetch('/api/generate/process', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          courseTitle,
+          modules: modules.map(m => ({
+            name: m.name,
+            quiz: m.quiz
+          }))
+        })
+      });
+
+      const data = await response.json();
+
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to queue job');
+      }
+
+      const jobId = data.jobId;
+      addLog(`✓ Job Queued: ${jobId}`);
+      addLog('Polling for progress...');
+
+      // Start Polling
+      const pollJob = async () => {
+        try {
+          const pollResp = await fetch(`/api/jobs/${jobId}`);
+          const pollData = await pollResp.json();
+
+          if (!pollData.success) throw new Error('Polling failed');
+
+          const job = pollData.job;
+          setProgress(`${job.status}: ${job.progress}%`);
+
+          if (job.current_module) {
+            addLog(`Processing: ${job.current_module} (${job.progress}%)`);
+          }
+
+          if (job.status === 'COMPLETED') {
+            addLog(`\n🎉 SUCCESS! Course generated and indexed.`);
+            setGeneratedCourse({
+              courseTitle,
+              description: 'Course successfully processed via secure background queue and stored in Supabase.',
+              modules: [],
+              totalPages: modules.length * 5
+            });
+            setIsGenerating(false);
+            return;
+          }
+
+          if (job.status === 'FAILED') {
+            throw new Error(job.error || 'Job worker failed');
+          }
+
+          // Continue polling
+          setTimeout(pollJob, 3000);
+        } catch (pollError: any) {
+          setError(pollError.message);
+          setIsGenerating(false);
+        }
       };
 
-      // Test API connection first
-      addLog('Testing API connection...');
-      setProgress('Testing API connection...');
-
-      try {
-        await callGeminiAPI(apiKey, 'Say "OK"');
-        addLog('✓ API connection successful');
-      } catch (apiError) {
-        addLog(`✗ API connection failed: ${apiError}`);
-        throw new Error(`API Connection Failed: ${apiError instanceof Error ? apiError.message : 'Check your API key'}`);
-      }
-
-      // Generate course description
-      addLog('Generating course description...');
-      setProgress('Generating course description...');
-
-      const descPrompt = `Generate a comprehensive 2-paragraph description for a course titled "${courseTitle}". Make it engaging and professional.`;
-      const descResponse = await callGeminiAPI(apiKey, descPrompt);
-      courseStructure.description = descResponse.trim();
-      addLog('✓ Course description generated');
-
-      let totalTopics = 0;
-
-      // Process each module
-      for (let i = 0; i < modules.length; i++) {
-        const module = modules[i];
-        addLog(`\n--- Processing Module ${i + 1}/${modules.length}: ${module.name} ---`);
-        setProgress(`Module ${i + 1}/${modules.length}: ${module.name}`);
-
-        // Generate topics for this module
-        // Asking for 6 topics to balance length (Target: ~70 pages total)
-        addLog('Requesting topics from AI...');
-        const topicsPrompt = `For a comprehensive course titled "${courseTitle}", list exactly 6 topic names for the module "${module.name}". 
-Format your response as a simple JSON array like this:
-["Topic 1", "Topic 2", "Topic 3", "Topic 4", "Topic 5", "Topic 6"]
-
-Only respond with the JSON array, nothing else.`;
-
-        let topics: string[] = [];
-        try {
-          const topicsResponse = await callGeminiAPI(apiKey, topicsPrompt);
-          addLog(`Raw topics response: ${topicsResponse.substring(0, 100)}...`);
-
-          const cleaned = topicsResponse
-            .replace(/```json/g, '')
-            .replace(/```/g, '')
-            .trim();
-
-          topics = JSON.parse(cleaned);
-
-          if (!Array.isArray(topics) || topics.length === 0) {
-            throw new Error('Invalid topics array');
-          }
-
-          addLog(`✓ Generated ${topics.length} topics`);
-        } catch (parseError) {
-          // Unused var parseError
-          console.warn(parseError);
-          addLog(`⚠ Topics parsing failed, using defaults`);
-          topics = [
-            `Introduction to ${module.name}`,
-            `Core Concepts of ${module.name}`,
-            `Advanced ${module.name} Techniques`,
-            `Practical Applications`,
-            `Best Practices and Tips`,
-            `Common Challenges and Solutions`,
-            `Case Studies in ${module.name}`,
-            `Future Trends`,
-            `Tools and Resources`,
-            `Final Project`
-          ];
-        }
-
-        totalTopics += topics.length;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const moduleContent: any = {
-          moduleName: module.name,
-          topics: [],
-          quiz: module.quiz || []
-        };
-
-        // Generate content for each topic
-        for (let j = 0; j < topics.length; j++) {
-          const topic = topics[j];
-          setProgress(`Module ${i + 1}/${modules.length} → Topic ${j + 1}/${topics.length}`);
-          addLog(`\nGenerating: "${topic}"`);
-
-          const topicPrompt = `Create a detailed educational guide for:
-Course: ${courseTitle}
-Module: ${module.name}
-Topic: ${topic}
-
-Output Format: Markdown.
-Target Length: Approximately 800 words.
-
-Structure:
-# ${topic}
-## Introduction
-(Write a detailed introduction, at least 300 words)
-
-## Key Concepts
-(Explain 5-7 key concepts in depth, use bolding for terms)
-
-## Detailed Exploration
-(This is the main body. Go deep into technical details, theories, or methodologies. Use subsections like ### as needed. Minimum 800 words.)
-
-## Practical Examples
-(Provide 3 detailed real-world examples or code snippets if applicable)
-
-## Exercises
-(List 3 comprehensive exercises for the student)
-
-## Summary
-(A solid conclusion)
-
-IMPORTANT: Do not wrap the response in JSON. Return pure Markdown text.`;
-
-          try {
-            const topicContent = await callGeminiAPI(apiKey, topicPrompt);
-            addLog(`Received ${topicContent.length} characters`);
-
-            moduleContent.topics.push({
-              topicName: topic,
-              content: topicContent
-            });
-            addLog(`✓ Generated content for "${topic}"`);
-          } catch (topicError) {
-            // Unused
-            console.warn(topicError);
-            addLog(`⚠ Generation failed for "${topic}", using fallback`);
-            moduleContent.topics.push({
-              topicName: topic,
-              content: `# ${topic}\n\nContent generation failed for this topic. Please regenerate or check API limits.`
-            });
-          }
-
-          // Delay to avoid rate limiting
-          await new Promise(resolve => setTimeout(resolve, 2000));
-        }
-
-        courseStructure.modules.push(moduleContent);
-        addLog(`✓ Module "${module.name}" completed\n`);
-      }
-
-      // Estimate pages (approx 400 words per page? ~2 pages per topic if 800 words)
-      courseStructure.totalPages = Math.round(totalTopics * 2);
-
-      setProgress('Complete!');
-      addLog(`\n🎉 SUCCESS! Course generated with ${totalTopics} topics (~${courseStructure.totalPages} pages)`);
-      setGeneratedCourse(courseStructure);
+      pollJob();
 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
       console.error('Generation error:', error);
       addLog(`\n❌ ERROR: ${errorMessage}`);
       setError(errorMessage);
-    } finally {
-      setIsGenerating(false);
     }
   };
 
