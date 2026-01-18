@@ -25,7 +25,7 @@ export default defineConfig(({ mode }) => {
             },
         },
         build: {
-            outDir: 'dist-admin',
+            outDir: 'dist',
             sourcemap: true,
         },
         resolve: {
