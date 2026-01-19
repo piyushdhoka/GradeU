@@ -42,6 +42,7 @@ export default function FileCourseGenerator() {
     const [extractedText, setExtractedText] = useState('');
     const [isProcessing, setIsProcessing] = useState(false);
     const [processStep, setProcessStep] = useState('');
+    const [uploadLog, setUploadLog] = useState<string[]>([]); // Added logging state
     const [error, setError] = useState('');
 
     const [courseStructure, setCourseStructure] = useState<CourseStructure | null>(null);
@@ -63,6 +64,8 @@ export default function FileCourseGenerator() {
         setError('');
         setIsProcessing(true);
         setProcessStep('Extracting text from file...');
+        setUploadLog([]); // Reset logs
+        addLog(`Started processing file: ${uploadedFile.name}`);
 
         try {
             let text = '';
@@ -75,7 +78,9 @@ export default function FileCourseGenerator() {
             }
 
             setExtractedText(text);
+            setExtractedText(text);
             setProcessStep('Analyzing content with AI...');
+            addLog('Text extraction complete. Analyzing content structure...');
             await generateInitialStructure(text);
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Failed to process file');
@@ -108,6 +113,12 @@ export default function FileCourseGenerator() {
         const arrayBuffer = await file.arrayBuffer();
         const result = await mammoth.extractRawText({ arrayBuffer });
         return result.value;
+    };
+
+    // --- Helper Functions ---
+    const addLog = (message: string) => {
+        const timestamp = new Date().toLocaleTimeString();
+        setUploadLog(prev => [...prev, `[${timestamp}] ${message}`]);
     };
 
     // --- API Interaction ---
@@ -160,9 +171,9 @@ export default function FileCourseGenerator() {
     }`;
 
         try {
-            console.log("Sending prompt to Gemini...");
+            addLog("Sending prompt to Gemini for structure generation...");
             const result = await callGeminiAPI(prompt);
-            console.log("Gemini Response:", result);
+            addLog("Structure generated. Parsing response...");
 
             // Robust JSON extraction
             const jsonMatch = result.match(/\{[\s\S]*\}/);
@@ -198,6 +209,7 @@ export default function FileCourseGenerator() {
             };
 
             setCourseStructure(formatted);
+            addLog(`Structure parsed successfully: ${formatted.modules.length} modules identified.`);
             setIsProcessing(false);
         } catch (err) {
             console.error("Structure Generation Error:", err);
@@ -211,6 +223,7 @@ export default function FileCourseGenerator() {
 
         setIsProcessing(true);
         setProcessStep('Generating topic content...');
+        addLog(`Generating content for single topic: ${editingTopic.topicId}...`);
         setError('');
 
         try {
@@ -234,6 +247,7 @@ export default function FileCourseGenerator() {
             const content = await callGeminiAPI(prompt);
             setTempTopicData(prev => ({ ...prev, content }));
             setProcessStep('Done!');
+            addLog('Topic content generated successfully.');
         } catch (err) {
             console.error("Topic Generation Error:", err);
             const msg = err instanceof Error ? err.message : String(err);
@@ -248,6 +262,7 @@ export default function FileCourseGenerator() {
 
         setIsProcessing(true);
         setGenerationProgress(0);
+        addLog("Starting full course deployment...");
         // flattened topics count for progress
         const totalTopics = courseStructure.modules.reduce((acc, m) => acc + m.topics.length, 0);
         let completedTopics = 0;
@@ -260,6 +275,7 @@ export default function FileCourseGenerator() {
 
                 for (const topic of module.topics) {
                     setProcessStep(`Processing: ${topic.name}`);
+                    addLog(`Generating content for user topic: ${topic.name} (${module.name})`);
 
                     let content = topic.content;
 
@@ -298,6 +314,7 @@ export default function FileCourseGenerator() {
 
             setGeneratedCourse(finalMarkdown);
             setProcessStep('Complete!');
+            addLog("Course generation complete. Ready for export.");
         } catch (err) {
             // Unused var err
             console.warn(err);
@@ -370,6 +387,26 @@ export default function FileCourseGenerator() {
                                         <span className="text-[10px] font-black uppercase tracking-[0.2em]">{processStep}</span>
                                     </div>
                                 )}
+                            </div>
+
+                            {/* Logging Console */}
+                            <div className="bg-zinc-950 rounded-2xl p-6 border border-zinc-800 shadow-inner h-64 flex flex-col">
+                                <div className="flex items-center gap-3 mb-4 border-b border-zinc-900 pb-2">
+                                    <div className={`w-2 h-2 rounded-full ${isProcessing ? 'bg-blue-500 animate-pulse' : 'bg-zinc-600'}`} />
+                                    <p className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em]">System Operations Log</p>
+                                </div>
+                                <div className="flex-1 overflow-y-auto custom-scrollbar font-mono text-[10px] space-y-1">
+                                    {uploadLog.length === 0 ? (
+                                        <p className="text-zinc-700 italic">System ready. Waiting for input...</p>
+                                    ) : (
+                                        uploadLog.map((log, i) => (
+                                            <p key={i} className="text-zinc-500 border-l-2 border-zinc-800 pl-2 hover:border-blue-500 hover:text-zinc-300 transition-colors">
+                                                {log}
+                                            </p>
+                                        ))
+                                    )}
+                                    <div id="log-end" />
+                                </div>
                             </div>
 
                             <div className="relative">
@@ -649,35 +686,37 @@ export default function FileCourseGenerator() {
 
                 {/* Final Markdown Preview/Download Modal */}
                 {generatedCourse && (
-                    <div className="fixed inset-0 bg-zinc-950/90 backdrop-blur-md flex items-center justify-center p-8 z-50">
-                        <div className="bg-white rounded-[3rem] w-full max-w-5xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden border border-blue-100">
-                            <div className="p-10 border-b border-zinc-100 flex items-center justify-between bg-zinc-50/50">
+                    <div className="fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 z-50">
+                        <div className="bg-zinc-950 rounded-[3rem] w-full max-w-6xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden border border-zinc-800/50">
+                            <div className="p-10 border-b border-zinc-800 flex items-center justify-between bg-zinc-900/30">
                                 <div className="flex items-center gap-6">
                                     <div className="w-16 h-16 bg-green-500 rounded-[1.5rem] flex items-center justify-center shadow-xl shadow-green-500/20">
                                         <CheckCircle2 className="w-10 h-10 text-white" />
                                     </div>
                                     <div>
-                                        <h2 className="text-3xl font-black text-zinc-900 tracking-tight leading-none">Dataset Finalized</h2>
-                                        <p className="text-[10px] font-black text-green-600 uppercase tracking-widest mt-2">{courseStructure?.title} is ready for deployment</p>
+                                        <h2 className="text-3xl font-black text-white tracking-tight leading-none">Dataset Finalized</h2>
+                                        <p className="text-[10px] font-black text-green-400 uppercase tracking-widest mt-2">{courseStructure?.title} is ready for deployment</p>
                                     </div>
                                 </div>
-                                <button onClick={() => setGeneratedCourse(null)} className="w-12 h-12 flex items-center justify-center text-zinc-400 hover:text-zinc-600 bg-white border border-zinc-200 rounded-2xl transition-all">
+                                <button onClick={() => setGeneratedCourse(null)} className="w-12 h-12 flex items-center justify-center text-zinc-500 hover:text-white bg-zinc-900 border border-zinc-800 rounded-2xl transition-all hover:bg-zinc-800">
                                     <X className="w-6 h-6" />
                                 </button>
                             </div>
-                            <div className="flex-1 overflow-hidden bg-zinc-950 flex flex-col m-10 rounded-[2rem] border border-zinc-800 shadow-2xl">
-                                <div className="px-10 py-4 bg-white/5 border-b border-white/5 flex justify-between items-center">
-                                    <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest">Metadata Payload Preview</span>
-                                    <span className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.2em]">{Math.round(generatedCourse.length / 1024)} KB Payload</span>
+                            <div className="flex-1 overflow-y-auto p-10 bg-zinc-950 flex justify-center">
+                                <div className="w-full max-w-3xl aspect-square bg-zinc-950 flex flex-col rounded-[2rem] border border-zinc-800 shadow-2xl shrink-0 overflow-hidden">
+                                    <div className="px-10 py-4 bg-white/5 border-b border-white/5 flex justify-between items-center">
+                                        <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest">Metadata Payload Preview</span>
+                                        <span className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.2em]">{Math.round(generatedCourse.length / 1024)} KB Payload</span>
+                                    </div>
+                                    <textarea
+                                        value={generatedCourse}
+                                        onChange={(e) => setGeneratedCourse(e.target.value)}
+                                        className="flex-1 w-full p-12 resize-none border-none focus:ring-0 font-mono text-xs text-zinc-400 bg-transparent leading-relaxed outline-none custom-scrollbar selection:bg-blue-600 selection:text-white"
+                                        spellCheck={false}
+                                    />
                                 </div>
-                                <textarea
-                                    value={generatedCourse}
-                                    onChange={(e) => setGeneratedCourse(e.target.value)}
-                                    className="flex-1 w-full p-12 resize-none border-none focus:ring-0 font-mono text-xs text-zinc-400 bg-transparent leading-relaxed outline-none custom-scrollbar selection:bg-blue-600 selection:text-white"
-                                    spellCheck={false}
-                                />
                             </div>
-                            <div className="p-10 border-t border-zinc-100 bg-zinc-50/50 flex justify-end gap-6">
+                            <div className="shrink-0 p-10 border-t border-zinc-800 bg-zinc-900/30 flex justify-end gap-6 z-10">
                                 <button
                                     onClick={() => {
                                         const blob = new Blob([generatedCourse], { type: 'text/markdown' });

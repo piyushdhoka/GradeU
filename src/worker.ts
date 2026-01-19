@@ -1,4 +1,4 @@
-import { Worker } from 'bullmq';
+import { Worker, Job } from 'bullmq';
 import { redisConnection } from './lib/queue';
 import { supabaseAdmin } from './lib/supabaseAdmin';
 import { callGeminiAPI, generateGeminiEmbedding } from './lib/ai';
@@ -14,8 +14,8 @@ if (!process.env.REDIS_URL || !process.env.NEXT_PUBLIC_SUPABASE_URL) {
 
 console.log('🚀 Worker started. Listening for jobs...');
 
-const worker = new Worker('course-generation', async (job) => {
-    const { jobId, courseTitle, modules } = job.data;
+const worker = new Worker('course-generation', async (job: Job) => {
+    const { jobId, courseTitle, modules, generalQuiz } = job.data;
     console.log(`[Job ${jobId}] Starting processing: ${courseTitle}`);
 
     try {
@@ -51,11 +51,15 @@ const worker = new Worker('course-generation', async (job) => {
             }).eq('id', jobId);
 
             // Generate Content
+            const topicsList = moduleData.topics && moduleData.topics.length > 0
+                ? `\nFocus on the following key topics:\n${moduleData.topics.map((t: string) => `- ${t}`).join('\n')}`
+                : '';
+
             const theoryPrompt = `Write a deep, educational, and technical theory guide for the module: "${moduleData.name}". 
-            Topic of the course: "${courseTitle}".
+            Topic of the course: "${courseTitle}".${topicsList}
             Provide the content in Markdown format. High detail is required.`;
 
-            await addCourseLog(jobId, courseTitle, `Generating content for module: ${moduleData.name}`, 'INFO');
+            await addCourseLog(jobId, courseTitle, `Generating content for module: ${moduleData.name} (${moduleData.topics?.length || 0} topics)`, 'INFO');
 
             const theoryContent = await callGeminiAPI(theoryPrompt);
 
@@ -127,6 +131,36 @@ const worker = new Worker('course-generation', async (job) => {
             await addCourseLog(jobId, courseTitle, `Module completed: ${moduleData.name}`, 'INFO', { moduleId: moduleRecord.id });
         }
 
+        // 3.5 Process General Quiz (if exists)
+        if (generalQuiz && generalQuiz.length > 0) {
+            await addCourseLog(jobId, courseTitle, 'Processing General Course Quiz...', 'INFO');
+
+            // Create "Initial Assessment" Module at the beginning
+            const { data: assessmentModule, error: moduleError } = await supabaseAdmin
+                .from('modules')
+                .insert({
+                    course_id: courseId,
+                    title: "Initial Assessment",
+                    content_markdown: "", // No content, just quiz
+                    module_order: 0 // Set as first module
+                })
+                .select().single();
+
+            if (moduleError) throw moduleError;
+
+            // Store Quizzes
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const quizInsert = generalQuiz.map((q: any) => ({
+                module_id: assessmentModule.id,
+                question: q.question,
+                options: q.options,
+                correct_option: q.correctAnswer
+            }));
+            await supabaseAdmin.from('quizzes').insert(quizInsert);
+
+            await addCourseLog(jobId, courseTitle, 'General Assessment created successfully', 'INFO');
+        }
+
         // 4. Finalize
         await supabaseAdmin.from('generation_jobs').update({
             status: 'COMPLETED',
@@ -154,10 +188,10 @@ const worker = new Worker('course-generation', async (job) => {
     concurrency: 5 // Process 5 jobs at a time
 });
 
-worker.on('completed', (job) => {
+worker.on('completed', (job: Job) => {
     console.log(`[${job.id}] Finished`);
 });
 
-worker.on('failed', (job, err) => {
+worker.on('failed', (job: Job | undefined, err: Error) => {
     console.log(`[${job?.id}] Failed with ${err.message}`);
 });

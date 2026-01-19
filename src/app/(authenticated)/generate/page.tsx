@@ -2,11 +2,13 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { BookOpen, Plus, Trash2, Loader2, CheckCircle2, AlertCircle, FileText, BrainCircuit, ListChecks, RefreshCcw, ChevronDown, ChevronUp } from 'lucide-react';
+import { Trash2, Plus, ChevronDown, ChevronRight, Loader2, Sparkles, BookOpen, GraduationCap, FileText, CheckCircle2, AlertCircle, BrainCircuit, ListChecks, RefreshCcw, ChevronUp } from 'lucide-react';
+import { v4 as uuidv4 } from 'uuid';
 
 interface Module {
   id: string;
   name: string;
+  topics: string[]; // Added topics array
   quiz: QuizQuestion[];
   isOpen?: boolean;
 }
@@ -35,6 +37,7 @@ interface GeneratedCourse {
 export default function GeneratorPage() {
   const [courseTitle, setCourseTitle] = useState('');
   const [modules, setModules] = useState<Module[]>([]);
+  const [generalQuiz, setGeneralQuiz] = useState<QuizQuestion[]>([]); // New State
   const [currentModule, setCurrentModule] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [isGeneratingStructure, setIsGeneratingStructure] = useState(false);
@@ -45,8 +48,10 @@ export default function GeneratorPage() {
 
   const addModule = () => {
     if (currentModule.trim()) {
-      setModules([...modules, { id: Date.now().toString(), name: currentModule, quiz: [], isOpen: false }]);
-      setCurrentModule('');
+      if (currentModule.trim()) {
+        setModules([...modules, { id: Date.now().toString(), name: currentModule, topics: [], quiz: [], isOpen: false }]);
+        setCurrentModule('');
+      } setCurrentModule('');
     }
   };
 
@@ -127,7 +132,7 @@ export default function GeneratorPage() {
   };
 
   const generateStructure = async () => {
-    const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
+    const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY_1 || process.env.NEXT_PUBLIC_GEMINI_API_KEY_2 || process.env.NEXT_PUBLIC_GEMINI_API_KEY_3 || process.env.GROQ_API_KEY;
     if (!apiKey || apiKey === 'your_api_key_here') {
       setError('Please set NEXT_PUBLIC_GEMINI_API_KEY in your .env.local file');
       return;
@@ -143,33 +148,48 @@ export default function GeneratorPage() {
 
     try {
       const prompt = `Generate a comprehensive course structure for: "${courseTitle}".
-Return a JSON object with a key "modules" which is an array of objects.
-Each module object should have:
-1. "name": string (Module Name)
-2. "quiz": an array of 3-5 objects, where each object has:
+Return a JSON object with:
+1. "modules": array of objects. Each module has:
+    - "name": string (Module Name)
+    - "topics": array of 3 strings (Sub-topics)
+    - "quiz": array of 3 objects (Module specific quiz)
+2. "generalQuiz": array of objects. An INITIAL general course assessment based on the Course Title.
+   - The number of questions must be EXACTLY equal to the number of modules generated.
+   - "question": string
+   - "options": array of 4 strings
+   - "correctAnswer": number (0-3 index)
+
+Each quiz object has:
     - "question": string
     - "options": array of 4 strings
-    - "correctAnswer": number (0-3 index of the correct option)
+    - "correctAnswer": number (0-3 index)
 
 Return ONLY valid JSON. Do not use markdown formatting.`;
 
       const response = await callGeminiAPI(apiKey, prompt);
-      const cleaned = response.replace(/```json/g, '').replace(/```/g, '').trim();
+
+      // Robust JSON extraction
+      const jsonMatch = response.match(/\{[\s\S]*\}/);
+      const cleaned = jsonMatch ? jsonMatch[0] : response.replace(/```json/g, '').replace(/```/g, '').trim();
+
       const data = JSON.parse(cleaned);
 
       if (data.modules && Array.isArray(data.modules)) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        setModules(data.modules.map((m: any) => ({
-          id: Math.random().toString(36).substr(2, 9),
+        const newModules = data.modules.map((m: any) => ({
+          id: uuidv4(),
           name: m.name,
-          quiz: m.quiz ? m.quiz.map((q: any) => ({
-            id: Math.random().toString(36).substr(2, 9),
-            question: q.question,
-            options: q.options,
-            correctAnswer: q.correctAnswer
-          })) : [],
-          isOpen: false
-        })));
+          topics: m.topics || [],
+          quiz: m.quiz?.map((q: any) => ({ ...q, id: uuidv4() })) || [],
+          isOpen: true
+        }));
+
+        // Parse General Quiz
+        const newGeneralQuiz = data.generalQuiz?.map((q: any) => ({ ...q, id: uuidv4() })) || [];
+
+        setModules(newModules);
+        setGeneralQuiz(newGeneralQuiz); // Set State
+        setGenerationLog(prev => [...prev, `Structure generated: ${newModules.length} modules, ${newGeneralQuiz.length} general questions.`]);
       }
 
     } catch (err) {
@@ -203,8 +223,10 @@ Return ONLY valid JSON. Do not use markdown formatting.`;
           courseTitle,
           modules: modules.map(m => ({
             name: m.name,
+            topics: m.topics, // Pass topics to API
             quiz: m.quiz
-          }))
+          })),
+          generalQuiz: generalQuiz // Add to payload
         })
       });
 
@@ -289,6 +311,12 @@ Return ONLY valid JSON. Do not use markdown formatting.`;
       })
     });
 
+    if (response.status === 503) {
+      console.warn('Model overloaded (503). Retrying in 2 seconds...');
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      return callGeminiAPI(key, prompt);
+    }
+
     if (!response.ok) {
       const errorText = await response.text();
       throw new Error(`API Error ${response.status}: ${errorText}`);
@@ -354,7 +382,7 @@ Return ONLY valid JSON. Do not use markdown formatting.`;
 
   return (
     <div className="min-h-full bg-zinc-950 p-8">
-      <div className="max-w-5xl mx-auto">
+      <div className="w-full max-w-[95%] mx-auto">
         <div className="bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl shadow-black/40 p-10">
           <div className="flex items-center gap-4 mb-10 pb-10 border-b border-zinc-800">
             <div className="w-14 h-14 bg-blue-500/10 rounded-2xl flex items-center justify-center">
@@ -432,6 +460,98 @@ Return ONLY valid JSON. Do not use markdown formatting.`;
                 </div>
               </div>
 
+
+
+              {/* Initial Assessment UI */}
+              {generalQuiz.length > 0 && (
+                <div className="mt-8 bg-zinc-900 rounded-2xl border border-indigo-500/30 overflow-hidden">
+                  <div className="p-6 bg-indigo-500/10 border-b border-indigo-500/20 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-indigo-500 flex items-center justify-center text-white shadow-lg shadow-indigo-500/20">
+                        <GraduationCap className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-bold text-white">Initial Assessment</h3>
+                        <p className="text-[10px] text-indigo-400 font-bold uppercase tracking-widest">Base Knowledge Check</p>
+                      </div>
+                    </div>
+                    <span className="bg-indigo-500/20 text-indigo-300 px-3 py-1 rounded-full text-xs font-bold border border-indigo-500/30">
+                      {generalQuiz.length} Questions
+                    </span>
+                  </div>
+                  <div className="p-6 space-y-4">
+                    {generalQuiz.map((q, qIdx) => (
+                      <div key={q.id} className="bg-zinc-950/50 rounded-xl p-4 border border-zinc-800 hover:border-indigo-500/30 transition-colors">
+                        <div className="flex items-start gap-4">
+                          <div className="w-6 h-6 rounded-full bg-zinc-800 flex items-center justify-center text-xs font-bold text-zinc-500 mt-1 shrink-0">
+                            {qIdx + 1}
+                          </div>
+                          <div className="flex-1 space-y-3">
+                            <input
+                              value={q.question}
+                              onChange={(e) => {
+                                const newQuiz = [...generalQuiz];
+                                newQuiz[qIdx].question = e.target.value;
+                                setGeneralQuiz(newQuiz);
+                              }}
+                              className="w-full bg-transparent text-white text-sm font-bold border-none p-0 focus:ring-0 placeholder-zinc-600"
+                              placeholder="Question text..."
+                            />
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                              {q.options.map((option, oIdx) => (
+                                <div key={oIdx} className={`flex items-center gap-2 p-2 rounded-lg border ${q.correctAnswer === oIdx ? 'bg-green-500/10 border-green-500/30' : 'bg-zinc-900 border-zinc-800'}`}>
+                                  <input
+                                    type="radio"
+                                    name={`gen-q-${q.id}`}
+                                    checked={q.correctAnswer === oIdx}
+                                    onChange={() => {
+                                      const newQuiz = [...generalQuiz];
+                                      newQuiz[qIdx].correctAnswer = oIdx;
+                                      setGeneralQuiz(newQuiz);
+                                    }}
+                                    className="w-3 h-3 text-green-500 bg-zinc-900 border-zinc-700 focus:ring-green-500/20"
+                                  />
+                                  <input
+                                    value={option}
+                                    onChange={(e) => {
+                                      const newQuiz = [...generalQuiz];
+                                      newQuiz[qIdx].options[oIdx] = e.target.value;
+                                      setGeneralQuiz(newQuiz);
+                                    }}
+                                    className="block w-full bg-transparent text-xs text-zinc-300 focus:outline-none"
+                                  />
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => {
+                              setGeneralQuiz(prev => prev.filter(item => item.id !== q.id));
+                            }}
+                            className="text-zinc-600 hover:text-red-400 transition-colors"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                    <button
+                      onClick={() => {
+                        setGeneralQuiz(prev => [...prev, {
+                          id: uuidv4(),
+                          question: "New Initial Question",
+                          options: ["Option A", "Option B", "Option C", "Option D"],
+                          correctAnswer: 0
+                        }]);
+                      }}
+                      className="w-full py-3 border-2 border-dashed border-zinc-800 rounded-xl text-zinc-500 hover:text-indigo-400 hover:border-indigo-500/30 hover:bg-indigo-500/5 transition-all text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-2"
+                    >
+                      <Plus className="w-4 h-4" /> Add Initial Question
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {modules.length > 0 && (
                 <div className="grid grid-cols-1 gap-3">
                   {modules.map((module, idx) => (
@@ -447,7 +567,7 @@ Return ONLY valid JSON. Do not use markdown formatting.`;
                           <div>
                             <p className="font-bold text-white">{module.name}</p>
                             <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest mt-0.5">
-                              {module.quiz?.length || 0} Quiz Questions
+                              {module.topics?.length || 0} Topics • {module.quiz?.length || 0} Quiz Questions
                             </p>
                           </div>
                         </div>
@@ -465,59 +585,78 @@ Return ONLY valid JSON. Do not use markdown formatting.`;
 
                       {module.isOpen && (
                         <div className="px-6 pb-6 pt-2 border-t border-zinc-700/50">
-                          <div className="space-y-4">
-                            <div className="flex items-center justify-between">
-                              <label className="text-[10px] font-black text-blue-400 uppercase tracking-widest">
-                                Module Quiz
+                          <div className="space-y-6">
+                            {/* Topics Section */}
+                            <div>
+                              <label className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-3 block">
+                                Planned Topics
                               </label>
-                              <button
-                                onClick={() => addQuizToModule(module.id)}
-                                className="text-[10px] font-black text-blue-400 uppercase tracking-widest hover:text-blue-300 flex items-center gap-1"
-                              >
-                                <Plus className="w-3 h-3" /> Add Question
-                              </button>
+                              <div className="flex flex-wrap gap-2">
+                                {module.topics?.map((topic, tIdx) => (
+                                  <div key={tIdx} className="bg-zinc-900 px-3 py-1.5 rounded-lg border border-zinc-700 text-xs font-medium text-zinc-300">
+                                    {topic}
+                                  </div>
+                                ))}
+                                {(!module.topics || module.topics.length === 0) && (
+                                  <p className="text-xs text-zinc-600 italic">No specific topics defined (AI will generate automatically)</p>
+                                )}
+                              </div>
                             </div>
 
-                            <div className="grid gap-3">
-                              {module.quiz?.map((q, qIdx) => (
-                                <div key={q.id} className="bg-zinc-900/50 p-4 rounded-xl border border-zinc-800">
-                                  <div className="flex items-start gap-4">
-                                    <div className="text-[10px] font-black text-slate-500 mt-2">Q{qIdx + 1}</div>
-                                    <div className="flex-1 space-y-3">
-                                      <input
-                                        value={q.question}
-                                        onChange={(e) => updateModuleQuizQuestion(module.id, q.id, 'question', e.target.value)}
-                                        className="w-full bg-transparent text-white text-sm font-bold border-none p-0 focus:ring-0 placeholder-zinc-600"
-                                        placeholder="Question text..."
-                                      />
-                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                                        {q.options.map((option, oIdx) => (
-                                          <div key={oIdx} className={`flex items-center gap-2 p-2 rounded-lg border ${q.correctAnswer === oIdx ? 'bg-green-500/10 border-green-500/30' : 'bg-zinc-900 border-zinc-800'}`}>
-                                            <input
-                                              type="radio"
-                                              name={`mod-${module.id}-q-${q.id}`}
-                                              checked={q.correctAnswer === oIdx}
-                                              onChange={() => updateModuleQuizQuestion(module.id, q.id, 'correctAnswer', oIdx)}
-                                              className="w-3 h-3 text-green-500 bg-zinc-900 border-zinc-700 focus:ring-green-500/20"
-                                            />
-                                            <input
-                                              value={option}
-                                              onChange={(e) => updateModuleQuizOption(module.id, q.id, oIdx, e.target.value)}
-                                              className="block w-full bg-transparent text-xs text-zinc-300 focus:outline-none"
-                                            />
-                                          </div>
-                                        ))}
+                            <div className="space-y-4">
+                              <div className="flex items-center justify-between">
+                                <label className="text-[10px] font-black text-blue-400 uppercase tracking-widest">
+                                  Module Quiz
+                                </label>
+                                <button
+                                  onClick={() => addQuizToModule(module.id)}
+                                  className="text-[10px] font-black text-blue-400 uppercase tracking-widest hover:text-blue-300 flex items-center gap-1"
+                                >
+                                  <Plus className="w-3 h-3" /> Add Question
+                                </button>
+                              </div>
+
+                              <div className="grid gap-3">
+                                {module.quiz?.map((q, qIdx) => (
+                                  <div key={q.id} className="bg-zinc-900/50 p-4 rounded-xl border border-zinc-800">
+                                    <div className="flex items-start gap-4">
+                                      <div className="text-[10px] font-black text-slate-500 mt-2">Q{qIdx + 1}</div>
+                                      <div className="flex-1 space-y-3">
+                                        <input
+                                          value={q.question}
+                                          onChange={(e) => updateModuleQuizQuestion(module.id, q.id, 'question', e.target.value)}
+                                          className="w-full bg-transparent text-white text-sm font-bold border-none p-0 focus:ring-0 placeholder-zinc-600"
+                                          placeholder="Question text..."
+                                        />
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                          {q.options.map((option, oIdx) => (
+                                            <div key={oIdx} className={`flex items-center gap-2 p-2 rounded-lg border ${q.correctAnswer === oIdx ? 'bg-green-500/10 border-green-500/30' : 'bg-zinc-900 border-zinc-800'}`}>
+                                              <input
+                                                type="radio"
+                                                name={`mod-${module.id}-q-${q.id}`}
+                                                checked={q.correctAnswer === oIdx}
+                                                onChange={() => updateModuleQuizQuestion(module.id, q.id, 'correctAnswer', oIdx)}
+                                                className="w-3 h-3 text-green-500 bg-zinc-900 border-zinc-700 focus:ring-green-500/20"
+                                              />
+                                              <input
+                                                value={option}
+                                                onChange={(e) => updateModuleQuizOption(module.id, q.id, oIdx, e.target.value)}
+                                                className="block w-full bg-transparent text-xs text-zinc-300 focus:outline-none"
+                                              />
+                                            </div>
+                                          ))}
+                                        </div>
                                       </div>
+                                      <button
+                                        onClick={() => removeQuizFromModule(module.id, q.id)}
+                                        className="text-zinc-600 hover:text-red-400 transition-colors"
+                                      >
+                                        <Trash2 className="w-3 h-3" />
+                                      </button>
                                     </div>
-                                    <button
-                                      onClick={() => removeQuizFromModule(module.id, q.id)}
-                                      className="text-zinc-600 hover:text-red-400 transition-colors"
-                                    >
-                                      <Trash2 className="w-3 h-3" />
-                                    </button>
                                   </div>
-                                </div>
-                              ))}
+                                ))}
+                              </div>
                             </div>
                           </div>
                         </div>
@@ -614,8 +753,8 @@ Return ONLY valid JSON. Do not use markdown formatting.`;
                   <span className="text-[10px] font-black text-blue-500/50 uppercase tracking-widest">Live Metadata Preview</span>
                 </div>
                 <div className="prose prose-invert prose-sm max-w-none">
-                  <pre className="whitespace-pre-wrap text-zinc-500 font-mono text-xs leading-relaxed selection:bg-blue-500 selection:text-white">
-                    {generatedCourse.modules[0]?.topics[0]?.content.substring(0, 800)}...
+                  <pre className="whitespace-pre-wrap text-zinc-500 font-mono text-xs leading-relaxed selection:bg-blue-500 selection:text-white aspect-square overflow-y-auto custom-scrollbar">
+                    {generatedCourse.modules[0]?.topics[0]?.content}
                   </pre>
                 </div>
               </div>
@@ -636,6 +775,6 @@ Return ONLY valid JSON. Do not use markdown formatting.`;
           )}
         </div>
       </div>
-    </div>
+    </div >
   );
 }
