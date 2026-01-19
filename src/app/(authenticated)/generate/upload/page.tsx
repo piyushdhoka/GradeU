@@ -376,40 +376,40 @@ export default function FileCourseGenerator() {
     // --- Rendering ---
 
     return (
-        <div className="flex h-screen bg-zinc-950 overflow-hidden text-white">
+        <div className="flex h-screen bg-white dark:bg-zinc-950 overflow-hidden text-zinc-900 dark:text-white transition-colors">
             {/* Left Panel: Source Document / Preview */}
-            <div className="w-1/2 border-r border-zinc-800 bg-zinc-900 flex flex-col m-4 rounded-2xl overflow-hidden shadow-2xl shadow-black/40">
-                <div className="p-6 border-b border-zinc-800 flex items-center justify-between bg-zinc-800/50">
+            <div className="w-1/2 border-r border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 flex flex-col m-4 rounded-2xl overflow-hidden shadow-2xl shadow-black/5 dark:shadow-black/40">
+                <div className="p-6 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between bg-zinc-50/50 dark:bg-zinc-800/50">
                     <div className="flex items-center gap-4">
-                        <Link href="/generate" className="w-10 h-10 flex items-center justify-center bg-zinc-800 border border-zinc-700 rounded-xl hover:bg-zinc-700 transition-all shadow-sm">
-                            <ArrowLeft className="w-5 h-5 text-slate-400" />
+                        <Link href="/generate" className="w-10 h-10 flex items-center justify-center bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-all shadow-sm">
+                            <ArrowLeft className="w-5 h-5 text-zinc-400 dark:text-slate-400" />
                         </Link>
                         <div>
-                            <h2 className="text-sm font-black uppercase tracking-widest text-slate-500 leading-none mb-1">Source Asset</h2>
-                            <p className="font-bold text-white">Extracted Intelligence</p>
+                            <h2 className="text-sm font-black uppercase tracking-widest text-zinc-500 dark:text-slate-500 leading-none mb-1">Source Asset</h2>
+                            <p className="font-bold text-zinc-900 dark:text-white">Extracted Intelligence</p>
                         </div>
                     </div>
                     {file && (
                         <button
                             onClick={() => { setFile(null); setCourseStructure(null); setExtractedText(''); }}
-                            className="text-[10px] font-black uppercase tracking-widest text-blue-400 hover:text-blue-300 bg-blue-500/10 px-3 py-1.5 rounded-lg border border-blue-500/20 transition-all"
+                            className="text-[10px] font-black uppercase tracking-widest text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 bg-blue-500/10 px-3 py-1.5 rounded-lg border border-blue-500/20 transition-all"
                         >
                             Swap Source
                         </button>
                     )}
                 </div>
 
-                <div className="flex-1 overflow-y-auto p-10 custom-scrollbar bg-zinc-900">
+                <div className="flex-1 overflow-y-auto p-10 custom-scrollbar bg-white dark:bg-zinc-900">
                     {!file ? (
                         <div
                             onClick={() => fileInputRef.current?.click()}
-                            className="h-full border-2 border-dashed border-zinc-700 rounded-2xl flex flex-col items-center justify-center cursor-pointer hover:border-blue-500 hover:bg-zinc-800 transition-all group"
+                            className="h-full border-2 border-dashed border-zinc-300 dark:border-zinc-700 rounded-2xl flex flex-col items-center justify-center cursor-pointer hover:border-blue-500 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-all group"
                         >
-                            <div className="w-20 h-20 bg-blue-500/10 rounded-3xl flex items-center justify-center mb-6 border border-blue-500/20 group-hover:scale-110 transition-transform">
-                                <Upload className="w-8 h-8 text-blue-400" />
+                            <div className="w-20 h-20 bg-blue-600/10 dark:bg-blue-500/10 rounded-3xl flex items-center justify-center mb-6 border border-blue-600/20 dark:border-blue-500/20 group-hover:scale-110 transition-transform">
+                                <Upload className="w-8 h-8 text-blue-600 dark:text-blue-400" />
                             </div>
-                            <p className="font-black text-white text-lg tracking-tight">Drop Source Material</p>
-                            <p className="text-[10px] text-slate-500 font-black uppercase tracking-[0.2em] mt-2">PDF, DOCX up to 10MB</p>
+                            <p className="font-black text-zinc-900 dark:text-white text-lg tracking-tight">Drop Source Material</p>
+                            <p className="text-[10px] text-zinc-500 dark:text-slate-500 font-black uppercase tracking-[0.2em] mt-2">PDF, DOCX up to 10MB</p>
                             <input
                                 ref={fileInputRef}
                                 type="file"
@@ -420,18 +420,18 @@ export default function FileCourseGenerator() {
                         </div>
                     ) : (
                         <div className="space-y-8">
-                            <div className="bg-zinc-800 p-6 rounded-2xl border border-zinc-700 shadow-xl">
+                            <div className="bg-zinc-50 dark:bg-zinc-800 p-6 rounded-2xl border border-zinc-200 dark:border-zinc-700 shadow-xl shadow-black/5 dark:shadow-black/20">
                                 <div className="flex items-center gap-4 mb-4">
-                                    <div className="w-12 h-12 bg-blue-500/10 rounded-2xl flex items-center justify-center">
-                                        <FileText className="w-6 h-6 text-blue-400" />
+                                    <div className="w-12 h-12 bg-blue-600/10 dark:bg-blue-500/10 rounded-2xl flex items-center justify-center">
+                                        <FileText className="w-6 h-6 text-blue-600 dark:text-blue-400" />
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                        <p className="text-white font-bold truncate">{file.name}</p>
-                                        <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest mt-0.5">Active Dataset</p>
+                                        <p className="text-zinc-900 dark:text-white font-bold truncate">{file.name}</p>
+                                        <p className="text-[10px] text-zinc-500 dark:text-slate-500 font-black uppercase tracking-widest mt-0.5">Active Dataset</p>
                                     </div>
                                 </div>
                                 {isProcessing && (
-                                    <div className="flex items-center gap-2 text-blue-400 animate-pulse bg-zinc-900/50 p-3 rounded-xl border border-zinc-700">
+                                    <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400 animate-pulse bg-white dark:bg-zinc-900/50 p-3 rounded-xl border border-zinc-200 dark:border-zinc-700">
                                         <Loader2 className="w-4 h-4 animate-spin" />
                                         <span className="text-[10px] font-black uppercase tracking-[0.2em]">{processStep}</span>
                                     </div>
@@ -439,17 +439,17 @@ export default function FileCourseGenerator() {
                             </div>
 
                             {/* Logging Console */}
-                            <div className="bg-zinc-950 rounded-2xl p-6 border border-zinc-800 shadow-inner h-64 flex flex-col">
-                                <div className="flex items-center gap-3 mb-4 border-b border-zinc-900 pb-2">
+                            <div className="bg-zinc-900 dark:bg-zinc-950 rounded-2xl p-6 border border-zinc-200 dark:border-zinc-800 shadow-inner h-64 flex flex-col">
+                                <div className="flex items-center gap-3 mb-4 border-b border-zinc-800 dark:border-zinc-900 pb-2">
                                     <div className={`w-2 h-2 rounded-full ${isProcessing ? 'bg-blue-500 animate-pulse' : 'bg-zinc-600'}`} />
                                     <p className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em]">System Operations Log</p>
                                 </div>
                                 <div className="flex-1 overflow-y-auto custom-scrollbar font-mono text-[10px] space-y-1">
                                     {uploadLog.length === 0 ? (
-                                        <p className="text-zinc-700 italic">System ready. Waiting for input...</p>
+                                        <p className="text-zinc-600 dark:text-zinc-700 italic">System ready. Waiting for input...</p>
                                     ) : (
                                         uploadLog.map((log, i) => (
-                                            <p key={i} className="text-zinc-500 border-l-2 border-zinc-800 pl-2 hover:border-blue-500 hover:text-zinc-300 transition-colors">
+                                            <p key={i} className="text-zinc-400 dark:text-zinc-500 border-l-2 border-zinc-700 dark:border-zinc-800 pl-2 hover:border-blue-500 hover:text-zinc-300 transition-colors">
                                                 {log}
                                             </p>
                                         ))
@@ -459,9 +459,9 @@ export default function FileCourseGenerator() {
                             </div>
 
                             <div className="relative">
-                                <div className="absolute -top-3 left-6 px-3 bg-zinc-900 text-[10px] font-black text-blue-400 uppercase tracking-widest">Raw Extraction</div>
-                                <div className="bg-zinc-800 rounded-2xl border border-zinc-700 p-8">
-                                    <pre className="whitespace-pre-wrap text-sm text-slate-300 font-medium leading-relaxed font-sans cursor-text selection:bg-blue-500 selection:text-white">
+                                <div className="absolute -top-3 left-6 px-3 bg-white dark:bg-zinc-900 text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest">Raw Extraction</div>
+                                <div className="bg-zinc-50 dark:bg-zinc-800 rounded-2xl border border-zinc-200 dark:border-zinc-700 p-8">
+                                    <pre className="whitespace-pre-wrap text-sm text-zinc-600 dark:text-slate-300 font-medium leading-relaxed font-sans cursor-text selection:bg-blue-500 selection:text-white">
                                         {extractedText || "Awaiting processing metadata..."}
                                     </pre>
                                 </div>
@@ -472,38 +472,38 @@ export default function FileCourseGenerator() {
             </div>
 
             {/* Right Panel: Generator */}
-            <div className="w-1/2 flex flex-col bg-zinc-900 m-4 rounded-2xl overflow-hidden shadow-2xl shadow-black/40 border border-zinc-800">
-                <div className="p-6 border-b border-zinc-800 bg-zinc-800/50 flex items-center justify-between">
+            <div className="w-1/2 flex flex-col bg-white dark:bg-zinc-900 m-4 rounded-2xl overflow-hidden shadow-2xl shadow-black/5 dark:shadow-black/40 border border-zinc-200 dark:border-zinc-800">
+                <div className="p-6 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-800/50 flex items-center justify-between">
                     <div>
-                        <h2 className="text-sm font-black uppercase tracking-widest text-slate-500 leading-none mb-1">Curriculum Design</h2>
-                        <p className="font-bold text-white">AI Architect Preview</p>
+                        <h2 className="text-sm font-black uppercase tracking-widest text-zinc-500 dark:text-slate-500 leading-none mb-1">Curriculum Design</h2>
+                        <p className="font-bold text-zinc-900 dark:text-white">AI Architect Preview</p>
                     </div>
                     {courseStructure && (
                         <div className="flex items-center gap-3">
                             <div className="text-right">
-                                <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest leading-none">Modules</p>
-                                <p className="text-xl font-black text-white leading-tight">{courseStructure.modules.length}</p>
+                                <p className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest leading-none">Modules</p>
+                                <p className="text-xl font-black text-zinc-900 dark:text-white leading-tight">{courseStructure.modules.length}</p>
                             </div>
                         </div>
                     )}
                 </div>
 
-                <div className="flex-1 overflow-y-auto p-10 custom-scrollbar bg-zinc-900">
+                <div className="flex-1 overflow-y-auto p-10 custom-scrollbar bg-white dark:bg-zinc-900">
                     {courseStructure ? (
                         <div className="space-y-10">
                             <div>
-                                <label className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-3 ml-1">Enterprise Course Identity</label>
+                                <label className="block text-[10px] font-black text-zinc-500 dark:text-slate-500 uppercase tracking-[0.2em] mb-3 ml-1">Enterprise Course Identity</label>
                                 <input
                                     value={courseStructure.title}
                                     onChange={(e) => setCourseStructure({ ...courseStructure, title: e.target.value })}
-                                    className="w-full text-2xl font-black border-none focus:ring-0 px-0 placeholder-slate-700 text-white tracking-tight bg-transparent"
+                                    className="w-full text-2xl font-black border-none focus:ring-0 px-0 placeholder-zinc-300 dark:placeholder-slate-700 text-zinc-900 dark:text-white tracking-tight bg-transparent"
                                     placeholder="Enter course title..."
                                 />
-                                <div className="h-[2px] w-full bg-zinc-800 my-4" />
+                                <div className="h-[2px] w-full bg-zinc-100 dark:bg-zinc-800 my-4" />
                                 <textarea
                                     value={courseStructure.description}
                                     onChange={(e) => setCourseStructure({ ...courseStructure, description: e.target.value })}
-                                    className="w-full text-sm font-medium text-slate-400 border-none focus:ring-0 px-0 resize-none leading-relaxed bg-transparent"
+                                    className="w-full text-sm font-medium text-zinc-500 dark:text-slate-400 border-none focus:ring-0 px-0 resize-none leading-relaxed bg-transparent"
                                     placeholder="Brief course objectives and summary..."
                                     rows={3}
                                 />
@@ -512,7 +512,7 @@ export default function FileCourseGenerator() {
                             <div className="space-y-6">
                                 {courseStructure.modules.map((module, mIdx) => (
                                     <div key={module.id} className="group relative">
-                                        <div className="absolute -left-4 top-0 bottom-0 w-[2px] bg-zinc-700 group-hover:bg-blue-500/50 transition-colors" />
+                                        <div className="absolute -left-4 top-0 bottom-0 w-[2px] bg-zinc-200 dark:bg-zinc-700 group-hover:bg-blue-500/50 transition-colors" />
                                         <div className="flex items-center justify-between mb-4">
                                             <input
                                                 value={module.name}
@@ -521,7 +521,7 @@ export default function FileCourseGenerator() {
                                                     newModules[mIdx].name = e.target.value;
                                                     setCourseStructure({ ...courseStructure, modules: newModules });
                                                 }}
-                                                className="bg-transparent font-black text-white border-none focus:ring-0 p-0 text-lg tracking-tight flex-1"
+                                                className="bg-transparent font-black text-zinc-900 dark:text-white border-none focus:ring-0 p-0 text-lg tracking-tight flex-1"
                                                 placeholder="Module Name"
                                             />
                                             <button
@@ -529,7 +529,7 @@ export default function FileCourseGenerator() {
                                                     const newModules = courseStructure.modules.filter((_, idx) => idx !== mIdx);
                                                     setCourseStructure({ ...courseStructure, modules: newModules });
                                                 }}
-                                                className="p-2 text-slate-500 hover:text-red-400 transition-colors rounded-lg hover:bg-zinc-800"
+                                                className="p-2 text-zinc-400 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 transition-colors rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800"
                                             >
                                                 <Trash2 className="w-4 h-4" />
                                             </button>
@@ -537,9 +537,9 @@ export default function FileCourseGenerator() {
 
                                         <div className="space-y-3 pl-4">
                                             {module.topics.map((topic, tIdx) => (
-                                                <div key={topic.id} className="flex items-center gap-4 bg-zinc-800 hover:bg-zinc-700 p-4 rounded-2xl border border-zinc-700 hover:border-blue-500/50 transition-all cursor-pointer group/topic">
-                                                    <div className={`w-2 h-2 rounded-full ${topic.content ? 'bg-blue-500 shadow-sm shadow-blue-500/40' : 'bg-zinc-500'}`} />
-                                                    <span className="flex-1 text-sm font-bold text-white">{topic.name}</span>
+                                                <div key={topic.id} className="flex items-center gap-4 bg-zinc-50 dark:bg-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-700 p-4 rounded-2xl border border-zinc-200 dark:border-zinc-700 hover:border-blue-500/50 transition-all cursor-pointer group/topic">
+                                                    <div className={`w-2 h-2 rounded-full ${topic.content ? 'bg-blue-500 shadow-sm shadow-blue-500/40' : 'bg-zinc-300 dark:bg-zinc-500'}`} />
+                                                    <span className="flex-1 text-sm font-bold text-zinc-700 dark:text-white">{topic.name}</span>
 
                                                     <div className="flex gap-1 opacity-0 group-hover/topic:opacity-100 transition-opacity">
                                                         <button
@@ -551,7 +551,7 @@ export default function FileCourseGenerator() {
                                                                     content: topic.content || ''
                                                                 });
                                                             }}
-                                                            className="w-8 h-8 flex items-center justify-center bg-zinc-900 border border-zinc-700 rounded-lg text-zinc-400 hover:text-blue-400 hover:border-blue-500/50 transition-all shadow-sm"
+                                                            className="w-8 h-8 flex items-center justify-center bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-lg text-zinc-400 hover:text-blue-600 dark:hover:text-blue-400 hover:border-blue-500/50 transition-all shadow-sm"
                                                             title="Refine Topic"
                                                         >
                                                             <Edit2 className="w-3.5 h-3.5" />
@@ -562,7 +562,7 @@ export default function FileCourseGenerator() {
                                                                 newModules[mIdx].topics = newModules[mIdx].topics.filter((_, idx) => idx !== tIdx);
                                                                 setCourseStructure({ ...courseStructure, modules: newModules });
                                                             }}
-                                                            className="w-8 h-8 flex items-center justify-center bg-zinc-900 border border-zinc-700 rounded-lg text-zinc-400 hover:text-red-400 hover:border-red-500/50 transition-all shadow-sm"
+                                                            className="w-8 h-8 flex items-center justify-center bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-lg text-zinc-400 hover:text-red-500 dark:hover:text-red-400 hover:border-red-500/50 transition-all shadow-sm"
                                                             title="Remove Topic"
                                                         >
                                                             <Trash2 className="w-3.5 h-3.5" />
@@ -579,7 +579,7 @@ export default function FileCourseGenerator() {
                                                     });
                                                     setCourseStructure({ ...courseStructure, modules: newModules });
                                                 }}
-                                                className="text-[10px] font-black text-blue-600 hover:text-blue-800 uppercase tracking-widest flex items-center gap-2 mt-4 ml-1 transition-colors"
+                                                className="text-[10px] font-black text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 uppercase tracking-widest flex items-center gap-2 mt-4 ml-1 transition-colors"
                                             >
                                                 <Plus className="w-3 h-3" /> Append Topic
                                             </button>
@@ -599,7 +599,7 @@ export default function FileCourseGenerator() {
                                         }]
                                     });
                                 }}
-                                className="w-full py-6 border-2 border-dashed border-zinc-100 rounded-[2rem] text-zinc-400 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50/30 transition-all font-black uppercase text-[10px] tracking-[0.2em] flex items-center justify-center gap-3"
+                                className="w-full py-6 border-2 border-dashed border-zinc-200 dark:border-zinc-100 rounded-[2rem] text-zinc-400 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50/30 transition-all font-black uppercase text-[10px] tracking-[0.2em] flex items-center justify-center gap-3"
                             >
                                 <Plus className="w-4 h-4" /> Add Structural Module
                             </button>
@@ -622,11 +622,11 @@ export default function FileCourseGenerator() {
                             </button>
                         </div>
                     ) : (
-                        <div className="h-full flex flex-col items-center justify-center text-zinc-300">
-                            <div className="w-24 h-24 bg-zinc-50 rounded-[2.5rem] flex items-center justify-center mb-8 border border-zinc-100">
-                                <BookOpen className="w-10 h-10 text-zinc-200" />
+                        <div className="h-full flex flex-col items-center justify-center text-zinc-300 dark:text-zinc-700">
+                            <div className="w-24 h-24 bg-zinc-50 dark:bg-zinc-800 rounded-[2.5rem] flex items-center justify-center mb-8 border border-zinc-200 dark:border-zinc-700">
+                                <BookOpen className="w-10 h-10 text-zinc-300 dark:text-zinc-600" />
                             </div>
-                            <p className="font-black text-zinc-400 uppercase tracking-[0.2em] text-xs">Awaiting Source Ingestion</p>
+                            <p className="font-black text-zinc-400 dark:text-zinc-600 uppercase tracking-[0.2em] text-xs">Awaiting Source Ingestion</p>
                         </div>
                     )}
                 </div>

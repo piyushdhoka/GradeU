@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabaseClient'
 import { Loader2, LogIn, Mail, Lock } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { ThemeToggle } from '@/components/ThemeToggle'
 
 export default function LoginPage() {
     const router = useRouter()
@@ -39,16 +40,19 @@ export default function LoginPage() {
     }
 
     return (
-        <div className="flex min-h-screen items-center justify-center bg-black p-4">
-            <div className="w-full max-w-md space-y-8 rounded-2xl bg-zinc-900 p-8 border border-zinc-800 shadow-xl shadow-blue-900/10">
+        <div className="flex min-h-screen items-center justify-center bg-zinc-50 dark:bg-zinc-950 p-4 relative transition-colors">
+            <div className="absolute top-4 right-4">
+                <ThemeToggle />
+            </div>
+            <div className="w-full max-w-md space-y-8 rounded-2xl bg-white dark:bg-zinc-900 p-8 border border-zinc-200 dark:border-zinc-800 shadow-xl shadow-blue-900/5 dark:shadow-blue-900/10">
                 <div className="text-center">
-                    <div className="mx-auto w-12 h-12 bg-blue-500/10 rounded-xl flex items-center justify-center mb-4">
-                        <LogIn className="w-6 h-6 text-blue-400" />
+                    <div className="mx-auto w-12 h-12 bg-blue-600/10 dark:bg-blue-500/10 rounded-xl flex items-center justify-center mb-4">
+                        <LogIn className="w-6 h-6 text-blue-600 dark:text-blue-400" />
                     </div>
-                    <h2 className="text-3xl font-black tracking-tight text-white">
+                    <h2 className="text-3xl font-black tracking-tight text-zinc-900 dark:text-white">
                         Welcome back
                     </h2>
-                    <p className="mt-2 text-sm text-zinc-400">
+                    <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
                         Sign in to continue to your dashboard
                     </p>
                 </div>
@@ -60,7 +64,7 @@ export default function LoginPage() {
                             </label>
                             <div className="relative">
                                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <Mail className="h-5 w-5 text-zinc-500" />
+                                    <Mail className="h-5 w-5 text-zinc-400 dark:text-zinc-500" />
                                 </div>
                                 <input
                                     id="email-address"
@@ -68,7 +72,7 @@ export default function LoginPage() {
                                     type="email"
                                     autoComplete="email"
                                     required
-                                    className="block w-full rounded-xl border border-zinc-800 bg-zinc-950 py-3 pl-10 pr-3 text-white placeholder-zinc-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 sm:text-sm transition-all"
+                                    className="block w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 py-3 pl-10 pr-3 text-zinc-900 dark:text-white placeholder-zinc-400 dark:placeholder-zinc-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 sm:text-sm transition-all"
                                     placeholder="Email address"
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
@@ -81,7 +85,7 @@ export default function LoginPage() {
                             </label>
                             <div className="relative">
                                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <Lock className="h-5 w-5 text-zinc-500" />
+                                    <Lock className="h-5 w-5 text-zinc-400 dark:text-zinc-500" />
                                 </div>
                                 <input
                                     id="password"
@@ -89,7 +93,7 @@ export default function LoginPage() {
                                     type="password"
                                     autoComplete="current-password"
                                     required
-                                    className="block w-full rounded-xl border border-zinc-800 bg-zinc-950 py-3 pl-10 pr-3 text-white placeholder-zinc-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 sm:text-sm transition-all"
+                                    className="block w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 py-3 pl-10 pr-3 text-zinc-900 dark:text-white placeholder-zinc-400 dark:placeholder-zinc-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 sm:text-sm transition-all"
                                     placeholder="Password"
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
@@ -99,7 +103,7 @@ export default function LoginPage() {
                     </div>
 
                     {error && (
-                        <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-sm text-red-400">
+                        <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-sm text-red-500 dark:text-red-400">
                             {error}
                         </div>
                     )}
@@ -108,7 +112,7 @@ export default function LoginPage() {
                         <button
                             type="submit"
                             disabled={loading}
-                            className="group relative flex w-full justify-center rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold text-white hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-zinc-900 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                            className="group relative flex w-full justify-center rounded-xl bg-blue-600 hover:bg-blue-700 px-4 py-3 text-sm font-bold text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-zinc-900 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                         >
                             {loading && (
                                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -120,7 +124,7 @@ export default function LoginPage() {
 
                 <div className="text-center text-sm text-zinc-500">
                     Don't have an account?{' '}
-                    <Link href="/signup" className="font-medium text-blue-400 hover:text-blue-300 transition-colors">
+                    <Link href="/signup" className="font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors">
                         Sign up
                     </Link>
                 </div>

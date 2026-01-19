@@ -45,15 +45,19 @@ export default function GeneratorPage() {
   const [progress, setProgress] = useState('');
   const [generationLog, setGenerationLog] = useState<string[]>([]);
   const [error, setError] = useState('');
+  const [openSections, setOpenSections] = useState({
+    quiz: true,
+    modules: true,
+    preview: false
+  });
 
   const addModule = () => {
     if (currentModule.trim()) {
-      if (currentModule.trim()) {
-        setModules([...modules, { id: Date.now().toString(), name: currentModule, topics: [], quiz: [], isOpen: false }]);
-        setCurrentModule('');
-      } setCurrentModule('');
+      setModules([...modules, { id: Date.now().toString(), name: currentModule, topics: [], quiz: [], isOpen: false }]);
+      setCurrentModule('');
     }
   };
+
 
   const removeModule = (moduleId: string) => {
     setModules(modules.filter(m => m.id !== moduleId));
@@ -423,19 +427,19 @@ Return ONLY valid JSON. Do not use markdown formatting.`;
   };
 
   return (
-    <div className="min-h-full bg-zinc-950 p-8">
+    <div className="min-h-full bg-white dark:bg-zinc-950 p-8 transition-colors">
       <div className="w-full max-w-[95%] mx-auto">
-        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl shadow-black/40 p-10">
-          <div className="flex items-center gap-4 mb-10 pb-10 border-b border-zinc-800">
-            <div className="w-14 h-14 bg-blue-500/10 rounded-2xl flex items-center justify-center">
-              <BookOpen className="w-8 h-8 text-blue-400" />
+        <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-2xl shadow-black/5 dark:shadow-black/40 p-10 transition-colors">
+          <div className="flex items-center gap-4 mb-10 pb-10 border-b border-zinc-200 dark:border-zinc-800">
+            <div className="w-14 h-14 bg-blue-600/10 rounded-2xl flex items-center justify-center">
+              <BookOpen className="w-8 h-8 text-blue-600 dark:text-blue-400" />
             </div>
             <div className="flex flex-col">
-              <h1 className="text-3xl font-black text-white tracking-tight leading-none">AI Course Generator</h1>
-              <span className="text-[10px] text-blue-400 font-black uppercase tracking-[0.2em] mt-2">Enterprise Edition v3.3</span>
+              <h1 className="text-3xl font-black text-zinc-900 dark:text-white tracking-tight leading-none">AI Course Generator</h1>
+              <span className="text-[10px] text-blue-600 dark:text-blue-400 font-black uppercase tracking-[0.2em] mt-2">Enterprise Edition v3.3</span>
             </div>
             <div className="ml-auto">
-              <Link href="/generate/upload" className="px-6 py-3 bg-zinc-800 text-blue-400 rounded-xl hover:bg-blue-600 hover:text-white transition-all font-black text-xs uppercase tracking-widest flex items-center gap-2 border border-zinc-700 shadow-sm">
+              <Link href="/generate/upload" className="px-6 py-3 bg-zinc-100 dark:bg-zinc-800 text-blue-600 dark:text-blue-400 rounded-xl hover:bg-blue-600 hover:text-white transition-all font-black text-xs uppercase tracking-widest flex items-center gap-2 border border-zinc-200 dark:border-zinc-700 shadow-sm">
                 <FileText className="w-4 h-4" /> Upload Document
               </Link>
             </div>
@@ -455,7 +459,7 @@ Return ONLY valid JSON. Do not use markdown formatting.`;
             <div className="space-y-8">
               <div className="flex gap-4">
                 <div className="flex-1">
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3 ml-1">
+                  <label className="block text-[10px] font-black text-zinc-500 dark:text-slate-400 uppercase tracking-[0.2em] mb-3 ml-1">
                     Course Objectives & Title
                   </label>
                   <input
@@ -463,7 +467,7 @@ Return ONLY valid JSON. Do not use markdown formatting.`;
                     value={courseTitle}
                     onChange={(e) => setCourseTitle(e.target.value)}
                     placeholder="e.g., Advanced Quantum Computing for Beginners"
-                    className="w-full px-6 py-4 bg-zinc-800 border border-zinc-700 rounded-2xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/50 transition-all outline-none text-white font-bold placeholder-slate-600"
+                    className="w-full px-6 py-4 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-2xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/50 transition-all outline-none text-zinc-900 dark:text-white font-bold placeholder-zinc-400 dark:placeholder-slate-600"
                   />
                 </div>
                 <div className="flex items-end">
@@ -479,7 +483,7 @@ Return ONLY valid JSON. Do not use markdown formatting.`;
               </div>
 
               <div>
-                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3 ml-1">
+                <label className="block text-[10px] font-black text-zinc-500 dark:text-slate-400 uppercase tracking-[0.2em] mb-3 ml-1">
                   Curriculum Modules (6 topics each)
                 </label>
                 <div className="flex gap-3">
@@ -489,12 +493,12 @@ Return ONLY valid JSON. Do not use markdown formatting.`;
                     onChange={(e) => setCurrentModule(e.target.value)}
                     onKeyPress={(e) => e.key === 'Enter' && addModule()}
                     placeholder="e.g., Introduction to Qubits"
-                    className="flex-1 px-6 py-4 bg-zinc-800 border border-zinc-700 rounded-2xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/50 transition-all outline-none text-white font-bold placeholder-slate-600"
+                    className="flex-1 px-6 py-4 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-2xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/50 transition-all outline-none text-zinc-900 dark:text-white font-bold placeholder-zinc-400 dark:placeholder-slate-600"
                   />
                   <button
                     onClick={addModule}
                     disabled={isGenerating}
-                    className="px-8 py-4 bg-blue-500 text-white rounded-2xl hover:bg-blue-600 transition-all flex items-center gap-2 disabled:opacity-50 font-black uppercase tracking-widest text-xs shadow-lg shadow-blue-500/20"
+                    className="px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl transition-all flex items-center gap-2 disabled:opacity-50 font-black uppercase tracking-widest text-xs shadow-lg shadow-blue-500/20"
                   >
                     <Plus className="w-5 h-5" />
                     Add
@@ -504,207 +508,292 @@ Return ONLY valid JSON. Do not use markdown formatting.`;
 
 
 
-              {/* Initial Assessment UI */}
+              {/* Section 1: Initial Assessment */}
               {generalQuiz.length > 0 && (
-                <div className="mt-8 bg-zinc-900 rounded-2xl border border-indigo-500/30 overflow-hidden">
-                  <div className="p-6 bg-indigo-500/10 border-b border-indigo-500/20 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-indigo-500 flex items-center justify-center text-white shadow-lg shadow-indigo-500/20">
+                <div className="mt-8 border border-zinc-200 dark:border-zinc-800 rounded-2xl overflow-hidden shadow-sm transition-all">
+                  <button
+                    onClick={() => setOpenSections(prev => ({ ...prev, quiz: !prev.quiz }))}
+                    className="w-full flex items-center justify-between p-6 bg-white dark:bg-zinc-900 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors text-left"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-xl bg-indigo-500/10 dark:bg-indigo-500/20 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
                         <GraduationCap className="w-6 h-6" />
                       </div>
                       <div>
-                        <h3 className="text-lg font-bold text-white">Initial Assessment</h3>
-                        <p className="text-[10px] text-indigo-400 font-bold uppercase tracking-widest">Base Knowledge Check</p>
+                        <h3 className="text-lg font-bold text-zinc-900 dark:text-white">Initial Assessment</h3>
+                        <p className="text-[10px] text-zinc-500 dark:text-slate-400 font-bold uppercase tracking-widest mt-1">
+                          {generalQuiz.length} Questions • Base Knowledge Check
+                        </p>
                       </div>
                     </div>
-                    <span className="bg-indigo-500/20 text-indigo-300 px-3 py-1 rounded-full text-xs font-bold border border-indigo-500/30">
-                      {generalQuiz.length} Questions
-                    </span>
-                  </div>
-                  <div className="p-6 space-y-4">
-                    {generalQuiz.map((q, qIdx) => (
-                      <div key={q.id} className="bg-zinc-950/50 rounded-xl p-4 border border-zinc-800 hover:border-indigo-500/30 transition-colors">
-                        <div className="flex items-start gap-4">
-                          <div className="w-6 h-6 rounded-full bg-zinc-800 flex items-center justify-center text-xs font-bold text-zinc-500 mt-1 shrink-0">
-                            {qIdx + 1}
-                          </div>
-                          <div className="flex-1 space-y-3">
-                            <input
-                              value={q.question}
-                              onChange={(e) => {
-                                const newQuiz = [...generalQuiz];
-                                newQuiz[qIdx].question = e.target.value;
-                                setGeneralQuiz(newQuiz);
-                              }}
-                              className="w-full bg-transparent text-white text-sm font-bold border-none p-0 focus:ring-0 placeholder-zinc-600"
-                              placeholder="Question text..."
-                            />
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                              {q.options.map((option, oIdx) => (
-                                <div key={oIdx} className={`flex items-center gap-2 p-2 rounded-lg border ${q.correctAnswer === oIdx ? 'bg-green-500/10 border-green-500/30' : 'bg-zinc-900 border-zinc-800'}`}>
-                                  <input
-                                    type="radio"
-                                    name={`gen-q-${q.id}`}
-                                    checked={q.correctAnswer === oIdx}
-                                    onChange={() => {
-                                      const newQuiz = [...generalQuiz];
-                                      newQuiz[qIdx].correctAnswer = oIdx;
-                                      setGeneralQuiz(newQuiz);
-                                    }}
-                                    className="w-3 h-3 text-green-500 bg-zinc-900 border-zinc-700 focus:ring-green-500/20"
-                                  />
-                                  <input
-                                    value={option}
-                                    onChange={(e) => {
-                                      const newQuiz = [...generalQuiz];
-                                      newQuiz[qIdx].options[oIdx] = e.target.value;
-                                      setGeneralQuiz(newQuiz);
-                                    }}
-                                    className="block w-full bg-transparent text-xs text-zinc-300 focus:outline-none"
-                                  />
-                                </div>
-                              ))}
+                    {openSections.quiz ? (
+                      <ChevronUp className="w-5 h-5 text-zinc-400" />
+                    ) : (
+                      <ChevronDown className="w-5 h-5 text-zinc-400" />
+                    )}
+                  </button>
+
+                  {openSections.quiz && (
+                    <div className="p-6 bg-zinc-50 dark:bg-black/20 border-t border-zinc-200 dark:border-zinc-800 space-y-4">
+                      {generalQuiz.map((q, qIdx) => (
+                        <div key={q.id} className="bg-white dark:bg-zinc-900 rounded-xl p-6 border border-zinc-200 dark:border-zinc-800 shadow-sm hover:border-indigo-500/30 transition-colors">
+                          <div className="flex items-start gap-4">
+                            <div className="w-6 h-6 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-xs font-bold text-zinc-500 mt-1 shrink-0">
+                              {qIdx + 1}
                             </div>
+                            <div className="flex-1 space-y-4">
+                              <input
+                                value={q.question}
+                                onChange={(e) => {
+                                  const newQuiz = [...generalQuiz];
+                                  newQuiz[qIdx].question = e.target.value;
+                                  setGeneralQuiz(newQuiz);
+                                }}
+                                className="w-full bg-transparent text-zinc-900 dark:text-white text-sm font-bold border-none p-0 focus:ring-0 placeholder-zinc-400 dark:placeholder-zinc-600"
+                                placeholder="Question text..."
+                              />
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                {q.options.map((option, oIdx) => (
+                                  <div key={oIdx} className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${q.correctAnswer === oIdx ? 'bg-green-500/10 border-green-500/30' : 'bg-zinc-50 dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800'}`}>
+                                    <input
+                                      type="radio"
+                                      name={`gen-q-${q.id}`}
+                                      checked={q.correctAnswer === oIdx}
+                                      onChange={() => {
+                                        const newQuiz = [...generalQuiz];
+                                        newQuiz[qIdx].correctAnswer = oIdx;
+                                        setGeneralQuiz(newQuiz);
+                                      }}
+                                      className="w-4 h-4 text-green-500 bg-white dark:bg-zinc-900 border-zinc-300 dark:border-zinc-700 focus:ring-green-500/20"
+                                    />
+                                    <input
+                                      value={option}
+                                      onChange={(e) => {
+                                        const newQuiz = [...generalQuiz];
+                                        newQuiz[qIdx].options[oIdx] = e.target.value;
+                                        setGeneralQuiz(newQuiz);
+                                      }}
+                                      className="block w-full bg-transparent text-xs font-medium text-zinc-700 dark:text-zinc-300 focus:outline-none"
+                                    />
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                            <button
+                              onClick={() => {
+                                setGeneralQuiz(prev => prev.filter(item => item.id !== q.id));
+                              }}
+                              className="text-zinc-400 hover:text-red-500 transition-colors p-1"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
                           </div>
-                          <button
-                            onClick={() => {
-                              setGeneralQuiz(prev => prev.filter(item => item.id !== q.id));
-                            }}
-                            className="text-zinc-600 hover:text-red-400 transition-colors"
-                          >
-                            <Trash2 className="w-3 h-3" />
-                          </button>
                         </div>
-                      </div>
-                    ))}
-                    <button
-                      onClick={() => {
-                        setGeneralQuiz(prev => [...prev, {
-                          id: uuidv4(),
-                          question: "New Initial Question",
-                          options: ["Option A", "Option B", "Option C", "Option D"],
-                          correctAnswer: 0
-                        }]);
-                      }}
-                      className="w-full py-3 border-2 border-dashed border-zinc-800 rounded-xl text-zinc-500 hover:text-indigo-400 hover:border-indigo-500/30 hover:bg-indigo-500/5 transition-all text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-2"
-                    >
-                      <Plus className="w-4 h-4" /> Add Initial Question
-                    </button>
-                  </div>
+                      ))}
+                      <button
+                        onClick={() => {
+                          setGeneralQuiz(prev => [...prev, {
+                            id: uuidv4(),
+                            question: "New Initial Question",
+                            options: ["Option A", "Option B", "Option C", "Option D"],
+                            correctAnswer: 0
+                          }]);
+                        }}
+                        className="w-full py-4 border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-xl text-zinc-500 hover:text-indigo-500 hover:border-indigo-500/30 hover:bg-indigo-500/5 transition-all text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2"
+                      >
+                        <Plus className="w-4 h-4" /> Add Initial Question
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
 
+              {/* Section 2: Modules */}
               {modules.length > 0 && (
-                <div className="grid grid-cols-1 gap-3">
-                  {modules.map((module, idx) => (
-                    <div key={module.id} className={`bg-zinc-800/50 rounded-2xl border ${module.isOpen ? 'border-blue-500/50' : 'border-zinc-700'} transition-all overflow-hidden`}>
-                      <div
-                        className="flex justify-between items-center px-6 py-4 cursor-pointer hover:bg-zinc-800/80"
-                        onClick={() => toggleModule(module.id)}
-                      >
-                        <div className="flex items-center gap-4">
-                          <span className="w-8 h-8 bg-blue-500/10 border border-blue-500/20 rounded-lg flex items-center justify-center text-xs font-black text-blue-400 shadow-sm">
-                            {idx + 1}
-                          </span>
-                          <div>
-                            <p className="font-bold text-white">{module.name}</p>
-                            <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest mt-0.5">
-                              {module.topics?.length || 0} Topics • {module.quiz?.length || 0} Quiz Questions
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={(e) => { e.stopPropagation(); removeModule(module.id); }}
-                            disabled={isGenerating}
-                            className="p-2 text-slate-400 hover:text-red-400 transition-colors disabled:opacity-50"
-                          >
-                            <Trash2 className="w-5 h-5" />
-                          </button>
-                          {module.isOpen ? <ChevronUp className="w-5 h-5 text-slate-500" /> : <ChevronDown className="w-5 h-5 text-slate-500" />}
-                        </div>
+                <div className="mt-6 border border-zinc-200 dark:border-zinc-800 rounded-2xl overflow-hidden shadow-sm transition-all">
+                  <button
+                    onClick={() => setOpenSections(prev => ({ ...prev, modules: !prev.modules }))}
+                    className="w-full flex items-center justify-between p-6 bg-white dark:bg-zinc-900 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors text-left"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-xl bg-blue-500/10 dark:bg-blue-500/20 flex items-center justify-center text-blue-600 dark:text-blue-400">
+                        <ListChecks className="w-6 h-6" />
                       </div>
+                      <div>
+                        <h3 className="text-lg font-bold text-zinc-900 dark:text-white">Course Modules</h3>
+                        <p className="text-[10px] text-zinc-500 dark:text-slate-400 font-bold uppercase tracking-widest mt-1">
+                          {modules.length} Modules • Topics & Quizzes
+                        </p>
+                      </div>
+                    </div>
+                    {openSections.modules ? (
+                      <ChevronUp className="w-5 h-5 text-zinc-400" />
+                    ) : (
+                      <ChevronDown className="w-5 h-5 text-zinc-400" />
+                    )}
+                  </button>
 
-                      {module.isOpen && (
-                        <div className="px-6 pb-6 pt-2 border-t border-zinc-700/50">
-                          <div className="space-y-6">
-                            {/* Topics Section */}
-                            <div>
-                              <label className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-3 block">
-                                Planned Topics
-                              </label>
-                              <div className="flex flex-wrap gap-2">
-                                {module.topics?.map((topic, tIdx) => (
-                                  <div key={tIdx} className="bg-zinc-900 px-3 py-1.5 rounded-lg border border-zinc-700 text-xs font-medium text-zinc-300">
-                                    {topic}
-                                  </div>
-                                ))}
-                                {(!module.topics || module.topics.length === 0) && (
-                                  <p className="text-xs text-zinc-600 italic">No specific topics defined (AI will generate automatically)</p>
-                                )}
+                  {openSections.modules && (
+                    <div className="p-6 bg-zinc-50 dark:bg-black/20 border-t border-zinc-200 dark:border-zinc-800 grid gap-4">
+                      {modules.map((module, idx) => (
+                        <div key={module.id} className={`bg-white dark:bg-zinc-800/50 rounded-2xl border ${module.isOpen ? 'border-blue-500/30' : 'border-zinc-200 dark:border-zinc-700'} transition-all overflow-hidden shadow-sm`}>
+                          <div
+                            className="flex justify-between items-center px-6 py-5 cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-800/80 transition-colors"
+                            onClick={() => toggleModule(module.id)}
+                          >
+                            <div className="flex items-center gap-4">
+                              <span className="w-8 h-8 bg-zinc-100 dark:bg-blue-500/10 border border-zinc-200 dark:border-blue-500/20 rounded-lg flex items-center justify-center text-xs font-black text-zinc-500 dark:text-blue-400">
+                                {idx + 1}
+                              </span>
+                              <div>
+                                <p className="font-bold text-zinc-900 dark:text-white">{module.name}</p>
+                                <p className="text-[10px] text-zinc-500 dark:text-slate-500 font-black uppercase tracking-widest mt-1">
+                                  {module.topics?.length || 0} Topics • {module.quiz?.length || 0} Quiz Questions
+                                </p>
                               </div>
                             </div>
+                            <div className="flex items-center gap-2">
+                              {module.isOpen ? <ChevronUp className="w-5 h-5 text-zinc-400" /> : <ChevronDown className="w-5 h-5 text-zinc-400" />}
+                              <button
+                                onClick={(e) => { e.stopPropagation(); removeModule(module.id); }}
+                                disabled={isGenerating}
+                                className="p-2 text-zinc-400 hover:text-red-500 transition-colors disabled:opacity-50"
+                              >
+                                <Trash2 className="w-5 h-5" />
+                              </button>
+                            </div>
+                          </div>
 
-                            <div className="space-y-4">
-                              <div className="flex items-center justify-between">
-                                <label className="text-[10px] font-black text-blue-400 uppercase tracking-widest">
-                                  Module Quiz
-                                </label>
-                                <button
-                                  onClick={() => addQuizToModule(module.id)}
-                                  className="text-[10px] font-black text-blue-400 uppercase tracking-widest hover:text-blue-300 flex items-center gap-1"
-                                >
-                                  <Plus className="w-3 h-3" /> Add Question
-                                </button>
-                              </div>
+                          {module.isOpen && (
+                            <div className="px-6 pb-8 pt-2">
+                              <div className="space-y-8">
+                                {/* Topics Section */}
+                                <div>
+                                  <label className="text-[10px] font-black text-indigo-500 dark:text-indigo-400 uppercase tracking-widest mb-3 block">
+                                    Planned Topics
+                                  </label>
+                                  <div className="flex flex-wrap gap-2">
+                                    {module.topics?.map((topic, tIdx) => (
+                                      <div key={tIdx} className="bg-zinc-100 dark:bg-zinc-900 px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 text-xs font-bold text-zinc-700 dark:text-zinc-300">
+                                        {topic}
+                                      </div>
+                                    ))}
+                                    {(!module.topics || module.topics.length === 0) && (
+                                      <p className="text-xs text-zinc-400 italic">No specific topics defined (AI will generate automatically)</p>
+                                    )}
+                                  </div>
+                                </div>
 
-                              <div className="grid gap-3">
-                                {module.quiz?.map((q, qIdx) => (
-                                  <div key={q.id} className="bg-zinc-900/50 p-4 rounded-xl border border-zinc-800">
-                                    <div className="flex items-start gap-4">
-                                      <div className="text-[10px] font-black text-slate-500 mt-2">Q{qIdx + 1}</div>
-                                      <div className="flex-1 space-y-3">
-                                        <input
-                                          value={q.question}
-                                          onChange={(e) => updateModuleQuizQuestion(module.id, q.id, 'question', e.target.value)}
-                                          className="w-full bg-transparent text-white text-sm font-bold border-none p-0 focus:ring-0 placeholder-zinc-600"
-                                          placeholder="Question text..."
-                                        />
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                                          {q.options.map((option, oIdx) => (
-                                            <div key={oIdx} className={`flex items-center gap-2 p-2 rounded-lg border ${q.correctAnswer === oIdx ? 'bg-green-500/10 border-green-500/30' : 'bg-zinc-900 border-zinc-800'}`}>
-                                              <input
-                                                type="radio"
-                                                name={`mod-${module.id}-q-${q.id}`}
-                                                checked={q.correctAnswer === oIdx}
-                                                onChange={() => updateModuleQuizQuestion(module.id, q.id, 'correctAnswer', oIdx)}
-                                                className="w-3 h-3 text-green-500 bg-zinc-900 border-zinc-700 focus:ring-green-500/20"
-                                              />
-                                              <input
-                                                value={option}
-                                                onChange={(e) => updateModuleQuizOption(module.id, q.id, oIdx, e.target.value)}
-                                                className="block w-full bg-transparent text-xs text-zinc-300 focus:outline-none"
-                                              />
+                                {/* Module Quiz Section */}
+                                <div className="space-y-4">
+                                  <div className="flex items-center justify-between">
+                                    <label className="text-[10px] font-black text-blue-500 dark:text-blue-400 uppercase tracking-widest">
+                                      Module Quiz
+                                    </label>
+                                    <button
+                                      onClick={() => addQuizToModule(module.id)}
+                                      className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest hover:text-blue-500 flex items-center gap-1 bg-blue-50 dark:bg-blue-500/10 px-3 py-1.5 rounded-lg transition-colors"
+                                    >
+                                      <Plus className="w-3 h-3" /> Add Question
+                                    </button>
+                                  </div>
+
+                                  <div className="grid gap-3">
+                                    {module.quiz?.map((q, qIdx) => (
+                                      <div key={q.id} className="bg-white dark:bg-zinc-900/50 p-5 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
+                                        <div className="flex items-start gap-4">
+                                          <div className="text-[10px] font-black text-zinc-400 mt-2">Q{qIdx + 1}</div>
+                                          <div className="flex-1 space-y-4">
+                                            <input
+                                              value={q.question}
+                                              onChange={(e) => updateModuleQuizQuestion(module.id, q.id, 'question', e.target.value)}
+                                              className="w-full bg-transparent text-zinc-900 dark:text-white text-sm font-bold border-none p-0 focus:ring-0 placeholder-zinc-400 dark:placeholder-zinc-600"
+                                              placeholder="Question text..."
+                                            />
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                              {q.options.map((option, oIdx) => (
+                                                <div key={oIdx} className={`flex items-center gap-3 p-3 rounded-lg border transition-all ${q.correctAnswer === oIdx ? 'bg-green-500/10 border-green-500/30' : 'bg-zinc-50 dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800'}`}>
+                                                  <input
+                                                    type="radio"
+                                                    name={`mod-${module.id}-q-${q.id}`}
+                                                    checked={q.correctAnswer === oIdx}
+                                                    onChange={() => updateModuleQuizQuestion(module.id, q.id, 'correctAnswer', oIdx)}
+                                                    className="w-4 h-4 text-green-500 bg-white dark:bg-zinc-900 border-zinc-300 dark:border-zinc-700 focus:ring-green-500/20"
+                                                  />
+                                                  <input
+                                                    value={option}
+                                                    onChange={(e) => updateModuleQuizOption(module.id, q.id, oIdx, e.target.value)}
+                                                    className="block w-full bg-transparent text-xs font-medium text-zinc-700 dark:text-zinc-300 focus:outline-none"
+                                                  />
+                                                </div>
+                                              ))}
                                             </div>
-                                          ))}
+                                          </div>
+                                          <button
+                                            onClick={() => removeQuizFromModule(module.id, q.id)}
+                                            className="text-zinc-400 hover:text-red-500 transition-colors p-1"
+                                          >
+                                            <Trash2 className="w-4 h-4" />
+                                          </button>
                                         </div>
                                       </div>
-                                      <button
-                                        onClick={() => removeQuizFromModule(module.id, q.id)}
-                                        className="text-zinc-600 hover:text-red-400 transition-colors"
-                                      >
-                                        <Trash2 className="w-3 h-3" />
-                                      </button>
-                                    </div>
+                                    ))}
+                                    {(!module.quiz || module.quiz.length === 0) && (
+                                      <div className="text-center py-6 border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-xl">
+                                        <p className="text-xs text-zinc-400">No quiz questions for this module yet.</p>
+                                      </div>
+                                    )}
                                   </div>
-                                ))}
+                                </div>
                               </div>
                             </div>
-                          </div>
+                          )}
                         </div>
-                      )}
+                      ))}
                     </div>
-                  ))}
+                  )}
+                </div>
+              )}
+
+              {/* Section 3: Preview */}
+              {(modules.length > 0 || generalQuiz.length > 0) && (
+                <div className="mt-6 border border-zinc-200 dark:border-zinc-800 rounded-2xl overflow-hidden shadow-sm transition-all">
+                  <button
+                    onClick={() => setOpenSections(prev => ({ ...prev, preview: !prev.preview }))}
+                    className="w-full flex items-center justify-between p-6 bg-white dark:bg-zinc-900 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors text-left"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-xl bg-purple-500/10 dark:bg-purple-500/20 flex items-center justify-center text-purple-600 dark:text-purple-400">
+                        <FileText className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-bold text-zinc-900 dark:text-white">Curriculum Preview</h3>
+                        <p className="text-[10px] text-zinc-500 dark:text-slate-400 font-bold uppercase tracking-widest mt-1">
+                          Live Syllabus View
+                        </p>
+                      </div>
+                    </div>
+                    {openSections.preview ? (
+                      <ChevronUp className="w-5 h-5 text-zinc-400" />
+                    ) : (
+                      <ChevronDown className="w-5 h-5 text-zinc-400" />
+                    )}
+                  </button>
+
+                  {openSections.preview && (
+                    <div className="p-0 bg-zinc-950/5 dark:bg-black/40 border-t border-zinc-200 dark:border-zinc-800">
+                      <div className="w-full h-96 relative group">
+                        <textarea
+                          readOnly
+                          className="w-full h-full p-6 bg-zinc-50 dark:bg-zinc-950 text-zinc-600 dark:text-slate-300 font-mono text-xs leading-relaxed resize-none focus:outline-none custom-scrollbar"
+                          value={`COURSE: ${courseTitle}\n\nINITIAL ASSESSMENT:\n${generalQuiz.map((q, i) => `${i + 1}. ${q.question}`).join('\n')}\n\nMODULES:\n${modules.map((m, i) => `Module ${i + 1}: ${m.name}\n  Topics: ${m.topics.join(', ')}\n  Quiz Questions: ${m.quiz.length}`).join('\n\n')}`}
+                        />
+                        <div className="absolute top-4 right-4 bg-zinc-900/10 dark:bg-white/10 backdrop-blur-sm px-3 py-1 rounded-full pointer-events-none">
+                          <span className="text-[10px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest">Read Only Preview</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -761,40 +850,40 @@ Return ONLY valid JSON. Do not use markdown formatting.`;
                 </button>
               </div>
 
-              <div className="bg-zinc-800/50 rounded-2xl p-8 border border-zinc-700 shadow-sm">
-                <h2 className="text-3xl font-black text-white mb-4 tracking-tight leading-tight">{generatedCourse.courseTitle}</h2>
-                <p className="text-slate-400 mb-8 leading-relaxed font-medium">{generatedCourse.description}</p>
+              <div className="bg-white dark:bg-zinc-800/50 rounded-2xl p-8 border border-zinc-200 dark:border-zinc-700 shadow-sm transition-colors">
+                <h2 className="text-3xl font-black text-zinc-900 dark:text-white mb-4 tracking-tight leading-tight">{generatedCourse.courseTitle}</h2>
+                <p className="text-zinc-500 dark:text-slate-400 mb-8 leading-relaxed font-medium">{generatedCourse.description}</p>
                 <div className="grid grid-cols-3 gap-6">
-                  <div className="bg-zinc-900 p-6 rounded-2xl shadow-sm border border-zinc-800">
-                    <p className="text-4xl font-black text-blue-400 leading-none">{generatedCourse.modules.length}</p>
-                    <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest mt-2">Modules</p>
+                  <div className="bg-zinc-50 dark:bg-zinc-900 p-6 rounded-2xl shadow-sm border border-zinc-100 dark:border-zinc-800">
+                    <p className="text-4xl font-black text-blue-600 dark:text-blue-400 leading-none">{generatedCourse.modules.length}</p>
+                    <p className="text-[10px] text-zinc-500 dark:text-slate-500 uppercase font-black tracking-widest mt-2">Modules</p>
                   </div>
-                  <div className="bg-zinc-900 p-6 rounded-2xl shadow-sm border border-zinc-800">
-                    <p className="text-4xl font-black text-indigo-400 leading-none">
+                  <div className="bg-zinc-50 dark:bg-zinc-900 p-6 rounded-2xl shadow-sm border border-zinc-100 dark:border-zinc-800">
+                    <p className="text-4xl font-black text-indigo-600 dark:text-indigo-400 leading-none">
                       {generatedCourse.modules.reduce((sum, m) => sum + m.topics.length, 0)}
                     </p>
-                    <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest mt-2">Topics</p>
+                    <p className="text-[10px] text-zinc-500 dark:text-slate-500 uppercase font-black tracking-widest mt-2">Topics</p>
                   </div>
-                  <div className="bg-zinc-900 p-6 rounded-2xl shadow-sm border border-zinc-800">
-                    <p className="text-4xl font-black text-blue-400 leading-none">~{generatedCourse.totalPages}</p>
-                    <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest mt-2">Pages</p>
+                  <div className="bg-zinc-50 dark:bg-zinc-900 p-6 rounded-2xl shadow-sm border border-zinc-100 dark:border-zinc-800">
+                    <p className="text-4xl font-black text-blue-600 dark:text-blue-400 leading-none">~{generatedCourse.totalPages}</p>
+                    <p className="text-[10px] text-zinc-500 dark:text-slate-500 uppercase font-black tracking-widest mt-2">Pages</p>
                   </div>
                   {generatedCourse.modules.some(m => m.quiz && m.quiz.length > 0) && (
-                    <div className="bg-zinc-900 p-6 rounded-2xl shadow-sm border border-zinc-800">
-                      <p className="text-4xl font-black text-purple-400 leading-none">
+                    <div className="bg-zinc-50 dark:bg-zinc-900 p-6 rounded-2xl shadow-sm border border-zinc-100 dark:border-zinc-800">
+                      <p className="text-4xl font-black text-purple-600 dark:text-purple-400 leading-none">
                         {generatedCourse.modules.reduce((sum, m) => sum + (m.quiz?.length || 0), 0)}
                       </p>
-                      <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest mt-2">Total Questions</p>
+                      <p className="text-[10px] text-zinc-500 dark:text-slate-500 uppercase font-black tracking-widest mt-2">Total Questions</p>
                     </div>
                   )}
                 </div>
               </div>
 
-              <div className="bg-zinc-950 rounded-2xl p-8 overflow-hidden shadow-2xl relative border border-zinc-800">
+              <div className="bg-white dark:bg-zinc-950 rounded-2xl p-8 overflow-hidden shadow-2xl relative border border-zinc-200 dark:border-zinc-800 transition-colors">
                 <div className="absolute top-0 right-0 p-4">
                   <span className="text-[10px] font-black text-blue-500/50 uppercase tracking-widest">Live Metadata Preview</span>
                 </div>
-                <div className="prose prose-invert prose-sm max-w-none">
+                <div className="prose prose-sm max-w-none dark:prose-invert">
                   <pre className="whitespace-pre-wrap text-zinc-500 font-mono text-xs leading-relaxed selection:bg-blue-500 selection:text-white aspect-square overflow-y-auto custom-scrollbar">
                     {generatedCourse.modules[0]?.topics[0]?.content}
                   </pre>
