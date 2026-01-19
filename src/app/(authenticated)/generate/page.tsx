@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Trash2, Plus, ChevronDown, ChevronRight, Loader2, Sparkles, BookOpen, GraduationCap, FileText, CheckCircle2, AlertCircle, BrainCircuit, ListChecks, RefreshCcw, ChevronUp } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
@@ -8,7 +8,7 @@ import { v4 as uuidv4 } from 'uuid';
 interface Module {
   id: string;
   name: string;
-  topics: string[]; // Added topics array
+  topics: { name: string; content: string }[]; // Updated topics array to object array
   quiz: QuizQuestion[];
   isOpen?: boolean;
 }
@@ -50,6 +50,8 @@ export default function GeneratorPage() {
     modules: true,
     preview: false
   });
+  const [syllabusText, setSyllabusText] = useState('');
+  const [isSyllabusEdited, setIsSyllabusEdited] = useState(false);
 
   const addModule = () => {
     if (currentModule.trim()) {
@@ -171,7 +173,9 @@ export default function GeneratorPage() {
 Return a JSON object with:
 1. "modules": array of objects. Each module has:
     - "name": string (Module Name)
-    - "topics": array of 3 strings (Sub-topics)
+    - "topics": array of 3 objects (Sub-topics), each having:
+        - "name": string (Topic Name)
+        - "content": string (Brief summary of what this topic covers, approx 1-2 sentences)
     - "quiz": array of 3 objects (Module specific quiz)
 2. "generalQuiz": array of objects. An INITIAL general course assessment based on the Course Title.
    - The number of questions must be EXACTLY equal to the number of modules generated.
@@ -199,7 +203,10 @@ Return ONLY valid JSON. Do not use markdown formatting.`;
         const newModules = data.modules.map((m: any) => ({
           id: uuidv4(),
           name: m.name,
-          topics: m.topics || [],
+          topics: m.topics?.map((t: any) => ({
+            name: t.name || t, // Fallback if still string
+            content: t.content || ''
+          })) || [],
           quiz: m.quiz?.map((q: any) => ({ ...q, id: uuidv4() })) || [],
           isOpen: true
         }));
@@ -376,6 +383,21 @@ Return ONLY valid JSON. Do not use markdown formatting.`;
       throw new Error(`Invalid response structure: ${JSON.stringify(data)}`);
     }
   };
+
+  useEffect(() => {
+    if (!isSyllabusEdited) {
+      const generatedText = `COURSE: ${courseTitle}
+
+MODULES:
+${modules.map((m, i) => `Module ${i + 1}: ${m.name}
+  Topics:
+${m.topics && m.topics.length > 0 ? m.topics.map(t => `  - ${t.name}: ${t.content}`).join('\n') : '  - (No topics defined yet)'}
+  
+  Quiz Questions: ${m.quiz?.length || 0}`).join('\n\n')}`;
+
+      setSyllabusText(generatedText);
+    }
+  }, [modules, generalQuiz, courseTitle, isSyllabusEdited]);
 
   const downloadMarkdown = () => {
     if (!generatedCourse) return;
@@ -672,15 +694,65 @@ Return ONLY valid JSON. Do not use markdown formatting.`;
                                   <label className="text-[10px] font-black text-indigo-500 dark:text-indigo-400 uppercase tracking-widest mb-3 block">
                                     Planned Topics
                                   </label>
-                                  <div className="flex flex-wrap gap-2">
-                                    {module.topics?.map((topic, tIdx) => (
-                                      <div key={tIdx} className="bg-zinc-100 dark:bg-zinc-900 px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 text-xs font-bold text-zinc-700 dark:text-zinc-300">
-                                        {topic}
-                                      </div>
-                                    ))}
-                                    {(!module.topics || module.topics.length === 0) && (
+                                  <div className="space-y-3">
+                                    {module.topics && module.topics.length > 0 ? (
+                                      module.topics.map((topic, tIdx) => (
+                                        <div key={tIdx} className="bg-zinc-50 dark:bg-zinc-900/50 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 flex flex-col gap-3">
+                                          <div className="flex items-center gap-2">
+                                            <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 flex-shrink-0 mt-2" />
+                                            <input
+                                              value={topic.name}
+                                              onChange={(e) => {
+                                                const newModules = [...modules];
+                                                newModules.find(m => m.id === module.id)!.topics[tIdx].name = e.target.value;
+                                                setModules(newModules);
+                                              }}
+                                              className="w-full bg-transparent border-none text-sm font-bold text-zinc-700 dark:text-zinc-300 focus:outline-none focus:ring-0 p-0"
+                                              placeholder="Topic Name"
+                                            />
+                                          </div>
+                                          <textarea
+                                            value={topic.content}
+                                            onChange={(e) => {
+                                              const newModules = [...modules];
+                                              newModules.find(m => m.id === module.id)!.topics[tIdx].content = e.target.value;
+                                              setModules(newModules);
+                                            }}
+                                            className="w-full bg-transparent border-l-2 border-zinc-200 dark:border-zinc-800/50 pl-3 text-xs text-zinc-500 dark:text-zinc-400 focus:outline-none focus:ring-0 resize-none h-auto min-h-[3rem] leading-relaxed"
+                                            placeholder="Topic brief description (e.g. key concepts covered)..."
+                                          />
+                                          <button
+                                            onClick={() => {
+                                              const newModules = [...modules];
+                                              const mod = newModules.find(m => m.id === module.id);
+                                              if (mod) {
+                                                mod.topics = mod.topics.filter((_, i) => i !== tIdx);
+                                                setModules(newModules);
+                                              }
+                                            }}
+                                            className="self-end text-[10px] text-red-300 hover:text-red-500 font-bold uppercase tracking-widest transition-colors"
+                                          >
+                                            Remove Topic
+                                          </button>
+                                        </div>
+                                      ))
+                                    ) : (
                                       <p className="text-xs text-zinc-400 italic">No specific topics defined (AI will generate automatically)</p>
                                     )}
+                                    <button
+                                      onClick={() => {
+                                        const newModules = [...modules];
+                                        const mod = newModules.find(m => m.id === module.id);
+                                        if (mod) {
+                                          mod.topics.push({ name: 'New Topic', content: '' });
+                                          setModules(newModules);
+                                        }
+                                      }}
+                                      className="w-full py-3 border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-xl text-xs font-bold text-zinc-400 hover:text-indigo-500 hover:border-indigo-500/30 transition-all uppercase tracking-widest flex items-center justify-center gap-2"
+                                    >
+                                      <Plus className="w-4 h-4" />
+                                      Add Topic
+                                    </button>
                                   </div>
                                 </div>
 
@@ -784,12 +856,26 @@ Return ONLY valid JSON. Do not use markdown formatting.`;
                     <div className="p-0 bg-zinc-950/5 dark:bg-black/40 border-t border-zinc-200 dark:border-zinc-800">
                       <div className="w-full h-96 relative group">
                         <textarea
-                          readOnly
                           className="w-full h-full p-6 bg-zinc-50 dark:bg-zinc-950 text-zinc-600 dark:text-slate-300 font-mono text-xs leading-relaxed resize-none focus:outline-none custom-scrollbar"
-                          value={`COURSE: ${courseTitle}\n\nINITIAL ASSESSMENT:\n${generalQuiz.map((q, i) => `${i + 1}. ${q.question}`).join('\n')}\n\nMODULES:\n${modules.map((m, i) => `Module ${i + 1}: ${m.name}\n  Topics: ${m.topics.join(', ')}\n  Quiz Questions: ${m.quiz.length}`).join('\n\n')}`}
+                          value={syllabusText}
+                          onChange={(e) => {
+                            setSyllabusText(e.target.value);
+                            setIsSyllabusEdited(true);
+                          }}
+                          placeholder="Syllabus preview will appear here..."
                         />
-                        <div className="absolute top-4 right-4 bg-zinc-900/10 dark:bg-white/10 backdrop-blur-sm px-3 py-1 rounded-full pointer-events-none">
-                          <span className="text-[10px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest">Read Only Preview</span>
+                        <div className="absolute top-4 right-4 flex gap-2">
+                          {isSyllabusEdited && (
+                            <button
+                              onClick={() => setIsSyllabusEdited(false)}
+                              className="bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-300 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest transition-colors"
+                            >
+                              Reset
+                            </button>
+                          )}
+                          <div className="bg-zinc-900/10 dark:bg-white/10 backdrop-blur-sm px-3 py-1 rounded-full pointer-events-none">
+                            <span className="text-[10px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest">Live Preview</span>
+                          </div>
                         </div>
                       </div>
                     </div>
