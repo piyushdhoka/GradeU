@@ -30,14 +30,21 @@ export async function updateSession(request: NextRequest) {
         data: { user },
     } = await supabase.auth.getUser()
 
-    // LIST OF PROTECTED ROUTES
+    // LIST OF PROTECTED ROUTES (require auth)
     const protectedRoutes = ['/dashboard', '/generate', '/students', '/profile']
     const isProtectedRoute = protectedRoutes.some(route => request.nextUrl.pathname.startsWith(route))
 
-    if (!user && isProtectedRoute) {
-        // If not logged in and trying to access protected route, redirect to Login (/)
+    // BLOCK SIGNUP - teachers are created by admin only
+    if (request.nextUrl.pathname.startsWith('/signup')) {
         const url = request.nextUrl.clone()
-        url.pathname = '/'
+        url.pathname = '/login'
+        return NextResponse.redirect(url)
+    }
+
+    if (!user && isProtectedRoute) {
+        // If not logged in and trying to access protected route, redirect to Login
+        const url = request.nextUrl.clone()
+        url.pathname = '/login'
         return NextResponse.redirect(url)
     }
 

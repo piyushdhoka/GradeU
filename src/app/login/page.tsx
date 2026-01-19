@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { Loader2, LogIn, Mail, Lock } from 'lucide-react'
-import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 
 export default function LoginPage() {
@@ -119,10 +118,7 @@ export default function LoginPage() {
                 </form>
 
                 <div className="text-center text-sm text-zinc-500">
-                    Don't have an account?{' '}
-                    <Link href="/signup" className="font-medium text-blue-400 hover:text-blue-300 transition-colors">
-                        Sign up
-                    </Link>
+                    Account provided by administrator.
                 </div>
             </div>
         </div>
