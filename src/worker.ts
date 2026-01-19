@@ -87,7 +87,8 @@ const worker = new Worker('course-generation', async (job: Job) => {
                     course_id: courseId,
                     title: moduleData.name,
                     content_markdown: filePath, // Store path instead of raw content
-                    module_order: i + 1
+                    module_order: i + 1,
+                    topics: moduleData.topics || [] // Save topics
                 })
                 .select().single();
 

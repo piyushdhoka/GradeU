@@ -58,7 +58,8 @@ export async function POST(req: Request) {
                     course_id: courseId,
                     title: moduleData.name,
                     content_markdown: theoryContent,
-                    module_order: i + 1
+                    module_order: i + 1,
+                    topics: moduleData.topics || [] // Save topics
                 })
                 .select().single();
 
