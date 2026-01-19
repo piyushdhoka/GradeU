@@ -131,10 +131,26 @@ export default function GeneratorPage() {
     setGenerationLog(prev => [...prev, logMessage]);
   };
 
+  const getApiKey = () => {
+    const keys = [
+      process.env.NEXT_PUBLIC_GEMINI_API_KEY,
+      process.env.NEXT_PUBLIC_GEMINI_API_KEY_1,
+      process.env.NEXT_PUBLIC_GEMINI_API_KEY_2,
+      process.env.NEXT_PUBLIC_GEMINI_API_KEY_3,
+      process.env.GROQ_API_KEY,
+      process.env.GROQ_API_KEY_1,
+      process.env.GROQ_API_KEY_2,
+      process.env.GROQ_API_KEY_3
+    ].filter(k => k && k.length > 10 && k !== 'your_api_key_here');
+
+    if (keys.length === 0) return '';
+    return keys[Math.floor(Math.random() * keys.length)];
+  };
+
   const generateStructure = async () => {
-    const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY_1 || process.env.NEXT_PUBLIC_GEMINI_API_KEY_2 || process.env.NEXT_PUBLIC_GEMINI_API_KEY_3 || process.env.GROQ_API_KEY;
-    if (!apiKey || apiKey === 'your_api_key_here') {
-      setError('Please set NEXT_PUBLIC_GEMINI_API_KEY in your .env.local file');
+    const apiKey = getApiKey();
+    if (!apiKey) {
+      setError('No valid API keys found in .env file');
       return;
     }
 
@@ -166,7 +182,7 @@ Each quiz object has:
 
 Return ONLY valid JSON. Do not use markdown formatting.`;
 
-      const response = await callGeminiAPI(apiKey, prompt);
+      const response = await callLLM(apiKey, prompt);
 
       // Robust JSON extraction
       const jsonMatch = response.match(/\{[\s\S]*\}/);
@@ -289,46 +305,72 @@ Return ONLY valid JSON. Do not use markdown formatting.`;
     }
   };
 
-  const callGeminiAPI = async (key: string, prompt: string): Promise<string> => {
-    // Using gemini-2.5-flash as requested
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`;
+  const callLLM = async (key: string, prompt: string): Promise<string> => {
+    const isGroq = key.startsWith('gsk_');
 
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        contents: [{
-          parts: [{ text: prompt }]
-        }],
-        generationConfig: {
+    if (isGroq) {
+      const url = 'https://api.groq.com/openai/v1/chat/completions';
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${key}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          messages: [{ role: 'user', content: prompt }],
+          model: 'llama3-70b-8192',
           temperature: 0.7,
-          maxOutputTokens: 8192, // Increased for longer output
-          topP: 0.95,
-          topK: 40
-        }
-      })
-    });
+        })
+      });
 
-    if (response.status === 503) {
-      console.warn('Model overloaded (503). Retrying in 2 seconds...');
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      return callGeminiAPI(key, prompt);
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Groq API Error ${response.status}: ${errorText}`);
+      }
+
+      const data = await response.json();
+      return data.choices?.[0]?.message?.content || '';
+    } else {
+      // Gemini Logic
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`;
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contents: [{
+            parts: [{ text: prompt }]
+          }],
+          generationConfig: {
+            temperature: 0.7,
+            maxOutputTokens: 8192,
+            topP: 0.95,
+            topK: 40
+          }
+        })
+      });
+
+      if (response.status === 503) {
+        console.warn('Model overloaded (503). Retrying in 2 seconds...');
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        return callLLM(key, prompt);
+      }
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Gemini API Error ${response.status}: ${errorText}`);
+      }
+
+      const data = await response.json();
+
+      if (data.candidates?.[0]?.content?.parts?.[0]?.text) {
+        return data.candidates[0].content.parts[0].text;
+      }
+
+      throw new Error(`Invalid response structure: ${JSON.stringify(data)}`);
     }
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`API Error ${response.status}: ${errorText}`);
-    }
-
-    const data = await response.json();
-
-    if (data.candidates?.[0]?.content?.parts?.[0]?.text) {
-      return data.candidates[0].content.parts[0].text;
-    }
-
-    throw new Error(`Invalid response structure: ${JSON.stringify(data)}`);
   };
 
   const downloadMarkdown = () => {

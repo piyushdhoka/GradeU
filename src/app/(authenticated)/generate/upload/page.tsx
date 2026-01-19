@@ -123,32 +123,81 @@ export default function FileCourseGenerator() {
 
     // --- API Interaction ---
 
-    const callGeminiAPI = async (prompt: string): Promise<string> => {
-        const key = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
-        if (!key || key === 'your_api_key_here') {
+    const getApiKey = () => {
+        const keys = [
+            process.env.NEXT_PUBLIC_GEMINI_API_KEY,
+            process.env.GROQ_API_KEY_4,
+            process.env.GROQ_API_KEY_5,
+            process.env.GROQ_API_KEY_6,
+            process.env.GROQ_API_KEY_7
+        ].filter(k => k && k.length > 10 && k !== 'your_api_key_here');
+
+        if (keys.length === 0) return '';
+        return keys[Math.floor(Math.random() * keys.length)];
+    };
+
+    const callLLM = async (prompt: string): Promise<string> => {
+        const key = getApiKey();
+        if (!key) {
             throw new Error('API Key missing. Please check .env.local file.');
         }
 
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`;
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                contents: [{ parts: [{ text: prompt }] }],
-                generationConfig: {
+        const isGroq = key.startsWith('gsk_');
+
+        if (isGroq) {
+            const url = 'https://api.groq.com/openai/v1/chat/completions';
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${key}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    messages: [{ role: 'user', content: prompt }],
+                    model: 'llama3-70b-8192',
                     temperature: 0.5,
-                    maxOutputTokens: 8192
-                }
-            })
-        });
+                    max_tokens: 8192
+                })
+            });
 
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`API Error ${response.status}: ${errorText}`);
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`Groq API Error ${response.status}: ${errorText}`);
+            }
+
+            const data = await response.json();
+            return data.choices?.[0]?.message?.content || '';
+        } else {
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`;
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: [{ parts: [{ text: prompt }] }],
+                    generationConfig: {
+                        temperature: 0.5,
+                        maxOutputTokens: 8192
+                    }
+                })
+            });
+
+            if (response.status === 503) {
+                console.warn('Model overloaded (503). Retrying in 2 seconds...');
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                // Recursive call with same logic (will pick new key potentially if I called callLLM recursively, 
+                // but here I want to retry with same logic. 
+                // actually better to just call callLLM again to potentially get a different key?)
+                return callLLM(prompt);
+            }
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`API Error ${response.status}: ${errorText}`);
+            }
+
+            const data = await response.json();
+            return data.candidates[0].content.parts[0].text;
         }
-
-        const data = await response.json();
-        return data.candidates[0].content.parts[0].text;
     };
 
     const generateInitialStructure = async (text: string) => {
@@ -172,7 +221,7 @@ export default function FileCourseGenerator() {
 
         try {
             addLog("Sending prompt to Gemini for structure generation...");
-            const result = await callGeminiAPI(prompt);
+            const result = await callLLM(prompt);
             addLog("Structure generated. Parsing response...");
 
             // Robust JSON extraction
@@ -244,7 +293,7 @@ export default function FileCourseGenerator() {
             
             Return ONLY Markdown.`;
 
-            const content = await callGeminiAPI(prompt);
+            const content = await callLLM(prompt);
             setTempTopicData(prev => ({ ...prev, content }));
             setProcessStep('Done!');
             addLog('Topic content generated successfully.');
@@ -294,7 +343,7 @@ export default function FileCourseGenerator() {
                             
                             Return ONLY Markdown.`;
 
-                            content = await callGeminiAPI(prompt);
+                            content = await callLLM(prompt);
                         } catch (e) {
                             // Unused var e
                             console.warn(e);
