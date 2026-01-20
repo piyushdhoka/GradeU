@@ -99,6 +99,11 @@ export default function ProfilePage() {
                 return
             }
 
+            if (file.size > 10240) {
+                setMessage('Error: File size must be less than 10KB.')
+                return
+            }
+
             setUploadingSignature(true)
             setMessage('')
 
