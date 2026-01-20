@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
-import { Loader2, User, Save, ArrowLeft, LogOut, Briefcase, FileText, PenTool } from 'lucide-react'
+import { Loader2, User, Save, ArrowLeft, LogOut, Briefcase, FileText, PenTool, Upload } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 
@@ -27,6 +27,7 @@ export default function ProfilePage() {
     const [bio, setBio] = useState('')
     const [signatureUrl, setSignatureUrl] = useState('')
     const [message, setMessage] = useState('')
+    const [uploadingSignature, setUploadingSignature] = useState(false)
 
     useEffect(() => {
         getProfile()
@@ -85,6 +86,46 @@ export default function ProfilePage() {
             console.error('Error loading user data:', error.message)
         } finally {
             setLoading(false)
+        }
+    }
+
+    async function handleSignatureUpload(event: React.ChangeEvent<HTMLInputElement>) {
+        try {
+            const file = event.target.files?.[0]
+            if (!file) return
+
+            if (file.type !== 'image/png') {
+                setMessage('Error: Only PNG files are allowed for the signature.')
+                return
+            }
+
+            setUploadingSignature(true)
+            setMessage('')
+
+            const fileExt = 'png'
+            // Create a unique file name
+            const fileName = `${user.id}/signature_${Date.now()}.${fileExt}`
+
+            const { error: uploadError } = await supabase.storage
+                .from('signature')
+                .upload(fileName, file, {
+                    upsert: true
+                })
+
+            if (uploadError) throw uploadError
+
+            const { data: { publicUrl } } = supabase.storage
+                .from('signature')
+                .getPublicUrl(fileName)
+
+            setSignatureUrl(publicUrl)
+            setMessage('Signature uploaded successfully!')
+
+        } catch (error: any) {
+            console.error('Error uploading signature:', error)
+            setMessage('Error uploading signature: ' + error.message)
+        } finally {
+            setUploadingSignature(false)
         }
     }
 
@@ -251,35 +292,57 @@ export default function ProfilePage() {
                             />
                         </div>
 
-                        {/* Signature URL */}
+                        {/* Signature Section */}
                         <div>
                             <label className="block text-sm font-medium text-zinc-400 mb-2 flex items-center gap-2">
                                 <PenTool className="w-4 h-4" />
-                                Signature URL
+                                Signature Image (PNG)
                             </label>
-                            <input
-                                type="url"
-                                value={signatureUrl}
-                                onChange={(e) => setSignatureUrl(e.target.value)}
-                                placeholder="https://storage.example.com/signatures/your-signature.png"
-                                className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3 text-white focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-all placeholder-zinc-600"
-                            />
-                            <p className="text-xs text-zinc-500 mt-1">
-                                Upload your signature image to Supabase Storage and paste the URL here.
-                            </p>
-                            {signatureUrl && (
-                                <div className="mt-3 p-3 bg-zinc-950 border border-zinc-800 rounded-lg">
-                                    <p className="text-xs text-zinc-400 mb-2">Preview:</p>
-                                    <img
-                                        src={signatureUrl}
-                                        alt="Signature preview"
-                                        className="max-h-20 bg-white p-2 rounded"
-                                        onError={(e) => {
-                                            (e.target as HTMLImageElement).style.display = 'none'
-                                        }}
-                                    />
+
+                            <div className="flex flex-col gap-4">
+                                <div className="flex items-center gap-4">
+                                    <label className={`
+                                        flex items-center justify-center px-4 py-3 
+                                        bg-zinc-950 border border-zinc-800 rounded-xl 
+                                        text-zinc-400 hover:text-white hover:border-blue-500 
+                                        cursor-pointer transition-all gap-2 w-full
+                                        ${uploadingSignature ? 'opacity-50 cursor-not-allowed' : ''}
+                                    `}>
+                                        {uploadingSignature ? (
+                                            <Loader2 className="w-5 h-5 animate-spin" />
+                                        ) : (
+                                            <Upload className="w-5 h-5" />
+                                        )}
+                                        <span className="text-sm font-medium">
+                                            {uploadingSignature ? 'Uploading...' : 'Click to Upload Signature (PNG)'}
+                                        </span>
+                                        <input
+                                            type="file"
+                                            accept="image/png"
+                                            onChange={handleSignatureUpload}
+                                            disabled={uploadingSignature}
+                                            className="hidden"
+                                        />
+                                    </label>
                                 </div>
-                            )}
+
+                                {signatureUrl && (
+                                    <div className="p-4 bg-zinc-950 border border-zinc-800 rounded-xl">
+                                        <p className="text-xs text-zinc-500 mb-2">Current Signature:</p>
+                                        <div className="bg-white/5 p-4 rounded-lg flex items-center justify-center border border-white/10">
+                                            <img
+                                                src={signatureUrl}
+                                                alt="Signature"
+                                                className="max-h-24 object-contain invert" // Invert for dark mode if signature is black, but usually keep as is or maybe add a white background
+                                                style={{ filter: "none" }} // Reset filter just in case, handle background instead
+                                            />
+                                        </div>
+                                        <div className="mt-2 text-xs text-zinc-600 truncate">
+                                            {signatureUrl}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
                         </div>
 
                         {message && (
@@ -291,7 +354,7 @@ export default function ProfilePage() {
                         <div className="pt-4 border-t border-zinc-800">
                             <button
                                 onClick={updateProfile}
-                                disabled={saving}
+                                disabled={saving || uploadingSignature}
                                 className="flex items-center justify-center w-full sm:w-auto px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 {saving ? (
