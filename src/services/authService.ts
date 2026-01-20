@@ -80,27 +80,7 @@ class AuthService {
           throw new Error('Please verify your email address before logging in. Check your inbox for the confirmation link.');
         }
 
-        // If supabase auth fails, fall back to legacy DB check (maintains compatibility)
-        const { data: user, error } = await withTimeout(
-          supabase
-            .from('users')
-            .select('*')
-            .ilike('email', credentials.email)
-            .eq('role', credentials.role)
-            .maybeSingle() as unknown as Promise<any>,
-          10000,
-          'Database query'
-        ) as any;
-
-        if (error) {
-          throw new Error(`Database error during login: ${error.message}`);
-        }
-
-        if (!user) {
-          throw new Error(`No ${credentials.role} account found with email: ${credentials.email}`);
-        }
-
-        throw new Error('Please use Supabase authentication. If this persists, contact support.');
+        throw new Error(signInError.message);
       }
 
       // Fetch profile row for signed-in user
@@ -115,9 +95,9 @@ class AuthService {
       try {
         const result = await withTimeout(
           supabase
-            .from('users')
+            .from('profiles')
             .select('*')
-            .eq('email', sessionUser.email?.toLowerCase() || '')
+            .eq('id', sessionUser.id)
             .maybeSingle() as unknown as Promise<any>,
           15000,
           'Profile fetch'
@@ -151,12 +131,12 @@ class AuthService {
 
         // Try to create the profile in background if it's missing (not on timeout)
         if (!profileError) {
-          supabase.from('users').upsert([{
+          supabase.from('profiles').upsert([{
             id: sessionUser.id,
-            email: sessionUser.email,
-            name: profileCopy.name,
-            role: credentials.role,
-            password_hash: 'SUPABASE_AUTH'
+            // email: sessionUser.email, // email is not in profiles table
+            full_name: profileCopy.name,
+            role: credentials.role
+            // password_hash: 'SUPABASE_AUTH' // not in profiles
           }]);
         }
       }
@@ -231,20 +211,14 @@ class AuthService {
 
       const profileRow = {
         id: userId,
-        email: userData.email,
-        name: userData.name || 'User',
-        role: userData.role,
-        password_hash: 'SUPABASE_AUTH',
-        level: 'beginner',
-        completed_assessment: userData.role === 'admin',
-        bio: userData.bio || '',
-        specialization: userData.specialization || '',
-        experience_years: userData.role === 'student' ? null : '0-1'
+        // bio: userData.bio || '', // This is in teacher_details, not profiles?
+        // specialization: userData.specialization || '', // teacher_details
+        // experience_years: userData.role === 'student' ? null : '0-1' // not in profiles
       } as Record<string, unknown>;
 
       const { data: newUser, error: profileError } = await withTimeout(
         supabase
-          .from('users')
+          .from('profiles')
           .upsert([profileRow], { onConflict: 'id' })
           .select()
           .maybeSingle() as unknown as Promise<any>,
@@ -363,9 +337,9 @@ class AuthService {
       while (attempts < 3) {
         const result = await withTimeout(
           supabase
-            .from('users')
+            .from('profiles')
             .select('*')
-            .eq('email', user.email?.toLowerCase() || '')
+            .eq('id', user.id)
             .maybeSingle() as unknown as Promise<any>,
           5000,
           `Profile fetch attempt ${attempts + 1}`
@@ -444,10 +418,11 @@ class AuthService {
         const createProfile = async () => {
           try {
             await supabase
-              .from('users')
+              .from('profiles')
               .upsert([{
-                ...placeholderUser,
-                password_hash: 'SUPABASE_AUTH'
+                id: placeholderUser.id,
+                full_name: placeholderUser.name,
+                role: placeholderUser.role
               }]);
           } catch (e) {
             // Silently fail

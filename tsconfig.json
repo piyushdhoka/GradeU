@@ -28,6 +28,42 @@
             "@/*": [
                 "./src/*"
             ],
+            "@components": [
+                "./src/components"
+            ],
+            "@components/*": [
+                "./src/components/*"
+            ],
+            "@services": [
+                "./src/services"
+            ],
+            "@services/*": [
+                "./src/services/*"
+            ],
+            "@context": [
+                "./src/shared/context"
+            ],
+            "@context/*": [
+                "./src/shared/context/*"
+            ],
+            "@lib": [
+                "./src/shared/lib"
+            ],
+            "@lib/*": [
+                "./src/shared/lib/*"
+            ],
+            "@types": [
+                "./src/shared/types"
+            ],
+            "@types/*": [
+                "./src/shared/types/*"
+            ],
+            "@utils": [
+                "./src/shared/utils"
+            ],
+            "@utils/*": [
+                "./src/shared/utils/*"
+            ],
             "@components/ui/*": [
                 "./src/shared/components/ui/*"
             ],
@@ -36,24 +72,6 @@
             ],
             "@components/layout/*": [
                 "./src/shared/components/layout/*"
-            ],
-            "@components/*": [
-                "./src/components/*"
-            ],
-            "@services/*": [
-                "./src/services/*"
-            ],
-            "@context/*": [
-                "./src/shared/context/*"
-            ],
-            "@lib/*": [
-                "./src/shared/lib/*"
-            ],
-            "@types/*": [
-                "./src/shared/types/*"
-            ],
-            "@utils/*": [
-                "./src/shared/utils/*"
             ]
         }
     },

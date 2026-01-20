@@ -12,6 +12,7 @@ export default defineConfig(({ mode }) => {
     return {
         root: rootDir,
         plugins: [react(), tailwindcss()],
+        envPrefix: ['VITE_', 'NEXT_PUBLIC_'],
         define: {
             __APP_ENV__: JSON.stringify(env.APP_ENV),
         },
