@@ -2,7 +2,7 @@ import { Worker, Job } from 'bullmq';
 import { redisConnection } from './lib/queue';
 import { supabaseAdmin } from './lib/supabaseAdmin';
 import { callGeminiAPI, generateGeminiEmbedding } from './lib/ai';
-import { addCourseLog, connectMongoDB } from './lib/mongodb';
+import { addCourseLog, connectMongoDB, syncCourseToMongo } from './lib/mongodb';
 import * as dotenv from 'dotenv';
 // env vars are preloaded by -r dotenv/config, but we also check specific paths if needed
 dotenv.config({ path: '.env' });
@@ -17,6 +17,10 @@ console.log('🚀 Worker started. Listening for jobs...');
 const worker = new Worker('course-generation', async (job: Job) => {
     const { jobId, courseTitle, modules, generalQuiz, finalAssessment } = job.data;
     console.log(`[Job ${jobId}] Starting processing: ${courseTitle}`);
+
+    // Accumulator for MongoDB Sync
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const generatedModules: any[] = [];
 
     try {
         await connectMongoDB();
@@ -62,6 +66,13 @@ const worker = new Worker('course-generation', async (job: Job) => {
             await addCourseLog(jobId, courseTitle, `Generating content for module: ${moduleData.name} (${moduleData.topics?.length || 0} topics)`, 'INFO');
 
             const theoryContent = await callGeminiAPI(theoryPrompt);
+
+            // Add to accumulator
+            generatedModules.push({
+                title: moduleData.name,
+                content: theoryContent,
+                quiz: moduleData.quiz || []
+            });
 
             // Upload to Supabase Storage
             const filePath = `${courseId}/${moduleData.name.replace(/[^a-zA-Z0-9]/g, '_')}.md`;
@@ -136,6 +147,13 @@ const worker = new Worker('course-generation', async (job: Job) => {
         if (generalQuiz && generalQuiz.length > 0) {
             await addCourseLog(jobId, courseTitle, 'Processing General Course Quiz...', 'INFO');
 
+            // Add to Accumulator
+            generatedModules.unshift({
+                title: "Initial Assessment",
+                content: "Complete this assessment to test your initial knowledge.",
+                quiz: generalQuiz
+            });
+
             // Create "Initial Assessment" Module at the beginning
             const { data: assessmentModule, error: moduleError } = await supabaseAdmin
                 .from('modules')
@@ -165,6 +183,13 @@ const worker = new Worker('course-generation', async (job: Job) => {
         // 3.6 Process Final Assessment (if exists)
         if (finalAssessment && finalAssessment.length > 0) {
             await addCourseLog(jobId, courseTitle, 'Processing Final Assessment...', 'INFO');
+
+            // Add to Accumulator
+            generatedModules.push({
+                title: "Final Assessment",
+                content: "Complete this final assessment to earn your certificate.",
+                quiz: finalAssessment
+            });
 
             // Create "Final Assessment" Module at the end
             const { data: finalModule, error: moduleError } = await supabaseAdmin
@@ -198,6 +223,9 @@ const worker = new Worker('course-generation', async (job: Job) => {
             progress: 100,
             results: { courseId }
         }).eq('id', jobId);
+
+        // SYNC TO MONGODB FOR CYBER_COACH
+        await syncCourseToMongo(courseId, courseTitle, generatedModules);
 
         await addCourseLog(jobId, courseTitle, 'Job successfully completed', 'INFO', { courseId });
         console.log(`[Job ${jobId}] Completed successfully.`);
