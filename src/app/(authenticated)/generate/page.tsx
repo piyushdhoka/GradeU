@@ -31,6 +31,7 @@ interface GeneratedCourse {
     }[];
     quiz?: QuizQuestion[];
   }[];
+  finalAssessment?: QuizQuestion[];
   totalPages: number;
 }
 
@@ -38,6 +39,7 @@ export default function GeneratorPage() {
   const [courseTitle, setCourseTitle] = useState('');
   const [modules, setModules] = useState<Module[]>([]);
   const [generalQuiz, setGeneralQuiz] = useState<QuizQuestion[]>([]); // New State
+  const [finalAssessment, setFinalAssessment] = useState<QuizQuestion[]>([]); // Final Assessment State
   const [currentModule, setCurrentModule] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [isGeneratingStructure, setIsGeneratingStructure] = useState(false);
@@ -48,6 +50,7 @@ export default function GeneratorPage() {
   const [openSections, setOpenSections] = useState({
     quiz: true,
     modules: true,
+    finalAssessment: true,
     preview: false
   });
   const [syllabusText, setSyllabusText] = useState('');
@@ -183,10 +186,12 @@ Return a JSON object with:
    - "options": array of 4 strings
    - "correctAnswer": number (0-3 index)
 
-Each quiz object has:
-    - "question": string
     - "options": array of 4 strings
     - "correctAnswer": number (0-3 index)
+3. "finalAssessment": array of objects. A COMPREHENSIVE Final Assessment based on the Course Title (approx 20 questions).
+   - "question": string
+   - "options": array of 4 strings
+   - "correctAnswer": number (0-3 index)
 
 Return ONLY valid JSON. Do not use markdown formatting.`;
 
@@ -214,9 +219,13 @@ Return ONLY valid JSON. Do not use markdown formatting.`;
         // Parse General Quiz
         const newGeneralQuiz = data.generalQuiz?.map((q: any) => ({ ...q, id: uuidv4() })) || [];
 
+        // Parse Final Assessment
+        const newFinalAssessment = data.finalAssessment?.map((q: any) => ({ ...q, id: uuidv4() })) || [];
+
         setModules(newModules);
         setGeneralQuiz(newGeneralQuiz); // Set State
-        setGenerationLog(prev => [...prev, `Structure generated: ${newModules.length} modules, ${newGeneralQuiz.length} general questions.`]);
+        setFinalAssessment(newFinalAssessment); // Set Final Assessment State
+        setGenerationLog(prev => [...prev, `Structure generated: ${newModules.length} modules, ${newGeneralQuiz.length} general questions, ${newFinalAssessment.length} final questions.`]);
       }
 
     } catch (err) {
@@ -253,7 +262,8 @@ Return ONLY valid JSON. Do not use markdown formatting.`;
             topics: m.topics, // Pass topics to API
             quiz: m.quiz
           })),
-          generalQuiz: generalQuiz // Add to payload
+          generalQuiz: generalQuiz, // Add to payload
+          finalAssessment: finalAssessment // Add Final Assessment to payload
         })
       });
 
@@ -287,7 +297,15 @@ Return ONLY valid JSON. Do not use markdown formatting.`;
             setGeneratedCourse({
               courseTitle,
               description: 'Course successfully processed via secure background queue and stored in Supabase.',
-              modules: [],
+              modules: modules.map(m => ({
+                moduleName: m.name,
+                topics: m.topics.map(t => ({
+                  topicName: t.name, // Use name as topicName
+                  content: t.content
+                })),
+                quiz: m.quiz
+              })),
+              finalAssessment: finalAssessment,
               totalPages: modules.length * 5
             });
             setIsGenerating(false);
@@ -436,6 +454,18 @@ ${m.topics && m.topics.length > 0 ? m.topics.map(t => `  - ${t.name}: ${t.conten
         markdownContent += `---\n\n`;
       }
     });
+
+    if (generatedCourse.finalAssessment && generatedCourse.finalAssessment.length > 0) {
+      markdownContent += `\n---\n\n`;
+      markdownContent += `# Final Assessment\n\n`;
+      generatedCourse.finalAssessment.forEach((q, idx) => {
+        markdownContent += `**${idx + 1}. ${q.question}**\n`;
+        q.options.forEach((opt, oIdx) => {
+          markdownContent += `- [${oIdx === q.correctAnswer ? 'x' : ' '}] ${opt}\n`;
+        });
+        markdownContent += `\n> Correct Answer: ${q.options[q.correctAnswer]}\n\n`;
+      });
+    }
 
     const blob = new Blob([markdownContent], { type: 'text/markdown' });
     const url = URL.createObjectURL(blob);
@@ -827,6 +857,106 @@ ${m.topics && m.topics.length > 0 ? m.topics.map(t => `  - ${t.name}: ${t.conten
                 </div>
               )}
 
+              {/* Section: Final Assessment */}
+              {finalAssessment.length > 0 && (
+                <div className="mt-6 border border-zinc-200 dark:border-zinc-800 rounded-2xl overflow-hidden shadow-sm transition-all">
+                  <button
+                    onClick={() => setOpenSections(prev => ({ ...prev, finalAssessment: !prev.finalAssessment }))}
+                    className="w-full flex items-center justify-between p-6 bg-white dark:bg-zinc-900 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors text-left"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-xl bg-orange-500/10 dark:bg-orange-500/20 flex items-center justify-center text-orange-600 dark:text-orange-400">
+                        <ListChecks className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-bold text-zinc-900 dark:text-white">Final Assessment</h3>
+                        <p className="text-[10px] text-zinc-500 dark:text-slate-400 font-bold uppercase tracking-widest mt-1">
+                          {finalAssessment.length} Questions • Comprehensive Exam
+                        </p>
+                      </div>
+                    </div>
+                    {openSections.finalAssessment ? (
+                      <ChevronUp className="w-5 h-5 text-zinc-400" />
+                    ) : (
+                      <ChevronDown className="w-5 h-5 text-zinc-400" />
+                    )}
+                  </button>
+
+                  {openSections.finalAssessment && (
+                    <div className="p-6 bg-zinc-50 dark:bg-black/20 border-t border-zinc-200 dark:border-zinc-800 space-y-4">
+                      {finalAssessment.map((q, qIdx) => (
+                        <div key={q.id} className="bg-white dark:bg-zinc-900 rounded-xl p-6 border border-zinc-200 dark:border-zinc-800 shadow-sm hover:border-orange-500/30 transition-colors">
+                          <div className="flex items-start gap-4">
+                            <div className="w-6 h-6 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-xs font-bold text-zinc-500 mt-1 shrink-0">
+                              {qIdx + 1}
+                            </div>
+                            <div className="flex-1 space-y-4">
+                              <input
+                                value={q.question}
+                                onChange={(e) => {
+                                  const newQuiz = [...finalAssessment];
+                                  newQuiz[qIdx].question = e.target.value;
+                                  setFinalAssessment(newQuiz);
+                                }}
+                                className="w-full bg-transparent text-zinc-900 dark:text-white text-sm font-bold border-none p-0 focus:ring-0 placeholder-zinc-400 dark:placeholder-zinc-600"
+                                placeholder="Question text..."
+                              />
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                {q.options.map((option, oIdx) => (
+                                  <div key={oIdx} className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${q.correctAnswer === oIdx ? 'bg-green-500/10 border-green-500/30' : 'bg-zinc-50 dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800'}`}>
+                                    <input
+                                      type="radio"
+                                      name={`final-q-${q.id}`}
+                                      checked={q.correctAnswer === oIdx}
+                                      onChange={() => {
+                                        const newQuiz = [...finalAssessment];
+                                        newQuiz[qIdx].correctAnswer = oIdx;
+                                        setFinalAssessment(newQuiz);
+                                      }}
+                                      className="w-4 h-4 text-green-500 bg-white dark:bg-zinc-900 border-zinc-300 dark:border-zinc-700 focus:ring-green-500/20"
+                                    />
+                                    <input
+                                      value={option}
+                                      onChange={(e) => {
+                                        const newQuiz = [...finalAssessment];
+                                        newQuiz[qIdx].options[oIdx] = e.target.value;
+                                        setFinalAssessment(newQuiz);
+                                      }}
+                                      className="block w-full bg-transparent text-xs font-medium text-zinc-700 dark:text-zinc-300 focus:outline-none"
+                                    />
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                            <button
+                              onClick={() => {
+                                setFinalAssessment(prev => prev.filter(item => item.id !== q.id));
+                              }}
+                              className="text-zinc-400 hover:text-red-500 transition-colors p-1"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                      <button
+                        onClick={() => {
+                          setFinalAssessment(prev => [...prev, {
+                            id: uuidv4(),
+                            question: "New Final Assessment Question",
+                            options: ["Option A", "Option B", "Option C", "Option D"],
+                            correctAnswer: 0
+                          }]);
+                        }}
+                        className="w-full py-4 border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-xl text-zinc-500 hover:text-orange-500 hover:border-orange-500/30 hover:bg-orange-500/5 transition-all text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2"
+                      >
+                        <Plus className="w-4 h-4" /> Add Question
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Section 3: Preview */}
               {(modules.length > 0 || generalQuiz.length > 0) && (
                 <div className="mt-6 border border-zinc-200 dark:border-zinc-800 rounded-2xl overflow-hidden shadow-sm transition-all">
@@ -980,6 +1110,8 @@ ${m.topics && m.topics.length > 0 ? m.topics.map(t => `  - ${t.name}: ${t.conten
                 onClick={() => {
                   setGeneratedCourse(null);
                   setModules([]);
+                  setGeneralQuiz([]);
+                  setFinalAssessment([]);
                   setCourseTitle('');
                   setGenerationLog([]);
                   setError('');

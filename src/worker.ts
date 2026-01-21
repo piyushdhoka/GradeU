@@ -15,7 +15,7 @@ if (!process.env.REDIS_URL || !process.env.NEXT_PUBLIC_SUPABASE_URL) {
 console.log('🚀 Worker started. Listening for jobs...');
 
 const worker = new Worker('course-generation', async (job: Job) => {
-    const { jobId, courseTitle, modules, generalQuiz } = job.data;
+    const { jobId, courseTitle, modules, generalQuiz, finalAssessment } = job.data;
     console.log(`[Job ${jobId}] Starting processing: ${courseTitle}`);
 
     try {
@@ -160,6 +160,36 @@ const worker = new Worker('course-generation', async (job: Job) => {
             await supabaseAdmin.from('quizzes').insert(quizInsert);
 
             await addCourseLog(jobId, courseTitle, 'General Assessment created successfully', 'INFO');
+        }
+
+        // 3.6 Process Final Assessment (if exists)
+        if (finalAssessment && finalAssessment.length > 0) {
+            await addCourseLog(jobId, courseTitle, 'Processing Final Assessment...', 'INFO');
+
+            // Create "Final Assessment" Module at the end
+            const { data: finalModule, error: moduleError } = await supabaseAdmin
+                .from('modules')
+                .insert({
+                    course_id: courseId,
+                    title: "Final Assessment",
+                    content_markdown: "", // No content, just quiz
+                    module_order: modules.length + 1 // Set as last module
+                })
+                .select().single();
+
+            if (moduleError) throw moduleError;
+
+            // Store Quizzes
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const quizInsert = finalAssessment.map((q: any) => ({
+                module_id: finalModule.id,
+                question: q.question,
+                options: q.options,
+                correct_option: q.correctAnswer
+            }));
+            await supabaseAdmin.from('quizzes').insert(quizInsert);
+
+            await addCourseLog(jobId, courseTitle, 'Final Assessment created successfully', 'INFO');
         }
 
         // 4. Finalize

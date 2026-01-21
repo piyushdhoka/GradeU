@@ -6,7 +6,7 @@ import { addCourseLog } from '@/lib/mongodb';
 
 export async function POST(req: Request) {
     try {
-        const { courseTitle, modules, generalQuiz } = await req.json();
+        const { courseTitle, modules, generalQuiz, finalAssessment } = await req.json();
 
         if (!courseTitle || !modules || !Array.isArray(modules)) {
             return NextResponse.json({ success: false, error: 'Invalid course data' }, { status: 400 });
@@ -31,7 +31,8 @@ export async function POST(req: Request) {
             jobId,
             courseTitle,
             modules,
-            generalQuiz // Pass to worker
+            generalQuiz, // Pass to worker
+            finalAssessment // Pass to worker
         }, {
             jobId: jobId // Use same ID for consistency
         });
