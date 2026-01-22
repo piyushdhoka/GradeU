@@ -23,10 +23,10 @@ export const AuditLogs = () => {
 
     return (
         <div className="space-y-6 animate-fade-in">
-            <h2 className="text-2xl font-bold font-display text-white border-l-4 border-cyan-500 pl-4">Audit Logs</h2>
-            <Card className="glass border-0 overflow-hidden">
-                <CardHeader className="border-b border-white/5 bg-white/5">
-                    <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Recent System Activity</CardTitle>
+            <h2 className="text-xl font-light uppercase tracking-[0.2em] text-white">Audit Logs</h2>
+            <Card className="bg-black border border-white/10 overflow-hidden">
+                <CardHeader className="border-b border-white/5 bg-white/5 py-4 px-6">
+                    <CardTitle className="text-[10px] font-medium text-zinc-500 uppercase tracking-widest">Recent System Activity</CardTitle>
                 </CardHeader>
                 <CardContent className="p-0">
                     {loading ? (
@@ -37,25 +37,19 @@ export const AuditLogs = () => {
                         <div className="divide-y divide-white/5">
                             {logs.map((log, index) => (
                                 <div key={index} className="flex gap-4 items-start p-4 hover:bg-white/5 transition-colors group">
-                                    <div className="mt-1 relative">
-                                        <div className={`w-2.5 h-2.5 rounded-full ${log.type === 'user_joined' ? 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.5)]' :
-                                                log.type === 'course_created' ? 'bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.5)]' :
-                                                    log.type === 'login' ? 'bg-purple-400 shadow-[0_0_8px_rgba(192,132,252,0.5)]' :
-                                                        'bg-gray-400'
-                                            }`} />
+                                    <div className="mt-1 relative px-2">
+                                        <div className="w-1.5 h-1.5 bg-white" />
                                     </div>
                                     <div className="flex-1">
                                         <div className="flex justify-between items-start">
-                                            <p className="text-white text-sm font-medium leading-none group-hover:text-primary transition-colors">{log.description}</p>
-                                            <span className="text-xs text-muted-foreground font-mono whitespace-nowrap ml-4">
-                                                {new Date(log.timestamp).toLocaleString(undefined, {
-                                                    month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
-                                                })}
+                                            <p className="text-white text-xs font-light tracking-wide uppercase leading-none group-hover:text-zinc-300 transition-colors">{log.description}</p>
+                                            <span className="text-[10px] text-zinc-500 font-mono whitespace-nowrap ml-4">
+                                                {new Date(log.timestamp).toLocaleString()}
                                             </span>
                                         </div>
                                         {log.metadata && (
-                                            <div className="mt-1.5 p-2 rounded bg-black/40 border border-white/5 text-xs font-mono text-muted-foreground overflow-auto max-w-xl">
-                                                {JSON.stringify(log.metadata, null, 2)}
+                                            <div className="mt-1.5 p-2 bg-zinc-950 border border-white/5 text-[9px] font-mono text-zinc-500 overflow-auto max-w-xl uppercase tracking-tighter">
+                                                {JSON.stringify(log.metadata, null, 1)}
                                             </div>
                                         )}
                                     </div>

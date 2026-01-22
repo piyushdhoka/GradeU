@@ -1,4 +1,4 @@
-import { AssessmentAnalytics } from '@admin/components/AssessmentAnalytics';
+import { AssessmentAnalytics } from '@components/AssessmentAnalytics';
 import '../styles/admin.css';
 
 export const AdminPortal = () => {

@@ -33,8 +33,8 @@ export const CoursesList = () => {
 
     return (
         <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-white">Course Oversight</h2>
-            <Card className="bg-white/5 border-white/10">
+            <h2 className="text-xl font-light uppercase tracking-[0.2em] text-white">Course Oversight</h2>
+            <Card className="bg-black border border-white/10">
                 <CardContent>
                     {loading ? (
                         <div className="text-center py-10 text-muted-foreground">Loading courses...</div>
@@ -42,12 +42,12 @@ export const CoursesList = () => {
                         <div className="overflow-x-auto">
                             <table className="w-full">
                                 <thead>
-                                    <tr className="border-b border-white/10 text-left">
-                                        <th className="p-4 text-muted-foreground font-medium">Title</th>
-                                        <th className="p-4 text-muted-foreground font-medium">Teacher</th>
-                                        <th className="p-4 text-muted-foreground font-medium">Enrollments</th>
-                                        <th className="p-4 text-muted-foreground font-medium">Status</th>
-                                        <th className="p-4 text-muted-foreground font-medium">Actions</th>
+                                    <tr className="border-b border-white/5 bg-black">
+                                        <th className="p-4 text-[10px] uppercase tracking-widest text-zinc-500 text-left font-semibold">Title</th>
+                                        <th className="p-4 text-[10px] uppercase tracking-widest text-zinc-500 text-left font-semibold">Teacher</th>
+                                        <th className="p-4 text-[10px] uppercase tracking-widest text-zinc-500 text-left font-semibold">Enrollments</th>
+                                        <th className="p-4 text-[10px] uppercase tracking-widest text-zinc-500 text-left font-semibold">Status</th>
+                                        <th className="p-4 text-[10px] uppercase tracking-widest text-zinc-500 text-left font-semibold">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -57,14 +57,14 @@ export const CoursesList = () => {
                                             <td className="p-4 text-muted-foreground">{course.teacher?.name || 'Unknown'}</td>
                                             <td className="p-4 text-muted-foreground">{course.enrollment_count}</td>
                                             <td className="p-4">
-                                                <Badge variant={course.is_published ? 'success' : 'secondary'}>
+                                                <Badge className={course.is_published ? 'bg-white text-black text-[9px] uppercase tracking-widest' : 'bg-zinc-800 text-zinc-500 border-zinc-700 text-[9px] uppercase tracking-widest'}>
                                                     {course.is_published ? 'Published' : 'Draft'}
                                                 </Badge>
                                             </td>
                                             <td className="p-4">
                                                 <button
                                                     onClick={() => togglePublish(course.id, course.is_published)}
-                                                    className={`text-xs px-3 py-1 rounded border ${course.is_published ? 'border-yellow-500 text-yellow-500 hover:bg-yellow-500/10' : 'border-emerald-500 text-emerald-500 hover:bg-emerald-500/10'}`}
+                                                    className={`text-[10px] uppercase tracking-widest px-3 py-1 border transition-all duration-200 ${course.is_published ? 'border-white/10 text-zinc-500 hover:text-white hover:border-white/30' : 'border-white text-white hover:bg-white hover:text-black'}`}
                                                 >
                                                     {course.is_published ? 'Unpublish' : 'Publish'}
                                                 </button>

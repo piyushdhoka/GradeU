@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { adminService } from '@services/adminService';
-import { Card, CardContent, CardHeader, CardTitle } from '@components/ui/card';
-import { Users } from 'lucide-react';
+import { Card, CardContent } from '@components/ui/card';
 import { Badge } from '@components/ui/badge';
 
 export const TeachersList = () => {
@@ -76,12 +75,12 @@ export const TeachersList = () => {
     return (
         <div className="space-y-6">
             <div className="flex justify-between items-center">
-                <h2 className="text-2xl font-bold font-display text-white">Teachers Directory</h2>
+                <h2 className="text-xl font-light uppercase tracking-[0.2em] text-white">Teachers Directory</h2>
                 <button
                     onClick={() => setShowCreateModal(true)}
-                    className="px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg font-medium transition-all shadow-glow flex items-center gap-2"
+                    className="px-4 py-2 bg-white text-black hover:bg-zinc-200 transition-colors text-xs uppercase tracking-widest font-bold"
                 >
-                    <Users className="h-4 w-4" /> Add Teacher
+                    Add Teacher
                 </button>
             </div>
 
@@ -134,10 +133,10 @@ export const TeachersList = () => {
                                                     <div>
                                                         <p className="font-medium text-white">{course.title}</p>
                                                         <p className="text-xs text-muted-foreground mt-1">
-                                                            {course.is_published ? <span className="text-emerald-400">Published</span> : <span className="text-amber-400">Draft</span>} • {new Date(course.created_at).toLocaleDateString()}
+                                                            {course.is_published ? <span className="text-white">Published</span> : <span className="text-zinc-500">Draft</span>} • {new Date(course.created_at).toLocaleDateString()}
                                                         </p>
                                                     </div>
-                                                    <Badge variant="secondary" className="bg-secondary text-secondary-foreground border-border">{course.enrollment_count} Students</Badge>
+                                                    <Badge variant="secondary" className="bg-zinc-900 text-white border-zinc-800">{course.enrollment_count} Students</Badge>
                                                 </div>
                                             ))}
                                         </div>
@@ -213,9 +212,9 @@ export const TeachersList = () => {
                                 <button
                                     type="submit"
                                     disabled={creating}
-                                    className="flex-1 px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg font-medium transition-all hover:shadow-glow disabled:opacity-50"
+                                    className="flex-1 px-4 py-2 bg-white text-black hover:bg-zinc-200 font-bold uppercase tracking-widest text-xs disabled:opacity-50"
                                 >
-                                    {creating ? 'Creating...' : 'Create Teacher'}
+                                    {creating ? '...' : 'Create Teacher'}
                                 </button>
                             </div>
                         </form>
@@ -254,25 +253,25 @@ export const TeachersList = () => {
                                         >
                                             <td className="p-4">
                                                 <div className="flex items-center gap-3">
-                                                    <div className="w-10 h-10 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-bold shadow-glow group-hover:scale-105 transition-transform">
+                                                    <div className="w-10 h-10 rounded-none bg-zinc-900 border border-zinc-800 flex items-center justify-center text-white font-bold transition-transform">
                                                         {teacher.name.charAt(0).toUpperCase()}
                                                     </div>
                                                     <div>
-                                                        <p className="font-medium text-white group-hover:text-primary transition-colors">{teacher.name}</p>
-                                                        <p className="text-xs text-muted-foreground truncate max-w-[200px]">{teacher.bio || 'No bio'}</p>
+                                                        <p className="font-medium text-white group-hover:text-zinc-300 transition-colors uppercase text-[10px] tracking-widest">{teacher.name}</p>
+                                                        <p className="text-[10px] text-zinc-500 truncate max-w-[200px] font-mono">{teacher.bio || 'No bio'}</p>
                                                     </div>
                                                 </div>
                                             </td>
                                             <td className="p-4">
-                                                <Badge variant="outline" className="bg-secondary/50 text-secondary-foreground border-border">
+                                                <Badge variant="outline" className="bg-transparent text-white border-zinc-800 text-[9px] uppercase tracking-widest px-2 py-0.5">
                                                     {teacher.specialization}
                                                 </Badge>
                                             </td>
-                                            <td className="p-4 text-sm text-muted-foreground font-mono">
+                                            <td className="p-4 text-[10px] text-zinc-500 font-mono">
                                                 {new Date(teacher.joined_at).toLocaleDateString()}
                                             </td>
                                             <td className="p-4">
-                                                <Badge className="bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 border border-emerald-500/20">Active</Badge>
+                                                <Badge className="bg-white text-black text-[9px] uppercase tracking-widest">Active</Badge>
                                             </td>
                                         </tr>
                                     ))}

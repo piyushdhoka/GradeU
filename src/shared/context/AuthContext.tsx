@@ -32,11 +32,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     let mounted = true;
     // Watchdog: ensure we never stay stuck in loading state due to network/cookie issues
+    // Increased to 10s as profile sync can be slow
     const watchdog = setTimeout(() => {
       if (mounted) {
         setLoading(false);
       }
-    }, 3500);
+    }, 10000);
 
     async function initializeAuth() {
       try {
@@ -50,16 +51,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             setUser(syncedUser);
           }
         } else {
-          // Fallback: Check localStorage if no Supabase session (though usually they sync)
-          // or just clear it if we trust Supabase as single source of truth
+          // Fallback: Check localStorage if no Supabase session
           const localUser = authService.getCurrentUser();
           if (mounted && localUser) {
-            // Optional: Validate local user? For now, trust it but maybe background re-verify
             setUser(localUser);
           }
         }
       } catch (error) {
-        console.error('Auth initialization error:', error);
         if (mounted) setUser(null);
       } finally {
         if (mounted) setLoading(false);
@@ -79,9 +77,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               setUser(syncedUser);
             }
           } catch (error: any) {
-            console.error('Auth sync error:', error);
-            await authService.logout();
-            setUser(null);
+            // Only logout if it's a critical mismatch (like role)
+            if (error.message.includes('Access Denied')) {
+              await authService.logout();
+              setUser(null);
+            }
           }
         }
       } else if (event === 'SIGNED_OUT') {

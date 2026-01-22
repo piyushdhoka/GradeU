@@ -1,8 +1,8 @@
 import { supabase } from '@lib/supabase';
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = import.meta.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseKey = import.meta.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 const serviceRoleKey = import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
 
 // Create admin client if service role key is available

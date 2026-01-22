@@ -12,9 +12,9 @@ export default defineConfig(({ mode }) => {
     return {
         root: rootDir,
         plugins: [react(), tailwindcss()],
-        envPrefix: ['VITE_', 'NEXT_PUBLIC_'],
+        envPrefix: ['VITE_'],
         define: {
-            __APP_ENV__: JSON.stringify(env.APP_ENV),
+            __APP_ENV__: JSON.stringify(env.VITE_APP_ENV),
         },
         server: {
             port: 5174,  // Different port for admin
