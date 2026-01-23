@@ -179,15 +179,15 @@ Return a JSON object with:
     - "topics": array of 3 objects (Sub-topics), each having:
         - "name": string (Topic Name)
         - "content": string (Brief summary of what this topic covers, approx 1-2 sentences)
-    - "quiz": array of 3 objects (Module specific quiz)
+    - "quiz": array of 3 objects (Module specific quiz), each having:
+        - "question": string
+        - "options": array of 4 strings
+        - "correctAnswer": number (0-3 index)
 2. "generalQuiz": array of objects. An INITIAL general course assessment based on the Course Title.
    - The number of questions must be EXACTLY equal to the number of modules generated.
    - "question": string
    - "options": array of 4 strings
    - "correctAnswer": number (0-3 index)
-
-    - "options": array of 4 strings
-    - "correctAnswer": number (0-3 index)
 3. "finalAssessment": array of objects. A COMPREHENSIVE Final Assessment based on the Course Title (approx 20 questions).
    - "question": string
    - "options": array of 4 strings
