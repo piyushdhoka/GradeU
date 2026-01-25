@@ -71,6 +71,7 @@ const worker = new Worker('course-generation', async (job: Job) => {
             generatedModules.push({
                 title: moduleData.name,
                 content: theoryContent,
+                type: 'lecture',
                 quiz: moduleData.quiz || []
             });
 
@@ -151,6 +152,7 @@ const worker = new Worker('course-generation', async (job: Job) => {
             generatedModules.unshift({
                 title: "Initial Assessment",
                 content: "Complete this assessment to test your initial knowledge.",
+                type: 'initial_assessment',
                 quiz: generalQuiz
             });
 
@@ -188,6 +190,7 @@ const worker = new Worker('course-generation', async (job: Job) => {
             generatedModules.push({
                 title: "Final Assessment",
                 content: "Complete this final assessment to earn your certificate.",
+                type: 'final_assessment',
                 quiz: finalAssessment
             });
 

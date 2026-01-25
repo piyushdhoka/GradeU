@@ -39,6 +39,11 @@ const QuestionSchema = new mongoose.Schema({
 const ModuleSchema = new mongoose.Schema({
     title: { type: String, required: true },
     content: { type: String, required: true }, // Markdown content
+    type: {
+        type: String,
+        enum: ['lecture', 'quiz', 'initial_assessment', 'final_assessment'],
+        default: 'lecture'
+    },
     quiz: [QuestionSchema],
 });
 
@@ -84,6 +89,7 @@ export const syncCourseToMongo = async (courseId: string, title: string, modules
                 modules: modules.map(m => ({
                     title: m.title,
                     content: m.content || "Content coming soon...",
+                    type: m.type || 'lecture',
                     quiz: m.quiz || []
                 })),
                 published: true,
