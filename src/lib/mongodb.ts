@@ -71,7 +71,17 @@ export const addCourseLog = async (jobId: string, courseTitle: string, message: 
     }
 };
 
-export const syncCourseToMongo = async (courseId: string, title: string, modules: any[], quizzes: any[] = []) => {
+export const syncCourseToMongo = async (
+    courseId: string,
+    title: string,
+    modules: any[],
+    meta: {
+        description?: string;
+        difficulty?: string;
+        duration?: string;
+        category?: string;
+    } = {}
+) => {
     try {
         await connectMongoDB();
 
@@ -83,7 +93,7 @@ export const syncCourseToMongo = async (courseId: string, title: string, modules
             { code: courseId },
             {
                 title,
-                description: `AI Generated Course: ${title}`,
+                description: meta.description || `AI Generated Course: ${title}`,
                 code: courseId,
                 teacherEmail: 'ai-generator@cybercoach.bot',
                 modules: modules.map(m => ({
@@ -92,6 +102,9 @@ export const syncCourseToMongo = async (courseId: string, title: string, modules
                     type: m.type || 'lecture',
                     quiz: m.quiz || []
                 })),
+                difficulty: meta.difficulty || 'Intermediate',
+                duration: meta.duration || '10 hours',
+                category: meta.category || 'AI Generated',
                 published: true,
                 updatedAt: new Date()
             },

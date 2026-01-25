@@ -6,7 +6,7 @@ import { addCourseLog } from '@/lib/mongodb';
 
 export async function POST(req: Request) {
     try {
-        const { courseTitle, modules, generalQuiz, finalAssessment } = await req.json();
+        const { courseTitle, modules, generalQuiz, finalAssessment, description, difficulty, duration, category } = await req.json();
 
         if (!courseTitle || !modules || !Array.isArray(modules)) {
             return NextResponse.json({ success: false, error: 'Invalid course data' }, { status: 400 });
@@ -21,7 +21,7 @@ export async function POST(req: Request) {
                 course_title: courseTitle,
                 status: 'PENDING',
                 progress: 0,
-                metadata: { modules }
+                metadata: { modules, description, difficulty, duration, category }
             });
 
         if (jobError) throw jobError;
@@ -32,7 +32,11 @@ export async function POST(req: Request) {
             courseTitle,
             modules,
             generalQuiz, // Pass to worker
-            finalAssessment // Pass to worker
+            finalAssessment, // Pass to worker
+            description,
+            difficulty,
+            duration,
+            category
         }, {
             jobId: jobId // Use same ID for consistency
         });
