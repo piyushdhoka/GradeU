@@ -1101,7 +1101,7 @@ ${m.topics && m.topics.length > 0 ? m.topics.map(t => `  - ${t.name}: ${t.conten
                 </div>
                 <div className="prose prose-sm max-w-none dark:prose-invert">
                   <pre className="whitespace-pre-wrap text-zinc-500 font-mono text-xs leading-relaxed selection:bg-blue-500 selection:text-white aspect-square overflow-y-auto custom-scrollbar">
-                    {generatedCourse.modules[0]?.topics[0]?.content}
+                    {JSON.stringify(generatedCourse, null, 2)}
                   </pre>
                 </div>
               </div>
