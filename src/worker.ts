@@ -20,7 +20,7 @@ const worker = new Worker('course-generation', async (job: Job) => {
 
     // Accumulator for MongoDB Sync
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const generatedModules: any[] = [];
+    const generatedModules: any[] = []; // Accumulator for MongoDB Sync
 
     try {
         await connectMongoDB();
@@ -116,6 +116,39 @@ const worker = new Worker('course-generation', async (job: Job) => {
 
                 const filePath = `${courseId}/${safeModuleName}/full_module.md`;
                 await supabaseAdmin.storage.from('courses').upload(filePath, theoryContent, { contentType: 'text/markdown', upsert: true });
+            }
+
+            // Handle Review Labs (NLP Labs or similar)
+            if (moduleData.labs && moduleData.labs.length > 0) {
+                await addCourseLog(jobId, courseTitle, `Processing ${moduleData.labs.length} labs for module: ${moduleData.name}`, 'INFO');
+
+                let labsContent = `# Hands-On Labs\n\nTo reinforce your learning, complete the following interactive labs:\n\n`;
+
+                for (const lab of moduleData.labs) {
+                    labsContent += `### ${lab.title}\n\n`;
+                    labsContent += `[Open Lab Environment](${lab.url})\n\n`;
+                    labsContent += `<iframe src="${lab.url}" width="100%" height="600px" style={{border: 'none', borderRadius: '8px', marginTop: '10px'}}></iframe>\n\n`;
+                    labsContent += `---\n\n`;
+                }
+
+                // Upload Labs to Supabase Storage
+                const labsFilePath = `${courseId}/${safeModuleName}/labs.md`;
+                await supabaseAdmin.storage.from('courses').upload(labsFilePath, labsContent, { contentType: 'text/markdown', upsert: true });
+
+                // Add to topics list
+                topicPaths.push({
+                    name: "Hands-On Labs",
+                    path: labsFilePath
+                });
+
+                // Append to combined content
+                moduleContentCombined += `\n\n${labsContent}`;
+
+                // Add to detailed topics for caching/sync
+                processedTopics.push({
+                    title: "Hands-On Labs",
+                    content: labsContent
+                });
             }
 
             // Stores Module Record in Supabase

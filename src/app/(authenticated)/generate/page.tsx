@@ -10,8 +10,23 @@ interface Module {
   name: string;
   topics: { name: string; content: string }[]; // Updated topics array to object array
   quiz: QuizQuestion[];
+  labs?: { title: string; url: string }[]; // New: Labs for this module
   isOpen?: boolean;
 }
+
+const NLP_LABS = [
+  { title: "Text Basics", url: "https://vulnarable-labs.onrender.com/lab/nlp/text-basics" },
+  { title: "Preprocessing", url: "https://vulnarable-labs.onrender.com/lab/nlp/preprocessing" },
+  { title: "Vectorization", url: "https://vulnarable-labs.onrender.com/lab/nlp/vectorization" },
+  { title: "Classification", url: "https://vulnarable-labs.onrender.com/lab/nlp/classification" },
+  { title: "Topic Modeling", url: "https://vulnarable-labs.onrender.com/lab/nlp/topic-modeling" },
+  { title: "Embeddings", url: "https://vulnarable-labs.onrender.com/lab/nlp/embeddings" },
+  { title: "Sentiment Analysis", url: "https://vulnarable-labs.onrender.com/lab/nlp/sentiment" },
+  { title: "Named Entity Recognition (NER)", url: "https://vulnarable-labs.onrender.com/lab/nlp/ner" },
+  { title: "Resume Parser", url: "https://vulnarable-labs.onrender.com/lab/nlp/resume-parser" },
+  { title: "Neural Networks", url: "https://vulnarable-labs.onrender.com/lab/nlp/neural-net" },
+  { title: "Text Generation", url: "https://vulnarable-labs.onrender.com/lab/nlp/text-gen" }
+];
 
 interface QuizQuestion {
   id: string;
@@ -58,7 +73,7 @@ export default function GeneratorPage() {
 
   const addModule = () => {
     if (currentModule.trim()) {
-      setModules([...modules, { id: Date.now().toString(), name: currentModule, topics: [], quiz: [], isOpen: false }]);
+      setModules([...modules, { id: Date.now().toString(), name: currentModule, topics: [], quiz: [], labs: [], isOpen: false }]);
       setCurrentModule('');
     }
   };
@@ -127,6 +142,32 @@ export default function GeneratorPage() {
         return {
           ...m,
           quiz: m.quiz.filter(q => q.id !== qId)
+        };
+      }
+      return m;
+    }));
+  };
+
+  const addLabToModule = (lab: { title: string; url: string }, moduleId: string) => {
+    setModules(modules.map(m => {
+      if (m.id === moduleId) {
+        // Check if lab already exists
+        if (m.labs?.some(l => l.url === lab.url)) return m;
+        return {
+          ...m,
+          labs: [...(m.labs || []), lab]
+        };
+      }
+      return m;
+    }));
+  };
+
+  const removeLabFromModule = (moduleId: string, labUrl: string) => {
+    setModules(modules.map(m => {
+      if (m.id === moduleId) {
+        return {
+          ...m,
+          labs: m.labs?.filter(l => l.url !== labUrl) || []
         };
       }
       return m;
@@ -231,6 +272,7 @@ Return ONLY valid JSON. Do not use markdown formatting. Do not include trailing 
             content: t.content || ''
           })) || [],
           quiz: m.quiz?.map((q: any) => ({ ...q, id: uuidv4() })) || [],
+          labs: [], // Initialize labs
           isOpen: true
         }));
 
@@ -278,7 +320,8 @@ Return ONLY valid JSON. Do not use markdown formatting. Do not include trailing 
           modules: modules.map(m => ({
             name: m.name,
             topics: m.topics, // Pass topics to API
-            quiz: m.quiz
+            quiz: m.quiz,
+            labs: m.labs // Pass labs to API
           })),
           generalQuiz: generalQuiz, // Add to payload
           finalAssessment: finalAssessment // Add Final Assessment to payload
@@ -576,6 +619,55 @@ ${m.topics && m.topics.length > 0 ? m.topics.map(t => `  - ${t.name}: ${t.conten
                 </div>
               </div>
 
+              {/* NLP Labs Catalog */}
+              {(courseTitle.toLowerCase().includes('nlp') || courseTitle.toLowerCase().includes('natural language processing')) && modules.length > 0 && (
+                <div className="mt-8 border border-indigo-200 dark:border-indigo-800 rounded-2xl overflow-hidden shadow-sm transition-all bg-indigo-50/50 dark:bg-indigo-900/10">
+                  <div className="p-6">
+                    <div className="flex items-center gap-4 mb-4">
+                      <div className="w-10 h-10 rounded-xl bg-indigo-500/10 dark:bg-indigo-500/20 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+                        <Sparkles className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-bold text-zinc-900 dark:text-white">NLP Hands-On Labs</h3>
+                        <p className="text-[10px] text-zinc-500 dark:text-indigo-300 font-bold uppercase tracking-widest mt-1">
+                          Interactive Labs detected for this topic
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                      {NLP_LABS.map((lab, idx) => (
+                        <div key={idx} className="bg-white dark:bg-zinc-900 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm flex flex-col gap-3">
+                          <div className="flex justify-between items-start">
+                            <h4 className="text-sm font-bold text-zinc-800 dark:text-zinc-200">{lab.title}</h4>
+                            <a href={lab.url} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline text-xs">View</a>
+                          </div>
+
+                          <div className="mt-auto">
+                            <label className="text-[10px] uppercase font-bold text-zinc-400 block mb-1">Assign to Module:</label>
+                            <select
+                              className="w-full text-xs bg-zinc-50 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 rounded-lg p-2 focus:ring-indigo-500"
+                              onChange={(e) => {
+                                if (e.target.value) {
+                                  addLabToModule(lab, e.target.value);
+                                  e.target.value = ""; // Reset select
+                                }
+                              }}
+                              defaultValue=""
+                            >
+                              <option value="" disabled>Select Module...</option>
+                              {modules.map(m => (
+                                <option key={m.id} value={m.id}>{m.name}</option>
+                              ))}
+                            </select>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
 
 
               {/* Section 1: Initial Assessment */}
@@ -737,6 +829,28 @@ ${m.topics && m.topics.length > 0 ? m.topics.map(t => `  - ${t.name}: ${t.conten
                           {module.isOpen && (
                             <div className="px-6 pb-8 pt-2">
                               <div className="space-y-8">
+                                {/* Assigned Labs Section */}
+                                {module.labs && module.labs.length > 0 && (
+                                  <div className="mb-6 bg-indigo-50 dark:bg-indigo-900/20 p-4 rounded-xl border border-indigo-100 dark:border-indigo-800">
+                                    <label className="text-[10px] font-black text-indigo-500 dark:text-indigo-400 uppercase tracking-widest mb-3 block flex items-center gap-2">
+                                      <Sparkles className="w-3 h-3" /> Assigned Labs
+                                    </label>
+                                    <div className="flex flex-wrap gap-2">
+                                      {module.labs.map((lab, lIdx) => (
+                                        <div key={lIdx} className="bg-white dark:bg-zinc-900 px-3 py-2 rounded-lg border border-indigo-200 dark:border-indigo-800 flex items-center gap-2 shadow-sm">
+                                          <span className="text-xs font-bold text-zinc-700 dark:text-zinc-300">{lab.title}</span>
+                                          <button
+                                            onClick={() => removeLabFromModule(module.id, lab.url)}
+                                            className="text-zinc-400 hover:text-red-500"
+                                          >
+                                            <Trash2 className="w-3 h-3" />
+                                          </button>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+
                                 {/* Topics Section */}
                                 <div>
                                   <label className="text-[10px] font-black text-indigo-500 dark:text-indigo-400 uppercase tracking-widest mb-3 block">
