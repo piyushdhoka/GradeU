@@ -36,9 +36,15 @@ const QuestionSchema = new mongoose.Schema({
     correctAnswer: { type: String, required: true },
 });
 
+const TopicSchema = new mongoose.Schema({
+    title: { type: String, required: true },
+    content: { type: String, required: true }, // Markdown content for the topic
+});
+
 const ModuleSchema = new mongoose.Schema({
     title: { type: String, required: true },
-    content: { type: String, required: true }, // Markdown content
+    content: { type: String, default: '' }, // Optional module summary or empty if using topics
+    topics: [TopicSchema], // New: Array of topics
     type: {
         type: String,
         enum: ['lecture', 'quiz', 'initial_assessment', 'final_assessment'],
@@ -71,13 +77,24 @@ export const addCourseLog = async (jobId: string, courseTitle: string, message: 
     }
 };
 
-export const syncCourseToMongo = async (courseId: string, title: string, modules: any[], quizzes: any[] = []) => {
+export const syncCourseToMongo = async (courseId: string, title: string, modules: any[]) => {
     try {
         await connectMongoDB();
 
         // Transform modules to match schema
-        // Note: We might receive quizzes separately or embedded.
-        // Assuming modules have { title, content, quiz }
+        // We ensure topics are mapped correctly
+        const mappedModules = modules.map(m => ({
+            title: m.title,
+            // If we have topics, content might be empty or a summary. 
+            // If it's a legacy module without topics, we use content.
+            content: m.content || "",
+            topics: m.topics ? m.topics.map((t: any) => ({
+                title: t.title,
+                content: t.content
+            })) : [],
+            type: m.type || 'lecture',
+            quiz: m.quiz || []
+        }));
 
         await CyberCoachCourse.findOneAndUpdate(
             { code: courseId },
@@ -86,12 +103,7 @@ export const syncCourseToMongo = async (courseId: string, title: string, modules
                 description: `AI Generated Course: ${title}`,
                 code: courseId,
                 teacherEmail: 'ai-generator@cybercoach.bot',
-                modules: modules.map(m => ({
-                    title: m.title,
-                    content: m.content || "Content coming soon...",
-                    type: m.type || 'lecture',
-                    quiz: m.quiz || []
-                })),
+                modules: mappedModules,
                 published: true,
                 updatedAt: new Date()
             },

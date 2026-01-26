@@ -54,53 +54,78 @@ const worker = new Worker('course-generation', async (job: Job) => {
                 current_module: moduleData.name
             }).eq('id', jobId);
 
-            // Generate Content
-            const topicsList = moduleData.topics && moduleData.topics.length > 0
-                ? `\nFocus on the following key topics:\n${moduleData.topics.map((t: string) => `- ${t}`).join('\n')}`
-                : '';
+            // Sanitize module name for folder path
+            const safeModuleName = moduleData.name.replace(/[^a-zA-Z0-9]/g, '_');
 
-            const theoryPrompt = `Write a deep, educational, and technical theory guide for the module: "${moduleData.name}". 
-            Topic of the course: "${courseTitle}".${topicsList}
-            Provide the content in Markdown format. High detail is required.`;
+            // Container for module content and topics to be synced/stored
+            let moduleContentCombined = "";
+            const processedTopics: any[] = [];
+            const topicPaths: any[] = []; // To store in Supabase 'topics' column if needed
 
-            await addCourseLog(jobId, courseTitle, `Generating content for module: ${moduleData.name} (${moduleData.topics?.length || 0} topics)`, 'INFO');
+            if (moduleData.topics && moduleData.topics.length > 0) {
+                await addCourseLog(jobId, courseTitle, `Generating content for ${moduleData.topics.length} topics in module: ${moduleData.name}`, 'INFO');
 
-            const theoryContent = await callGeminiAPI(theoryPrompt);
+                for (const topic of moduleData.topics) {
+                    const safeTopicName = topic.name.replace(/[^a-zA-Z0-9]/g, '_');
+                    const topicPrompt = `Write a deep, educational, and technical guide for the topic: "${topic.name}".
+                     Module: "${moduleData.name}"
+                     Course: "${courseTitle}"
+                     Context: ${topic.content || 'Provide comprehensive details.'}
+                     Provide the content in Markdown format. High detail is required.`;
 
-            // Add to accumulator
-            generatedModules.push({
-                title: moduleData.name,
-                content: theoryContent,
-                type: 'lecture',
-                quiz: moduleData.quiz || []
-            });
+                    const topicContent = await callGeminiAPI(topicPrompt);
 
-            // Upload to Supabase Storage
-            const filePath = `${courseId}/${moduleData.name.replace(/[^a-zA-Z0-9]/g, '_')}.md`;
-            const { error: uploadError } = await supabaseAdmin
-                .storage
-                .from('courses')
-                .upload(filePath, theoryContent, {
-                    contentType: 'text/markdown',
-                    upsert: true
-                });
+                    // Upload Topic to Supabase Storage: courseId/moduleName/topicName.md
+                    const filePath = `${courseId}/${safeModuleName}/${safeTopicName}.md`;
+                    const { error: uploadError } = await supabaseAdmin
+                        .storage
+                        .from('courses')
+                        .upload(filePath, topicContent, {
+                            contentType: 'text/markdown',
+                            upsert: true
+                        });
 
-            if (uploadError) {
-                console.error('Storage Upload Error:', uploadError);
-                // Fallback: Store in DB if upload fails? Or throw?
-                // For now, let's throw to ensure data consistency
-                throw uploadError;
+                    if (uploadError) {
+                        console.error(`Failed to upload topic ${topic.name}:`, uploadError);
+                        // Continue but log error
+                        await addCourseLog(jobId, courseTitle, `Failed to upload topic: ${topic.name}`, 'ERROR');
+                    }
+
+                    processedTopics.push({
+                        title: topic.name,
+                        content: topicContent
+                    });
+
+                    topicPaths.push({
+                        name: topic.name,
+                        path: filePath
+                    });
+
+                    moduleContentCombined += `# ${topic.name}\n\n${topicContent}\n\n`;
+                }
+            } else {
+                // Fallback for modules without topics (should be rare with new UI)
+                const theoryPrompt = `Write a deep, educational, and technical theory guide for the module: "${moduleData.name}". 
+                Topic of the course: "${courseTitle}".
+                Provide the content in Markdown format. High detail is required.`;
+
+                const theoryContent = await callGeminiAPI(theoryPrompt);
+                moduleContentCombined = theoryContent;
+
+                const filePath = `${courseId}/${safeModuleName}/full_module.md`;
+                await supabaseAdmin.storage.from('courses').upload(filePath, theoryContent, { contentType: 'text/markdown', upsert: true });
             }
 
-            // Store Module with File Path
+            // Stores Module Record in Supabase
+            // We store the updated topics array containing paths
             const { data: moduleRecord, error: moduleError } = await supabaseAdmin
                 .from('modules')
                 .insert({
                     course_id: courseId,
                     title: moduleData.name,
-                    content_markdown: filePath, // Store path instead of raw content
+                    content_markdown: `${courseId}/${safeModuleName}/`, // Point to the folder or leave generic
                     module_order: i + 1,
-                    topics: moduleData.topics || [] // Save topics
+                    topics: topicPaths // Store structure with paths in Supabase
                 })
                 .select().single();
 
@@ -108,8 +133,8 @@ const worker = new Worker('course-generation', async (job: Job) => {
 
             // Generate & Store Embeddings (RAG)
             try {
-                // Simple chunking by paragraphs (approx 500-1000 chars)
-                const chunks = theoryContent.split('\n\n').filter(c => c.length > 50);
+                // Chunk the combined content or per topic
+                const chunks = moduleContentCombined.split('\n\n').filter(c => c.length > 50);
 
                 for (const chunk of chunks) {
                     const embedding = await generateGeminiEmbedding(chunk);
@@ -123,11 +148,8 @@ const worker = new Worker('course-generation', async (job: Job) => {
                 await addCourseLog(jobId, courseTitle, `Embeddings stored for module: ${moduleData.name}`, 'INFO');
             } catch (embedError) {
                 console.error(`[Embedding Error] Module ${moduleData.name}:`, embedError);
-                // Don't fail the whole job, just log it
                 await addCourseLog(jobId, courseTitle, `Embedding failed: ${embedError}`, 'WARN');
             }
-
-            if (moduleError) throw moduleError;
 
             // Store Quizzes
             if (moduleData.quiz && moduleData.quiz.length > 0) {
@@ -140,6 +162,15 @@ const worker = new Worker('course-generation', async (job: Job) => {
                 }));
                 await supabaseAdmin.from('quizzes').insert(quizInsert);
             }
+
+            // Add to accumulator for MongoDB Sync (with full content)
+            generatedModules.push({
+                title: moduleData.name,
+                topics: processedTopics, // Pass detailed topics
+                content: moduleContentCombined, // Pass combined/fallback content
+                type: 'lecture',
+                quiz: moduleData.quiz || []
+            });
 
             await addCourseLog(jobId, courseTitle, `Module completed: ${moduleData.name}`, 'INFO', { moduleId: moduleRecord.id });
         }
@@ -228,6 +259,7 @@ const worker = new Worker('course-generation', async (job: Job) => {
         }).eq('id', jobId);
 
         // SYNC TO MONGODB FOR CYBER_COACH
+        // Ensure generatedModules has the structure expected by the new sync function
         await syncCourseToMongo(courseId, courseTitle, generatedModules);
 
         await addCourseLog(jobId, courseTitle, 'Job successfully completed', 'INFO', { courseId });
