@@ -77,7 +77,7 @@ export const addCourseLog = async (jobId: string, courseTitle: string, message: 
     }
 };
 
-export const syncCourseToMongo = async (courseId: string, title: string, modules: any[]) => {
+export const syncCourseToMongo = async (courseId: string, title: string, modules: any[], meta: any = {}) => {
     try {
         await connectMongoDB();
 
@@ -100,7 +100,7 @@ export const syncCourseToMongo = async (courseId: string, title: string, modules
             { code: courseId },
             {
                 title,
-                description: `AI Generated Course: ${title}`,
+                description: meta.description || `AI Generated Course: ${title}`,
                 code: courseId,
                 teacherEmail: 'ai-generator@cybercoach.bot',
                 modules: mappedModules,

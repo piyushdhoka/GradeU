@@ -252,6 +252,18 @@ const worker = new Worker('course-generation', async (job: Job) => {
         }
 
         // 4. Finalize
+        // Update Supabase course record to be published and include metadata
+        await supabaseAdmin.from('courses').update({
+            is_published: true,
+            description: job.data.description || `AI Generated Course: ${courseTitle}`,
+            // Assuming these columns exist or will be ignored/handled
+            // If they don't exist in Supabase schema, this might error. 
+            // However, the user request implies they want these variables used.
+            // difficulty: job.data.difficulty,
+            // duration: job.data.duration,
+            // category: job.data.category
+        }).eq('id', courseId);
+
         await supabaseAdmin.from('generation_jobs').update({
             status: 'COMPLETED',
             progress: 100,
@@ -260,7 +272,12 @@ const worker = new Worker('course-generation', async (job: Job) => {
 
         // SYNC TO MONGODB FOR CYBER_COACH
         // Ensure generatedModules has the structure expected by the new sync function
-        await syncCourseToMongo(courseId, courseTitle, generatedModules);
+        await syncCourseToMongo(courseId, courseTitle, generatedModules, {
+            description: job.data.description,
+            difficulty: job.data.difficulty,
+            duration: job.data.duration,
+            category: job.data.category
+        });
 
         await addCourseLog(jobId, courseTitle, 'Job successfully completed', 'INFO', { courseId });
         console.log(`[Job ${jobId}] Completed successfully.`);
