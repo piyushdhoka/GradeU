@@ -176,7 +176,7 @@ export default function GeneratorPage() {
 Return a JSON object with:
 1. "modules": array of objects. Each module has:
     - "name": string (Module Name)
-    - "topics": array of 3 objects (Sub-topics), each having:
+    - "topics": array of objects (Sub-topics), cover the module comprehensively. Each object:
         - "name": string (Topic Name)
         - "content": string (Brief summary of what this topic covers, approx 1-2 sentences)
     - "quiz": array of 3 objects (Module specific quiz), each having:
@@ -193,15 +193,33 @@ Return a JSON object with:
    - "options": array of 4 strings
    - "correctAnswer": number (0-3 index)
 
-Return ONLY valid JSON. Do not use markdown formatting.`;
+Return ONLY valid JSON. Do not use markdown formatting. Do not include trailing commas. Ensure valid JSON syntax.`;
 
       const response = await callLLM(apiKey, prompt);
 
-      // Robust JSON extraction
-      const jsonMatch = response.match(/\{[\s\S]*\}/);
-      const cleaned = jsonMatch ? jsonMatch[0] : response.replace(/```json/g, '').replace(/```/g, '').trim();
+      // Robust JSON extraction and parsing
+      let cleaned = response.replace(/```json/g, '').replace(/```/g, '').trim();
+      const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+      if (jsonMatch) cleaned = jsonMatch[0];
 
-      const data = JSON.parse(cleaned);
+      let data;
+      try {
+        data = JSON.parse(cleaned);
+      } catch (e) {
+        console.warn('Initial JSON parse failed, attempting repairs...', e);
+        // Attempt to fix common JSON errors
+        // 1. Remove trailing commas
+        const fixed = cleaned.replace(/,(\s*[}\]])/g, '$1');
+        try {
+          data = JSON.parse(fixed);
+        } catch (e2) {
+          console.error('JSON Repair failed:', e2);
+          // One last desperate attempt: if it looks like it was truncated (no closing brace)
+          // This is harder to fix safely without a library, so we will throw for now but log the content
+          console.log('Failed JSON content:', cleaned);
+          throw new Error('Failed to parse (and repair) generated JSON.');
+        }
+      }
 
       if (data.modules && Array.isArray(data.modules)) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any

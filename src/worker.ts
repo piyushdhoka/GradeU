@@ -71,7 +71,8 @@ const worker = new Worker('course-generation', async (job: Job) => {
                      Module: "${moduleData.name}"
                      Course: "${courseTitle}"
                      Context: ${topic.content || 'Provide comprehensive details.'}
-                     Provide the content in Markdown format. High detail is required.`;
+                     Provide the content in Markdown format. High detail is required.
+                     Limit the response to approximately 300 lines of Markdown code or less. Focus on quality and conciseness.`;
 
                     const topicContent = await callGeminiAPI(topicPrompt);
 
@@ -107,7 +108,8 @@ const worker = new Worker('course-generation', async (job: Job) => {
                 // Fallback for modules without topics (should be rare with new UI)
                 const theoryPrompt = `Write a deep, educational, and technical theory guide for the module: "${moduleData.name}". 
                 Topic of the course: "${courseTitle}".
-                Provide the content in Markdown format. High detail is required.`;
+                Provide the content in Markdown format. High detail is required.
+                Limit the response to approximately 300 lines of Markdown code or less. Focus on quality and conciseness.`;
 
                 const theoryContent = await callGeminiAPI(theoryPrompt);
                 moduleContentCombined = theoryContent;
