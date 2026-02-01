@@ -13,7 +13,7 @@ npm install
 ## Development
 
 ```bash
-npm run dev
+npm run dev:full
 ```
 
 ## Build
