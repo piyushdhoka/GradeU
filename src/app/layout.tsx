@@ -75,6 +75,8 @@ export const metadata: Metadata = {
     },
 };
 
+import Script from "next/script";
+
 export default function RootLayout({
     children,
 }: Readonly<{
@@ -82,6 +84,16 @@ export default function RootLayout({
 }>) {
     return (
         <html lang="en" className={`dark ${inter.variable} ${spaceGrotesk.variable}`}>
+            <head>
+                {process.env.NEXT_PUBLIC_UMAMI_WEBSITE_ID && (
+                    <Script
+                        defer
+                        src="https://cloud.umami.is/script.js"
+                        data-website-id={process.env.NEXT_PUBLIC_UMAMI_WEBSITE_ID}
+                        strategy="afterInteractive"
+                    />
+                )}
+            </head>
             <body className={`${inter.className} antialiased bg-[#0F1115] text-white`}>
                 <AuthProvider>
                     <OnboardingGuard />
