@@ -16,9 +16,11 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
     useEffect(() => {
         // Only redirect after loading is complete and no user
         if (!loading && !user) {
-            // Check if there's a code in URL (OAuth callback in progress)
-            const urlParams = new URLSearchParams(window.location.search);
-            if (!urlParams.get('code')) {
+            // Check if there's auth data in URL (OAuth callback in progress)
+            const hasCode = window.location.search.includes('code=');
+            const hasToken = window.location.hash.includes('access_token');
+            
+            if (!hasCode && !hasToken) {
                 console.log('[StudentLayout] No user, redirecting to login');
                 router.replace("/login");
             }

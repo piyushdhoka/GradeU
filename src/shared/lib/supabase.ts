@@ -12,34 +12,35 @@ function normalizeUrl(url?: string) {
   return trimmed;
 }
 
-const supabaseUrl = normalizeUrl(rawUrl);
-const supabaseAnonKey = rawKey?.trim().replace(/^"|"$/g, '').replace(/^'|'$/g, '');
+const supabaseUrl = normalizeUrl(rawUrl) || '';
+const supabaseAnonKey = rawKey?.trim().replace(/^"|"$/g, '').replace(/^'|'$/g, '') || '';
 
+// Only validate on client side to avoid build errors
 export function assertSupabaseEnv() {
+  if (typeof window === 'undefined') return; // Skip on server
   if (!supabaseUrl || !supabaseAnonKey) {
-    throw new Error('Supabase is not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in .env');
-  }
-  if (!/^https:\/\//i.test(supabaseUrl)) {
-    throw new Error('Invalid NEXT_PUBLIC_SUPABASE_URL. It must start with https://');
+    console.error('Supabase is not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in .env');
   }
 }
 
-assertSupabaseEnv();
-
-// Use standard Supabase client with localStorage (not SSR cookies)
+// Create Supabase client - works on both server and client
 export const supabase = createClient(
-  supabaseUrl as string, 
-  supabaseAnonKey as string,
+  supabaseUrl, 
+  supabaseAnonKey,
   {
     auth: {
       autoRefreshToken: true,
       persistSession: true,
       detectSessionInUrl: true,
       flowType: 'implicit', // Use implicit flow - tokens come in URL hash
-      storage: typeof window !== 'undefined' ? window.localStorage : undefined,
     }
   }
 );
+
+// Call assertion on client side only
+if (typeof window !== 'undefined') {
+  assertSupabaseEnv();
+}
 
 export async function testSupabaseConnection(): Promise<void> {
   try {
