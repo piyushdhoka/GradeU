@@ -26,14 +26,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // Watchdog: ensure we never stay stuck in loading state
     const watchdog = setTimeout(() => {
       if (mounted && loading) {
-        console.log('[AuthContext] Watchdog triggered - forcing loading to false');
         setLoading(false);
       }
     }, 8000);
 
     async function initializeAuth() {
       try {
-        console.log('[AuthContext] Initializing auth...');
+        
         
         // With implicit flow, Supabase automatically handles tokens in URL hash
         // detectSessionInUrl: true handles this automatically
@@ -43,7 +42,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const hasAuthHash = window.location.hash && window.location.hash.includes('access_token');
         
         if (hasAuthHash) {
-          console.log('[AuthContext] Found auth tokens in URL hash');
+          
           // Give Supabase a moment to process the hash
           await new Promise(resolve => setTimeout(resolve, 100));
         }
@@ -57,23 +56,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
         
         if (error) {
-          console.log('[AuthContext] getSession error:', error.message);
+          // Session error is not critical, user just needs to login
         }
-
-        console.log('[AuthContext] Session found:', !!session, session?.user?.id);
 
         if (session) {
           // If we have a session, sync with our DB to get role/profile
           const syncedUser = await authService.handleAuthStateChange(session) as AuthContextValue['user'];
           if (mounted && syncedUser && syncedUser.role !== 'admin' as any) {
-            console.log('[AuthContext] User synced:', syncedUser.id);
             setUser(syncedUser);
           }
         } else {
           // Check localStorage as fallback
           const localUser = authService.getCurrentUser() as AuthContextValue['user'];
           if (mounted && localUser && localUser.role !== 'admin' as any) {
-            console.log('[AuthContext] Using cached user:', localUser.id);
             setUser(localUser);
           }
         }
@@ -82,7 +77,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (mounted) setUser(null);
       } finally {
         if (mounted) {
-          console.log('[AuthContext] Init complete, setting loading to false');
           setLoading(false);
         }
         clearTimeout(watchdog);
@@ -93,8 +87,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     // Listen for auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log(`[AuthContext] Auth event: ${event}`, session?.user?.id);
-
       if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
         if (session) {
           try {
@@ -107,7 +99,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 const nowOnboarded = syncedUser.onboarding_completed;
 
                 if (isSameUser && wasOnboarded && !nowOnboarded) {
-                  console.warn('[AuthContext] Preventing state downgrade');
                   return prevUser;
                 }
                 return syncedUser;
@@ -127,7 +118,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           }
         }
       } else if (event === 'SIGNED_OUT') {
-        console.log('[AuthContext] User signed out');
+        
         setUser(null);
         setLoading(false);
       }

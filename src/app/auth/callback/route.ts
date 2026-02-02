@@ -18,6 +18,5 @@ export async function GET(request: Request) {
 
     // For implicit flow, just redirect to dashboard
     // The tokens will be in the URL hash and handled by the client
-    console.log('Auth callback - redirecting to dashboard')
     return NextResponse.redirect(new URL('/dashboard', origin))
 }

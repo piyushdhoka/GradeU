@@ -9,12 +9,13 @@ interface ExperienceDetail {
 
 interface ExperienceConfig {
     studentId: string;
+    studentEmail?: string;
     courseId: string;
     moduleId: string;
     enabled: boolean;
 }
 
-export const useExperienceTracker = ({ studentId, courseId, moduleId, enabled }: ExperienceConfig) => {
+export const useExperienceTracker = ({ studentId, studentEmail, courseId, moduleId, enabled }: ExperienceConfig) => {
     const startTimeRef = useRef<number>(Date.now());
     const maxScrollRef = useRef<number>(0);
     const scrollRequestRef = useRef<number | null>(null);
@@ -46,6 +47,7 @@ export const useExperienceTracker = ({ studentId, courseId, moduleId, enabled }:
             const timeSpent = (Date.now() - startTimeRef.current) / 1000;
             const payload = JSON.stringify({
                 studentId,
+                studentEmail,
                 courseId,
                 moduleStats: {
                     moduleId,
@@ -81,7 +83,7 @@ export const useExperienceTracker = ({ studentId, courseId, moduleId, enabled }:
             clearInterval(intervalId);
             syncData(); // Final sync on unmount/module change
         };
-    }, [studentId, courseId, moduleId, enabled]);
+    }, [studentId, studentEmail, courseId, moduleId, enabled]);
 
     return {};
 };

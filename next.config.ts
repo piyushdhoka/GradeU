@@ -21,37 +21,7 @@ const nextConfig: NextConfig = {
             }
         ],
     },
-    // Proxies for backend
-    async rewrites() {
-        const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
-
-
-        const target = backendUrl || 'http://localhost:4000';
-
-
-        if (process.env.NODE_ENV === 'production' && !backendUrl) {
-            return [];
-        }
-
-        return [
-            {
-                source: '/api/:path*',
-                destination: `${target}/api/:path*`,
-            },
-            {
-                source: '/proxy/:path*',
-                destination: `${target}/proxy/:path*`,
-            },
-            {
-                source: '/proctor-logs/:path*',
-                destination: `${target}/proctor-logs/:path*`,
-            },
-            {
-                source: '/test-models/:path*',
-                destination: `${target}/test-models/:path*`,
-            },
-        ];
-    },
+    // No rewrites needed - all API routes are now Next.js API routes
 };
 
 export default nextConfig;

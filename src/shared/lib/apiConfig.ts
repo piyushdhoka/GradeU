@@ -1,10 +1,7 @@
 
 export function getBackendUrl(): string {
     
-    const backendUrl =
-        process.env.NEXT_PUBLIC_BACKEND_URL ||
-        process.env.VITE_API_URL ||
-        '';
+    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || '';
 
     return backendUrl;
 }

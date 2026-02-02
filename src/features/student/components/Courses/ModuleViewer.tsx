@@ -65,6 +65,7 @@ export const ModuleViewer: React.FC<ModuleViewerProps> = ({ courseId, moduleId, 
   // Experience Tracking
   useExperienceTracker({
     studentId: user?.id || 'anonymous',
+    studentEmail: user?.email || '',
     courseId,
     moduleId,
     enabled: !!user?.id

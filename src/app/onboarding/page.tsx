@@ -32,20 +32,29 @@ export default function OnboardingPage() {
     });
 
     useEffect(() => {
-        if (user) {
-            setFormData(prev => ({
-                ...prev,
-                name: user.name || '',
-                contact_email: user.email || '',
-                phone_number: user.phone_number || '',
-                faculty: user.faculty || '',
-                department: user.department || '',
-                email_type: user.email_type || 'personal',
-            }));
+        // If no user and not loading, redirect to login
+        if (!user) {
+            // Give auth a moment to initialize
+            const timeout = setTimeout(() => {
+                if (!user) router.replace('/login');
+            }, 2000);
+            return () => clearTimeout(timeout);
+        }
 
-            if (user.onboarding_completed) {
-                router.replace('/dashboard');
-            }
+        // Pre-fill form with user data
+        setFormData(prev => ({
+            ...prev,
+            name: user.name || '',
+            contact_email: user.email || '',
+            phone_number: user.phone_number || '',
+            faculty: user.faculty || '',
+            department: user.department || '',
+            email_type: user.email_type || 'personal',
+        }));
+
+        // If already onboarded, redirect to dashboard immediately
+        if (user.onboarding_completed) {
+            router.replace('/dashboard');
         }
     }, [user, router]);
 
@@ -87,6 +96,12 @@ export default function OnboardingPage() {
         try {
             if (!user) throw new Error("No user found");
 
+            // Ensure we have an active session for RLS
+            const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+            if (sessionError || !session) {
+                throw new Error("Session expired. Please log in again.");
+            }
+
             const updates = {
                 full_name: formData.name,
                 phone_number: formData.phone_number,
@@ -106,10 +121,27 @@ export default function OnboardingPage() {
 
             const data = results?.[0];
 
-            if (updateError) throw updateError;
+            if (updateError) {
+                console.error("Supabase update error:", updateError);
+                throw new Error(updateError.message || "Failed to update profile");
+            }
 
-            if (!data || !data.onboarding_completed) {
-                throw new Error("Database refused update. Please check RLS policies or internet connection.");
+            if (!data) {
+                // Profile might not exist yet, try upsert
+                const { data: upsertData, error: upsertError } = await supabase
+                    .from('profiles')
+                    .upsert({
+                        id: user.id,
+                        email: user.email,
+                        ...updates,
+                    })
+                    .select()
+                    .single();
+
+                if (upsertError) {
+                    console.error("Supabase upsert error:", upsertError);
+                    throw new Error(upsertError.message || "Failed to create profile");
+                }
             }
 
             updateUser({

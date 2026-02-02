@@ -4,14 +4,11 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "fetch-faceapi": "node ./scripts/fetch-faceapi.js",
-    "server": "tsx src/server/server.ts",
-    "dev:full": "concurrently \"npm run server\" \"npm run dev\"",
-    "server:watch": "tsx watch src/server/server.ts"
+    "fetch-faceapi": "node ./scripts/fetch-faceapi.js"
   },
   "dependencies": {
     "@radix-ui/react-avatar": "^1.1.2",

@@ -82,7 +82,6 @@ class CourseService {
   // Course Management
   async createCourse(courseData: Omit<Partial<Course>, 'modules'> & { modules?: Partial<Module>[] }) {
     try {
-      console.log('Creating course with data:', courseData);
 
       let contentJsonUrl = null;
 
@@ -134,8 +133,6 @@ class CourseService {
         console.error('Supabase error:', error);
         throw new Error(`Failed to create course: ${error.message}`);
       }
-
-      console.log('Course created successfully:', data);
 
       // Return full course object with modules
       return {
@@ -251,7 +248,6 @@ class CourseService {
       }
 
       // Fallback: Fetch from Supabase if backend is unavailable
-      console.log('Backend unavailable, falling back to Supabase...');
       const { data, error } = await supabase
         .from('courses')
         .select('*')
