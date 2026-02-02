@@ -1,0 +1,45 @@
+/* Central theme tokens for student dark-slate + amber/emerald palette */
+
+:root {
+  --color-bg: #000000; /* black */
+  --color-card: #000000; /* black */
+  --color-text: #000000; /* fallback */
+}
+
+/* Text tokens */
+.text-primary { color: #e6edf3; } /* text-slate-100 */
+.text-muted { color: #94a3b8; } /* text-slate-400 */
+.text-accent { color: #f59e0b; } /* amber-500 */
+
+/* Background tokens */
+.bg-page { background-color: #000000; } /* black */
+.bg-card { background-color: #000000; } /* black */
+.bg-muted { background-color: #000000; } /* black */
+
+/* Button tokens */
+.btn-primary { background-color: #f59e0b; color: #0b1220; } /* amber on dark */
+.btn-primary:hover { background-color: #f59e0b; opacity: 0.95; }
+.btn-cta { background-color: #10b981; color: #0b1220; } /* emerald */
+
+/* Progress / accent */
+.accent-amber { background-color: #f59e0b; }
+.accent-emerald { background-color: #10b981; }
+
+/* Card border */
+.border-card { border-color: #1f2937; }
+
+/* Left accent border used for highlights */
+.border-accent { border-left-width: 4px; border-left-style: solid; border-left-color: #f59e0b; }
+
+/* Code block tokens for dark content */
+.code-bg { background-color: #0b1220; color: #e6edf3; border: 1px solid #1f2937; }
+
+/* Small helpers */
+.text-contrast { color: #e6edf3; }
+.text-low { color: #94a3b8; }
+
+/* Utility to replace repeated classes */
+.btn-primary-rounded { @apply px-4 py-2 rounded-md font-medium; }
+
+/* Export a tailwind-friendly pluginless set for quick use in JSX as plain classnames */
+
