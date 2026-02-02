@@ -48,7 +48,7 @@ export const metadata: Metadata = {
         type: 'website',
         images: [
             {
-                url: '/og.png',
+                url: `${siteConfig.url}/og.png`,
                 width: 1200,
                 height: 630,
                 alt: 'GradeU - Master Any Subject With Hands-on Labs',
@@ -60,7 +60,7 @@ export const metadata: Metadata = {
         title: siteConfig.title,
         description: siteConfig.description,
         creator: '@gradeu',
-        images: ['/og.png'],
+        images: [`${siteConfig.url}/og.png`],
     },
     robots: {
         index: true,
