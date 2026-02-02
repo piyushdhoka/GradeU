@@ -2,8 +2,8 @@ export const siteConfig = {
     name: "GradeU",
     title: "GradeU - Empowering Excellence in Education",
     description: "The complete platform to learn, practice, and achieve your academic goals. AI-powered education platform with hands-on labs, proctored assessments, and career tools. No fluff, just results.",
-    url: "https://gradeu.in",
-    ogImage: "/og.png",
+    url: "https://www.gradeu.in",
+    ogImage: "https://www.gradeu.in/og.png",
     links: {
         twitter: "https://twitter.com/gradeu",
         github: "https://github.com/gradeu",
