@@ -9,6 +9,6 @@ export default function CommunityPageRoute() {
         router.push("/dashboard");
     };
 
-    return <CommunityPage onBack={handleBack} />;
+    return <CommunityPage onBackAction={handleBack} />;
 }
 
