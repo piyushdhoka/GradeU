@@ -5,8 +5,8 @@ export default function robots(): MetadataRoute.Robots {
     return {
         rules: {
             userAgent: '*',
-            allow: '/',
-            disallow: ['/dashboard/', '/api/'],
+            allow: ['/', '/opengraph-image.png', '/twitter-image.png'],
+            disallow: ['/dashboard/', '/api/', '/verify/'],
         },
         sitemap: `${siteConfig.url}/sitemap.xml`,
     }
