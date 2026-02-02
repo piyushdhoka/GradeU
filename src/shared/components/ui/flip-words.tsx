@@ -65,10 +65,10 @@ export const FlipWords = ({
                 {currentWord.split(" ").map((word, wordIndex) => (
                     <motion.span
                         key={word + wordIndex}
-                        initial={{ opacity: 0, y: 10, filter: "blur(8px)" }}
+                        initial={words.indexOf(currentWord) === 0 ? { opacity: 1, y: 0, filter: "blur(0px)" } : { opacity: 0, y: 10, filter: "blur(8px)" }}
                         animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
                         transition={{
-                            delay: wordIndex * 0.3,
+                            delay: words.indexOf(currentWord) === 0 ? 0 : wordIndex * 0.3,
                             duration: 0.3,
                         }}
                         className="inline-block whitespace-nowrap"
@@ -76,10 +76,10 @@ export const FlipWords = ({
                         {word.split("").map((letter, letterIndex) => (
                             <motion.span
                                 key={word + letterIndex}
-                                initial={{ opacity: 0, y: 10, filter: "blur(8px)" }}
+                                initial={words.indexOf(currentWord) === 0 ? { opacity: 1, y: 0, filter: "blur(0px)" } : { opacity: 0, y: 10, filter: "blur(8px)" }}
                                 animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
                                 transition={{
-                                    delay: wordIndex * 0.3 + letterIndex * 0.05,
+                                    delay: words.indexOf(currentWord) === 0 ? 0 : (wordIndex * 0.3 + letterIndex * 0.05),
                                     duration: 0.2,
                                 }}
                                 className="inline-block"
