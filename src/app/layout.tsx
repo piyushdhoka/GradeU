@@ -46,12 +46,21 @@ export const metadata: Metadata = {
         siteName: siteConfig.name,
         locale: 'en_US',
         type: 'website',
+        images: [
+            {
+                url: '/og.png',
+                width: 1200,
+                height: 630,
+                alt: 'GradeU - Master Any Subject With Hands-on Labs',
+            },
+        ],
     },
     twitter: {
         card: 'summary_large_image',
         title: siteConfig.title,
         description: siteConfig.description,
         creator: '@gradeu',
+        images: ['/og.png'],
     },
     robots: {
         index: true,
