@@ -23,11 +23,9 @@ export const LandingHero: React.FC = () => {
 
     return (
         <section className="relative min-h-[85vh] lg:h-[90vh] flex flex-col items-center justify-center overflow-hidden pt-12 pb-12 px-6 bg-black">
-            {/* Background elements - Refined Mesh */}
+            {/* Background elements - Clean */}
             <div className="absolute inset-0 pointer-events-none">
                 <div className="absolute top-0 left-0 w-full h-full bg-[#0a0a0b]" />
-                <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-brand-400/5 blur-[120px] rounded-full" />
-                <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-brand-400/5 blur-[120px] rounded-full" />
             </div>
 
             {/* Left Illustration */}
@@ -38,7 +36,7 @@ export const LandingHero: React.FC = () => {
                 className="absolute left-[2%] lg:left-[5%] top-[25%] lg:top-[30%] hidden md:block pointer-events-none z-0"
             >
                 <div className="relative">
-                    <div className="absolute inset-0 bg-brand-400/20 blur-[60px] rounded-full" />
+                    {/* Removed bg-brand-400/20 blur */}
                     <Image
                         src="/science-l.svg"
                         alt="Science"
@@ -57,7 +55,7 @@ export const LandingHero: React.FC = () => {
                 className="absolute right-[2%] lg:right-[5%] bottom-[15%] lg:bottom-[20%] hidden md:block pointer-events-none z-0"
             >
                 <div className="relative">
-                    <div className="absolute inset-0 bg-white/5 blur-[60px] rounded-full" />
+                    {/* Removed bg-white/5 blur */}
                     <Image
                         src="/cap-l.svg"
                         alt="Education"
@@ -89,7 +87,7 @@ export const LandingHero: React.FC = () => {
                     >
                         <span className="block">Master Any Subject</span>
                         <div className="flex flex-wrap justify-center items-center gap-x-4 mt-2">
-                            <span className="text-zinc-500">With</span>
+                            <span className="text-white">With</span>
                             <div className="inline-block min-w-[280px] text-left">
                                 <FlipWords
                                     words={features}

@@ -111,7 +111,7 @@ class AuthService {
       localStorage.setItem('auth_pending_role', role);
       localStorage.setItem('auth_pending_role_ts', Date.now().toString());
 
-      const redirectTo = window.location.origin;
+      const redirectTo = `${window.location.origin}/auth/callback`;
 
       const { error } = await withTimeout(
         supabase.auth.signInWithOAuth({
