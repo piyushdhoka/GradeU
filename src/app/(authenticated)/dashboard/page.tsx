@@ -3,24 +3,35 @@
 import Link from 'next/link';
 import {
   BookOpen,
-  Users,
-  TrendingUp,
-  Award,
-  Target,
   Sparkles,
   FileText,
   ArrowUpRight,
   CheckCircle2,
+  Award,
+  Users,
 } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { getRecentActivity, ActivityItem } from '@/actions/get-dashboard-activity';
 
 export default function Dashboard() {
+  const [activities, setActivities] = useState<ActivityItem[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchActivity() {
+      const data = await getRecentActivity();
+      setActivities(data);
+      setLoading(false);
+    }
+    fetchActivity();
+  }, []);
+
   return (
     <div className="p-8 space-y-8">
       {/* Header */}
-      {/* Header */}
       <div className="mb-8">
         <h1 className="text-4xl font-black text-zinc-900 dark:text-white tracking-tight">Dashboard</h1>
-        <p className="text-zinc-500 dark:text-slate-400 mt-2 font-medium">Welcome back! Here's your overview.</p>
+        <p className="text-zinc-500 dark:text-slate-400 mt-2 font-medium">Welcome back! Here&apos;s your overview.</p>
       </div>
       {/* Quick Actions */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -62,38 +73,33 @@ export default function Dashboard() {
           </Link>
         </div>
         <div className="space-y-4">
-          {/* Activity Item 1 */}
-          <div className="flex items-center gap-4 p-4 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl border border-zinc-100 dark:border-zinc-700/50 hover:border-zinc-300 dark:hover:border-zinc-600 transition-colors">
-            <div className="w-10 h-10 bg-blue-500/10 rounded-full flex items-center justify-center flex-shrink-0">
-              <CheckCircle2 className="w-5 h-5 text-blue-500 dark:text-blue-400" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-zinc-900 dark:text-white font-bold">Sarah Chen completed &quot;Advanced React Patterns&quot;</p>
-              <p className="text-zinc-500 dark:text-slate-500 text-sm mt-0.5">2 hours ago</p>
-            </div>
-          </div>
-
-          {/* Activity Item 2 */}
-          <div className="flex items-center gap-4 p-4 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl border border-zinc-100 dark:border-zinc-700/50 hover:border-zinc-300 dark:hover:border-zinc-600 transition-colors">
-            <div className="w-10 h-10 bg-blue-500/10 rounded-full flex items-center justify-center flex-shrink-0">
-              <Award className="w-5 h-5 text-blue-500 dark:text-blue-400" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-zinc-900 dark:text-white font-bold">John Doe achieved 95% on &quot;TypeScript Fundamentals&quot;</p>
-              <p className="text-zinc-500 dark:text-slate-500 text-sm mt-0.5">5 hours ago</p>
-            </div>
-          </div>
-
-          {/* Activity Item 3 */}
-          <div className="flex items-center gap-4 p-4 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl border border-zinc-100 dark:border-zinc-700/50 hover:border-zinc-300 dark:hover:border-zinc-600 transition-colors">
-            <div className="w-10 h-10 bg-blue-500/10 rounded-full flex items-center justify-center flex-shrink-0">
-              <BookOpen className="w-5 h-5 text-blue-500 dark:text-blue-400" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-zinc-900 dark:text-white font-bold">New course &quot;Web Development Bootcamp&quot; was created</p>
-              <p className="text-zinc-500 dark:text-slate-500 text-sm mt-0.5">1 day ago</p>
-            </div>
-          </div>
+          {loading ? (
+            <div className="text-center text-zinc-500 dark:text-zinc-400 py-4">Loading activity...</div>
+          ) : activities.length === 0 ? (
+            <div className="text-center text-zinc-500 dark:text-zinc-400 py-4">No recent activity found.</div>
+          ) : (
+            activities.map((activity) => (
+              <div key={activity.id} className="flex items-center gap-4 p-4 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl border border-zinc-100 dark:border-zinc-700/50 hover:border-zinc-300 dark:hover:border-zinc-600 transition-colors">
+                <div className="w-10 h-10 bg-blue-500/10 rounded-full flex items-center justify-center flex-shrink-0">
+                  {activity.type === 'enrollment' || activity.type === 'course_created' ? (
+                    <BookOpen className="w-5 h-5 text-blue-500 dark:text-blue-400" />
+                  ) : activity.type === 'quiz' ? (
+                    <Award className="w-5 h-5 text-blue-500 dark:text-blue-400" />
+                  ) : activity.type === 'login' ? (
+                    <Users className="w-5 h-5 text-blue-500 dark:text-blue-400" />
+                  ) : (
+                    <CheckCircle2 className="w-5 h-5 text-blue-500 dark:text-blue-400" />
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-zinc-900 dark:text-white font-bold">
+                    {activity.studentName} {activity.description}
+                  </p>
+                  <p className="text-zinc-500 dark:text-slate-500 text-sm mt-0.5">{activity.timeAgo}</p>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </div>
     </div>
