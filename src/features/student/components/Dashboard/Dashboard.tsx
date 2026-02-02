@@ -3,7 +3,6 @@ import React, { useEffect, useState } from 'react';
 import { Shield, Award, Play, ChevronRight, Terminal, BookOpen, GraduationCap, Zap, Clock } from 'lucide-react';
 import { useAuth } from '@context/AuthContext';
 import { supabase } from '@lib/supabase';
-import { SEO } from '@components/SEO/SEO';
 import { studentService, StudentStats, RecentActivity, ActiveOperation } from '@services/studentService';
 import { labApiService, LabStats } from '@services/labApiService';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@components/ui/card';
@@ -92,10 +91,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ onTabChange }) => {
 
   return (
     <div className="flex flex-col gap-6 p-4 md:p-8 animate-in fade-in duration-500">
-      <SEO
-        title="Learner Dashboard"
-        description="Monitor your academic progress, labs, and achievements."
-      />
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card className="shadow-sm hover:shadow-md transition-all duration-200 border-border/50 hover:border-border">
