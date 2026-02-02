@@ -39,20 +39,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         // detectSessionInUrl: true handles this automatically
         // Just need to get the session
         
-        // Clean up URL if it has auth params (hash fragments)
-        if (window.location.hash && window.location.hash.includes('access_token')) {
+        // Check if there are auth params in URL (hash fragments)
+        const hasAuthHash = window.location.hash && window.location.hash.includes('access_token');
+        
+        if (hasAuthHash) {
           console.log('[AuthContext] Found auth tokens in URL hash');
           // Give Supabase a moment to process the hash
           await new Promise(resolve => setTimeout(resolve, 100));
         }
         
-        // Clean up URL query params from callback
-        if (window.location.search.includes('code=')) {
-          window.history.replaceState({}, '', window.location.pathname);
-        }
-        
         // Now check for session
         const { data: { session }, error } = await supabase.auth.getSession();
+        
+        // Clean up URL - remove hash and query params
+        if (hasAuthHash || window.location.hash || window.location.search.includes('code=')) {
+          window.history.replaceState({}, '', window.location.pathname);
+        }
         
         if (error) {
           console.log('[AuthContext] getSession error:', error.message);
