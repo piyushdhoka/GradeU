@@ -1,7 +1,6 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import { MessageSquare, ThumbsUp, RefreshCw, Loader2, Send } from 'lucide-react';
-import { SEO } from '@components/SEO/SEO';
 import { useAuth } from '@context/AuthContext';
 import { communityService, Post, Comment } from '@student/services/communityService';
 import { formatDistanceToNow } from 'date-fns';
@@ -12,7 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@shared/co
 import { Badge } from '@shared/components/ui/badge';
 import { Separator } from '@shared/components/ui/separator';
 
-export const CommunityPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
+export const CommunityPage: React.FC<{ onBackAction: () => void }> = ({ onBackAction }) => {
     const { user } = useAuth();
     const [posts, setPosts] = useState<Post[]>([]);
     const [newPostContent, setNewPostContent] = useState('');
@@ -134,10 +133,6 @@ export const CommunityPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
     return (
         <div className="min-h-screen bg-background text-foreground animate-in fade-in duration-500">
-            <SEO
-                title="Community Discussion"
-                description="Connect with fellow students and instructors. Share knowledge, ask questions, and collaborate."
-            />
 
             <div className="container max-w-5xl mx-auto p-4 md:p-8">
                 {/* Header */}

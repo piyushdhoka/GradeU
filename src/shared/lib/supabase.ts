@@ -26,7 +26,20 @@ export function assertSupabaseEnv() {
 
 assertSupabaseEnv();
 
-export const supabase = createClient(supabaseUrl as string, supabaseAnonKey as string);
+// Use standard Supabase client with localStorage (not SSR cookies)
+export const supabase = createClient(
+  supabaseUrl as string, 
+  supabaseAnonKey as string,
+  {
+    auth: {
+      autoRefreshToken: true,
+      persistSession: true,
+      detectSessionInUrl: true,
+      flowType: 'implicit', // Use implicit flow - tokens come in URL hash
+      storage: typeof window !== 'undefined' ? window.localStorage : undefined,
+    }
+  }
+);
 
 export async function testSupabaseConnection(): Promise<void> {
   try {

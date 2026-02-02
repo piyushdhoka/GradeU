@@ -14,8 +14,14 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
     const pathname = usePathname();
 
     useEffect(() => {
+        // Only redirect after loading is complete and no user
         if (!loading && !user) {
-            router.push("/login");
+            // Check if there's a code in URL (OAuth callback in progress)
+            const urlParams = new URLSearchParams(window.location.search);
+            if (!urlParams.get('code')) {
+                console.log('[StudentLayout] No user, redirecting to login');
+                router.replace("/login");
+            }
         }
     }, [user, loading, router]);
 
@@ -31,7 +37,15 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
     }
 
     if (!user) {
-        return null;
+        // Still show loading if no user yet (might be processing OAuth)
+        return (
+            <div className="flex items-center justify-center min-h-screen">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-400 mx-auto"></div>
+                    <p className="mt-4 text-muted-foreground">Authenticating...</p>
+                </div>
+            </div>
+        );
     }
 
     const getActiveTab = () => {

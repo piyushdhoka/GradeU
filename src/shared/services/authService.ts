@@ -112,6 +112,7 @@ class AuthService {
       localStorage.setItem('auth_pending_role_ts', Date.now().toString());
 
       const redirectTo = `${window.location.origin}/auth/callback`;
+      console.log('Starting Google OAuth with redirect URL:', redirectTo);
 
       const { error } = await withTimeout(
         supabase.auth.signInWithOAuth({

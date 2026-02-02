@@ -3,7 +3,6 @@ import React, { useState, useEffect } from "react"
 import { useAuth } from "@context/AuthContext"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { SEO } from "@components/SEO/SEO"
 import { Button } from "@components/ui/button"
 import {
   Card,
@@ -51,10 +50,6 @@ export const LoginForm: React.FC<LoginFormProps> = () => {
 
   return (
     <>
-      <SEO
-        title="Login"
-        description="Access your GradeU Dashboard. Sign in to continue your training and academic operations."
-      />
       <div className="dark bg-zinc-950 flex min-h-svh flex-col items-center justify-center gap-6 p-6 md:p-10">
         <div className="flex w-full max-w-sm flex-col gap-6">
           <Link href="/" className="flex flex-col items-center gap-4 self-center font-medium group transition-all hover:opacity-90 mb-4 focus:outline-none">

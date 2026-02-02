@@ -97,7 +97,7 @@ export const StudentAppContent: React.FC<StudentAppContentProps> = ({ initialTab
       case 'profile':
         return <Profile />;
       case 'community':
-        return <CommunityPage onBack={() => setActiveTab('dashboard')} />;
+        return <CommunityPage onBackAction={() => setActiveTab('dashboard')} />;
       default:
         return <Dashboard onTabChange={setActiveTab} />;
     }

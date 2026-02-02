@@ -4,7 +4,6 @@ import { useAuth } from '@context/AuthContext';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 // UI Components
-import { SEO } from '@components/SEO/SEO';
 import {
   Navbar,
   NavBody,
@@ -58,10 +57,6 @@ export const LandingPage: React.FC = () => {
 
   return (
     <>
-      <SEO
-        description="Empowering excellence with GradeU. Elevate your learning journey with our advanced education platform."
-      />
-
       <div className="min-h-screen bg-black text-zinc-100 font-sans selection:bg-brand-400/30">
         <StickyBanner className="bg-zinc-900 border-b border-zinc-800">
           <p className="text-sm font-medium text-zinc-300 tracking-wide text-center px-4">

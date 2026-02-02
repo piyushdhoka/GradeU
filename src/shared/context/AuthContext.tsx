@@ -22,37 +22,67 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     let mounted = true;
-    // Watchdog: ensure we never stay stuck in loading state due to network/cookie issues
+    
+    // Watchdog: ensure we never stay stuck in loading state
     const watchdog = setTimeout(() => {
-      if (mounted) {
+      if (mounted && loading) {
+        console.log('[AuthContext] Watchdog triggered - forcing loading to false');
         setLoading(false);
       }
-    }, 3500);
+    }, 8000);
 
     async function initializeAuth() {
       try {
-        // 1. Check for existing session from Supabase first
-        const { data: { session } } = await supabase.auth.getSession();
+        console.log('[AuthContext] Initializing auth...');
+        
+        // With implicit flow, Supabase automatically handles tokens in URL hash
+        // detectSessionInUrl: true handles this automatically
+        // Just need to get the session
+        
+        // Clean up URL if it has auth params (hash fragments)
+        if (window.location.hash && window.location.hash.includes('access_token')) {
+          console.log('[AuthContext] Found auth tokens in URL hash');
+          // Give Supabase a moment to process the hash
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
+        
+        // Clean up URL query params from callback
+        if (window.location.search.includes('code=')) {
+          window.history.replaceState({}, '', window.location.pathname);
+        }
+        
+        // Now check for session
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.log('[AuthContext] getSession error:', error.message);
+        }
+
+        console.log('[AuthContext] Session found:', !!session, session?.user?.id);
 
         if (session) {
           // If we have a session, sync with our DB to get role/profile
           const syncedUser = await authService.handleAuthStateChange(session) as AuthContextValue['user'];
           if (mounted && syncedUser && syncedUser.role !== 'admin' as any) {
+            console.log('[AuthContext] User synced:', syncedUser.id);
             setUser(syncedUser);
           }
         } else {
-          // Fallback: Check localStorage if no Supabase session (though usually they sync)
-          // or just clear it if we trust Supabase as single source of truth
+          // Check localStorage as fallback
           const localUser = authService.getCurrentUser() as AuthContextValue['user'];
           if (mounted && localUser && localUser.role !== 'admin' as any) {
+            console.log('[AuthContext] Using cached user:', localUser.id);
             setUser(localUser);
           }
         }
       } catch (error) {
-        console.error('Auth initialization error:', error);
+        console.error('[AuthContext] Auth initialization error:', error);
         if (mounted) setUser(null);
       } finally {
-        if (mounted) setLoading(false);
+        if (mounted) {
+          console.log('[AuthContext] Init complete, setting loading to false');
+          setLoading(false);
+        }
         clearTimeout(watchdog);
       }
     }
@@ -69,36 +99,33 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             const syncedUser = await authService.handleAuthStateChange(session) as AuthContextValue['user'];
             if (syncedUser && syncedUser.role !== 'admin' as any) {
               setUser(prevUser => {
-                // PROTECT AGAINST DOWNGRADES
-                // If we already have a fully onboarded user state, and the new state claims we aren't onboarded,
-                // it's likely a partial fetch/timeout issue. Ignore the downgrade.
-                // Ensure we don't accidentally ignore legitimate re-logins for different users.
+                // Protect against state downgrades
                 const isSameUser = prevUser?.id === syncedUser.id;
                 const wasOnboarded = prevUser?.onboarding_completed;
                 const nowOnboarded = syncedUser.onboarding_completed;
 
                 if (isSameUser && wasOnboarded && !nowOnboarded) {
-                  console.warn('[AuthContext] Preventing state downgrade: Ignoring incomplete profile sync during session update.', { event });
-                  // We return the previous user, effectively ignoring the "bad" update
+                  console.warn('[AuthContext] Preventing state downgrade');
                   return prevUser;
                 }
                 return syncedUser;
               });
             }
+            // Make sure loading is false after successful sign in
+            setLoading(false);
           } catch (error: any) {
-            console.error('Auth sync error:', error);
-            // If it's a background refresh or update, DO NOT LOG OUT. Just warn.
+            console.error('[AuthContext] Auth sync error:', error);
             if (event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
-              console.warn('[AuthContext] Ignoring auth error on background update to prevent session loss', { event });
+              console.warn('[AuthContext] Ignoring error on background update');
             } else {
-              // For SIGNED_IN failures, we might fail hard, OR we could be lenient too?
-              // Choosing to be strict for initial SIGNED_IN but lenient for everything else.
               await authService.logout();
               setUser(null);
             }
+            setLoading(false);
           }
         }
       } else if (event === 'SIGNED_OUT') {
+        console.log('[AuthContext] User signed out');
         setUser(null);
         setLoading(false);
       }
@@ -106,6 +133,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     return () => {
       mounted = false;
+      clearTimeout(watchdog);
       subscription.unsubscribe();
     };
   }, []);

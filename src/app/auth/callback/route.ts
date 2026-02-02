@@ -1,17 +1,23 @@
-import { createClient } from '@lib/supabase-server';
-import { NextResponse } from 'next/server';
+import { NextResponse } from 'next/server'
 
 export async function GET(request: Request) {
-    const requestUrl = new URL(request.url);
-    const code = requestUrl.searchParams.get('code');
+    const { searchParams, origin } = new URL(request.url)
+    const error = searchParams.get('error')
+    const errorDescription = searchParams.get('error_description')
 
-    if (code) {
-        const supabase = await createClient();
-
-        // Exchange the code for a session
-        await supabase.auth.exchangeCodeForSession(code);
+    // Handle OAuth errors
+    if (error) {
+        console.error('OAuth error:', error, errorDescription)
+        const loginUrl = new URL('/login', origin)
+        loginUrl.searchParams.set('error', error)
+        if (errorDescription) {
+            loginUrl.searchParams.set('error_description', errorDescription)
+        }
+        return NextResponse.redirect(loginUrl)
     }
 
-    // URL to redirect to after sign in process completes
-    return NextResponse.redirect(`${requestUrl.origin}/dashboard`);
+    // For implicit flow, just redirect to dashboard
+    // The tokens will be in the URL hash and handled by the client
+    console.log('Auth callback - redirecting to dashboard')
+    return NextResponse.redirect(new URL('/dashboard', origin))
 }

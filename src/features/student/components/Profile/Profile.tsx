@@ -10,7 +10,6 @@ import { Progress } from '@shared/components/ui/progress';
 import { Badge } from '@shared/components/ui/badge';
 import { Skeleton } from '@components/ui/skeleton';
 import { cn } from '@lib/utils';
-import { SEO } from '@components/SEO/SEO';
 
 export const Profile: React.FC = () => {
   const { user } = useAuth();
@@ -82,11 +81,10 @@ export const Profile: React.FC = () => {
 
   return (
     <div className="flex flex-col gap-6 p-4 md:p-8 animate-in fade-in duration-500">
-      <SEO title="Profile" description="Your profile and achievements." />
 
       {/* Hero Section */}
       <Card className="shadow-sm border-border/50 overflow-hidden relative">
-        <div className="absolute top-0 w-full h-32 bg-gradient-to-r from-primary/10 via-primary/5 to-background border-b border-border/50"></div>
+        <div className="absolute top-0 w-full h-32 bg-linear-to-r from-primary/10 via-primary/5 to-background border-b border-border/50"></div>
         <CardContent className="pt-12 relative z-10">
           <div className="flex flex-col md:flex-row gap-6 items-start md:items-end">
             <div className="relative">
