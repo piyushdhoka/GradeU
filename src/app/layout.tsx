@@ -84,21 +84,20 @@ export default function RootLayout({
 }>) {
     return (
         <html lang="en" className={`dark ${inter.variable} ${spaceGrotesk.variable}`}>
-            <head>
-                {process.env.NEXT_PUBLIC_UMAMI_WEBSITE_ID && (
-                    <Script
-                        defer
-                        src="https://cloud.umami.is/script.js"
-                        data-website-id={process.env.NEXT_PUBLIC_UMAMI_WEBSITE_ID}
-                        strategy="afterInteractive"
-                    />
-                )}
-            </head>
             <body className={`${inter.className} antialiased bg-[#0F1115] text-white`}>
                 <AuthProvider>
                     <OnboardingGuard />
                     {children}
                 </AuthProvider>
+                
+                {/* Umami Analytics */}
+                {process.env.NEXT_PUBLIC_UMAMI_SRC && process.env.NEXT_PUBLIC_UMAMI_WEBSITE_ID && (
+                    <Script
+                        src={process.env.NEXT_PUBLIC_UMAMI_SRC}
+                        data-website-id={process.env.NEXT_PUBLIC_UMAMI_WEBSITE_ID}
+                        strategy="lazyOnload"
+                    />
+                )}
             </body>
         </html>
     );

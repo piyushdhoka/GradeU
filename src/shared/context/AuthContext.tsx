@@ -56,7 +56,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
         
         if (error) {
-          // Session error is not critical, user just needs to login
+          // Session error - clear any stale local data
+          localStorage.removeItem('gradeUUser');
         }
 
         if (session) {
@@ -64,13 +65,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           const syncedUser = await authService.handleAuthStateChange(session) as AuthContextValue['user'];
           if (mounted && syncedUser && syncedUser.role !== 'admin' as any) {
             setUser(syncedUser);
+          } else if (mounted && !syncedUser) {
+            // Session exists but profile doesn't (user deleted from DB)
+            await authService.logout();
+            setUser(null);
           }
         } else {
-          // Check localStorage as fallback
-          const localUser = authService.getCurrentUser() as AuthContextValue['user'];
-          if (mounted && localUser && localUser.role !== 'admin' as any) {
-            setUser(localUser);
-          }
+          // No session - clear any stale localStorage and don't trust it
+          localStorage.removeItem('gradeUUser');
+          if (mounted) setUser(null);
         }
       } catch (error) {
         console.error('[AuthContext] Auth initialization error:', error);
