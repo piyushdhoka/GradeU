@@ -13,6 +13,7 @@ import {
 import { useEffect, useState } from 'react';
 import { getRecentActivity, ActivityItem } from '@/actions/get-dashboard-activity';
 
+
 export default function Dashboard() {
   const [activities, setActivities] = useState<ActivityItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -63,6 +64,8 @@ export default function Dashboard() {
           </div>
         </Link>
       </div>
+
+
 
       {/* Recent Activity */}
       <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-8 shadow-lg shadow-black/5 dark:shadow-black/20">

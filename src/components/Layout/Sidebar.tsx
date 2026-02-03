@@ -2,10 +2,11 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, BookOpen, Users, LogOut } from 'lucide-react';
+import { LayoutDashboard, BookOpen, Users, LogOut, ListChecks } from 'lucide-react';
 
 const navItems = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+    { name: 'Generated Courses', href: '/generated-courses', icon: ListChecks },
     { name: 'Generate Course', href: '/generate', icon: BookOpen },
     { name: 'Students', href: '/students', icon: Users },
 ];
@@ -25,7 +26,7 @@ export default function Sidebar() {
 
                 <nav className="space-y-1.5">
                     {navItems.map((item) => {
-                        const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
+                        const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(`${item.href}/`));
                         return (
                             <Link
                                 key={item.name}
