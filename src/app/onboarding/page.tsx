@@ -112,14 +112,12 @@ export default function OnboardingPage() {
                 onboarding_completed: true,
             };
 
-            const { data: results, error: updateError } = await supabase
+            const { data, error: updateError } = await supabase
                 .from('profiles')
                 .update(updates)
                 .eq('id', user.id)
                 .select()
-                .limit(1);
-
-            const data = results?.[0];
+                .single();
 
             if (updateError) {
                 console.error("Supabase update error:", updateError);
@@ -127,21 +125,7 @@ export default function OnboardingPage() {
             }
 
             if (!data) {
-                // Profile might not exist yet, try upsert
-                const { data: upsertData, error: upsertError } = await supabase
-                    .from('profiles')
-                    .upsert({
-                        id: user.id,
-                        email: user.email,
-                        ...updates,
-                    })
-                    .select()
-                    .single();
-
-                if (upsertError) {
-                    console.error("Supabase upsert error:", upsertError);
-                    throw new Error(upsertError.message || "Failed to create profile");
-                }
+                throw new Error("Profile not found. Please ensure your account setup is complete.");
             }
 
             updateUser({
