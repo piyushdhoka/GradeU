@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { supabase } from '@lib/supabase';
 import { Award, ShieldCheck, CheckCircle, AlertTriangle } from 'lucide-react';
+import { Loader } from '@components/ui/loader';
 
 export const VerifyCertificate = () => {
   const params = useParams();
@@ -47,7 +48,7 @@ export const VerifyCertificate = () => {
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-black text-white">
-        <div className="h-12 w-12 animate-spin rounded-full border-b-2 border-green-500"></div>
+        <Loader size="lg" />
       </div>
     );
   }

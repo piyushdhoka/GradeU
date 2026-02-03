@@ -2,6 +2,7 @@
 import { use, Suspense } from 'react';
 import { LabViewer } from '@student/components/Labs/LabViewer';
 import { useRouter } from 'next/navigation';
+import { Loader } from '@components/ui/loader';
 
 function LabViewerContent({ labId }: { labId: string }) {
   const router = useRouter();
@@ -25,8 +26,8 @@ export default function LabViewerPage({ params }: { params: Promise<{ labId: str
       fallback={
         <div className="flex min-h-screen items-center justify-center bg-black p-6">
           <div className="text-center">
-            <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-b-2 border-[#00FF88]"></div>
-            <p className="text-[#00FF88]">Loading lab...</p>
+            <Loader size="lg" />
+            <p className="mt-4 text-[#00FF88]">Loading lab...</p>
           </div>
         </div>
       }

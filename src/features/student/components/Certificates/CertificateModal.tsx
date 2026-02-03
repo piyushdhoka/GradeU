@@ -3,6 +3,7 @@ import { Award, Download } from 'lucide-react';
 import { supabase } from '@lib/supabase';
 import { useAuth } from '@context/AuthContext';
 import { Button } from '@shared/components/ui/button';
+import { ButtonLoader } from '@components/ui/loader';
 
 interface CertificateModalProps {
   isOpen: boolean;
@@ -524,7 +525,7 @@ export const CertificateModal: React.FC<CertificateModalProps> = ({
             className="bg-primary hover:bg-primary/90 font-bold text-black"
           >
             {isDownloading ? (
-              <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-black/30 border-t-black" />
+              <ButtonLoader className="mr-2" />
             ) : (
               <Download className="mr-2 h-4 w-4" />
             )}

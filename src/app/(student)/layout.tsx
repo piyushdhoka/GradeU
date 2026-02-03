@@ -7,6 +7,7 @@ import { AppSidebar } from '@shared/components/layout/AppSidebar';
 import { DashboardHeader } from '@shared/components/layout/DashboardHeader';
 import { StickyBanner } from '@shared/components/ui/sticky-banner';
 import { usePathname } from 'next/navigation';
+import { Loader } from '@components/ui/loader';
 
 export default function StudentLayout({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -33,9 +34,9 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
+      <div className="flex min-h-screen items-center justify-center bg-[#0F1115]">
         <div className="text-center">
-          <div className="border-brand-400 mx-auto h-12 w-12 animate-spin rounded-full border-b-2"></div>
+          <Loader size="lg" />
           <p className="text-muted-foreground mt-4">Loading...</p>
         </div>
       </div>
@@ -45,9 +46,9 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
   if (!user) {
     // Still show loading if no user yet (might be processing OAuth)
     return (
-      <div className="flex min-h-screen items-center justify-center">
+      <div className="flex min-h-screen items-center justify-center bg-[#0F1115]">
         <div className="text-center">
-          <div className="border-brand-400 mx-auto h-12 w-12 animate-spin rounded-full border-b-2"></div>
+          <Loader size="lg" />
           <p className="text-muted-foreground mt-4">Authenticating...</p>
         </div>
       </div>

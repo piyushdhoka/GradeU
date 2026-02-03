@@ -4,6 +4,7 @@ import { labs } from '@data/labs';
 import { isLabCompleted, markLabAsCompleted } from '@utils/labCompletion';
 import { labApiService } from '@services/labApiService';
 import { useAuth } from '@context/AuthContext';
+import { Loader } from '@components/ui/loader';
 
 interface LabViewerProps {
   labId: string;
@@ -254,7 +255,7 @@ export const LabViewer: React.FC<LabViewerProps> = ({ labId, onBack }) => {
         {isLoading && (
           <div className="fixed top-4 right-4 z-50 rounded-lg border border-[#00FF88]/20 bg-[#0A0F0A] px-6 py-4 text-[#00FF88] shadow-lg">
             <div className="flex items-center space-x-3">
-              <div className="h-5 w-5 animate-spin rounded-full border-b-2 border-[#00FF88]"></div>
+              <Loader size="sm" />
               <span className="font-medium">Syncing lab status...</span>
             </div>
           </div>

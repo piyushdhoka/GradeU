@@ -17,6 +17,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@comp
 import { Button } from '@components/ui/button';
 import { Skeleton } from '@components/ui/skeleton';
 import { cn } from '@lib/utils';
+import { Loader } from '@components/ui/loader';
 
 export interface CourseData {
   id: string;
@@ -358,11 +359,7 @@ export const CourseList: React.FC<CourseListProps> = ({ onCourseSelect }) => {
           <p className="text-muted-foreground">Choose your specialization and start learning</p>
         </div>
         <div className="bg-card border-border/50 flex items-center gap-2 rounded-lg border px-4 py-2">
-          {loading ? (
-            <div className="border-primary h-5 w-5 animate-spin rounded-full border-2 border-t-transparent" />
-          ) : (
-            <GraduationCap className="text-primary h-5 w-5" />
-          )}
+          {loading ? <Loader size="sm" /> : <GraduationCap className="text-primary h-5 w-5" />}
           <span className="text-sm font-medium">{allCategories.length} Categories</span>
         </div>
       </div>

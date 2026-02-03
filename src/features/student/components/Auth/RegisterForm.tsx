@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@components/ui/card';
 import { Field, FieldGroup } from '@components/ui/field';
+import { ButtonLoader } from '@components/ui/loader';
 
 interface RegisterFormProps {
   onSuccess?: () => void;
@@ -76,7 +77,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = () => {
                   >
                     {isLoading ? (
                       <div className="flex items-center gap-2">
-                        <div className="size-4 animate-spin rounded-full border-2 border-white/20 border-t-white" />
+                        <ButtonLoader />
                         <span>Initializing...</span>
                       </div>
                     ) : (
