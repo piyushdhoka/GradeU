@@ -51,27 +51,33 @@ export async function GET(request: NextRequest) {
     const userClient = getSupabaseUserClient(token);
 
     // Run all independent queries in parallel
-    const [experiences, mongoProgress, labCompletionsResult] = await Promise.all([
-      // Get study time from MongoDB
-      StudentExperience.find({
-        $or: [{ studentId: user.id }, { studentEmail: studentEmail }],
-      }).lean(),
+    const [experiences, mongoProgress, labCompletionsResult, certificatesResult] =
+      await Promise.all([
+        // Get study time from MongoDB
+        StudentExperience.find({
+          $or: [{ studentId: user.id }, { studentEmail: studentEmail }],
+        }).lean(),
 
-      // Get progress from MongoDB
-      StudentProgress.find({
-        $or: [{ studentId: user.id }, { studentEmail: studentEmail }],
-      })
-        .sort({ updatedAt: -1 })
-        .lean(),
+        // Get progress from MongoDB
+        StudentProgress.find({
+          $or: [{ studentId: user.id }, { studentEmail: studentEmail }],
+        })
+          .sort({ updatedAt: -1 })
+          .lean(),
 
-      // Get lab completions from Supabase (use user token to respect RLS)
-      userClient
-        .from('lab_completions')
-        .select('*', { count: 'exact', head: true })
-        .eq('student_id', user.id),
-    ]);
+        // Get lab completions from Supabase (use user token to respect RLS)
+        userClient.from('lab_completions').select('lab_id'),
 
-    const completedLabs = labCompletionsResult.count || 0;
+        // Get certificates count from Supabase
+        userClient
+          .from('certificates')
+          .select('*', { count: 'exact', head: true })
+          .eq('student_id', user.id),
+      ]);
+
+    const completedLabs = labCompletionsResult.data?.length || 0;
+    const completedLabIds = labCompletionsResult.data?.map((l: any) => l.lab_id) || [];
+    const certificatesEarned = certificatesResult.count || 0;
 
     // Calculate study time
     const totalSeconds = experiences.reduce(
@@ -174,9 +180,16 @@ export async function GET(request: NextRequest) {
         completedCourses: completedCourseIds.size,
         completedModules: mongoProgress.filter((p: any) => p.completed).length,
         completedLabs: completedLabs || 0,
+        certificatesEarned,
         totalStudyTime,
         activeCourse,
         activities,
+      },
+      labStats: {
+        totalLabs: 6,
+        completedLabs: completedLabs,
+        completionPercentage: Math.round((completedLabs / 6) * 100),
+        completedLabIds: completedLabIds,
       },
     });
   } catch (error) {

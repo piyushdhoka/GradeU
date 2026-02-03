@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Inter, Space_Grotesk } from 'next/font/google';
 import { AuthProvider } from '@context/AuthContext';
 import { OnboardingGuard } from '@components/auth/OnboardingGuard';
+import { Toaster } from '@shared/components/ui/sonner';
 import './globals.css';
 
 const inter = Inter({
@@ -86,6 +87,7 @@ export default function RootLayout({
           <OnboardingGuard />
           {children}
         </AuthProvider>
+        <Toaster richColors position="top-right" />
 
         {/* Umami Analytics */}
         {process.env.NEXT_PUBLIC_UMAMI_SRC && process.env.NEXT_PUBLIC_UMAMI_WEBSITE_ID && (

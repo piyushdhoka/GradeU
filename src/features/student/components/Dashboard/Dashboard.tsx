@@ -56,21 +56,25 @@ export const Dashboard: React.FC<DashboardProps> = ({ onTabChange }) => {
     try {
       setLoading(true);
 
-      // Fetch all data in parallel - single API call for overview
-      const [overviewData, labStatsData] = await Promise.all([
-        studentService.getFullDashboardData(user.id),
-        labApiService.getLabStats().catch(() => ({
-          totalLabs: 6,
-          completedLabs: 0,
-          completionPercentage: 0,
-          completedLabIds: [],
-        })),
-      ]);
+      // Fetch all data in a single optimized API call
+      const overviewData = await studentService.getFullDashboardData(user.id);
 
       setStatsData(overviewData.stats);
       setActivities(overviewData.activities);
       setActiveOperation(overviewData.activeOperation);
-      setLabStats(labStatsData);
+
+      if (overviewData.labStats) {
+        setLabStats(overviewData.labStats);
+      } else {
+        // Fallback for lab stats if for some reason missing
+        const labStatsData = await labApiService.getLabStats().catch(() => ({
+          totalLabs: 6,
+          completedLabs: 0,
+          completionPercentage: 0,
+          completedLabIds: [],
+        }));
+        setLabStats(labStatsData);
+      }
     } catch (error) {
       console.error('Failed to load dashboard data:', error);
       setStatsData({

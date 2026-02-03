@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Redis } from '@upstash/redis';
 import { v4 as uuidv4 } from 'uuid';
+import {
+  authenticateRequest,
+  unauthorizedResponse,
+  rateLimit,
+  rateLimitResponse,
+} from '../../middleware';
 
 const redis =
   process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN
@@ -23,7 +29,10 @@ const safeParse = (data: any, fallback: any) => {
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     if (!redis) {
-      return NextResponse.json([]);
+      return NextResponse.json(
+        { error: 'Community service is not configured. Please contact your administrator.' },
+        { status: 503 }
+      );
     }
 
     const { id } = await params;
@@ -54,12 +63,35 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 // ADD a comment
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    // Authenticate user
+    const auth = await authenticateRequest(request);
+    if (!auth) {
+      return unauthorizedResponse();
+    }
+
+    // Rate limiting - 10 comments per minute
+    if (!rateLimit(`comment:${auth.userId}`, 10, 60000)) {
+      return rateLimitResponse();
+    }
+
     if (!redis) {
       return NextResponse.json({ error: 'Redis not configured' }, { status: 503 });
     }
 
     const { id: postId } = await params;
     const { author, content } = await request.json();
+
+    if (!content || content.trim().length === 0) {
+      return NextResponse.json({ error: 'Content is required' }, { status: 400 });
+    }
+
+    if (content.length > 2000) {
+      return NextResponse.json(
+        { error: 'Comment too long (max 2000 characters)' },
+        { status: 400 }
+      );
+    }
+
     const commentId = uuidv4();
     const timestamp = new Date().toISOString();
 
@@ -69,6 +101,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       author: JSON.stringify(author),
       content,
       timestamp,
+      userId: auth.userId, // Store creator's userId for permissions
     };
 
     // Save comment and update post comment count

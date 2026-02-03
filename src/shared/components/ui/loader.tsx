@@ -27,11 +27,10 @@ export function Loader({ size = 'md', className }: LoaderProps) {
 }
 
 // Full page loader with centered positioning
-export function PageLoader({ message = 'Loading...' }: { message?: string }) {
+export function PageLoader() {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-[#0F1115]">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-black">
       <Loader size="lg" />
-      <p className="mt-4 text-zinc-400">{message}</p>
     </div>
   );
 }

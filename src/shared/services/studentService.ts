@@ -37,6 +37,7 @@ export interface FullDashboardData {
   stats: StudentStats;
   activities: RecentActivity[];
   activeOperation: ActiveOperation | null;
+  labStats?: any;
 }
 
 // Cache for overview data to avoid repeated API calls
@@ -90,17 +91,11 @@ class StudentService {
       if (overviewData?.stats) {
         const stats = overviewData.stats;
 
-        // Get certificates count from Supabase (in parallel won't help much here)
-        const { count: certificatesEarned } = await supabase
-          .from('certificates')
-          .select('*', { count: 'exact', head: true })
-          .eq('student_id', userId);
-
         const activities: RecentActivity[] = (stats.activities || []).map((a: any) => ({
           id: a.id,
+          type: a.type === 'completion' ? 'completion' : 'start',
           action: a.action,
           created_at: a.timestamp,
-          type: a.type === 'completion' ? 'completion' : 'start',
           courseId: a.courseId,
           moduleId: a.moduleId,
         }));
@@ -120,12 +115,13 @@ class StudentService {
         return {
           stats: {
             coursesCompleted: stats.completedCourses || 0,
-            certificatesEarned: certificatesEarned || 0,
+            certificatesEarned: stats.certificatesEarned || 0,
             liveLabsCompleted: stats.completedLabs || 0,
             studyTime: stats.totalStudyTime || '0 mins',
           },
           activities,
           activeOperation,
+          labStats: overviewData.labStats,
         };
       }
 

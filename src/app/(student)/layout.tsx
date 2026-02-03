@@ -34,10 +34,9 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#0F1115]">
+      <div className="flex min-h-screen items-center justify-center bg-black">
         <div className="text-center">
           <Loader size="lg" />
-          <p className="text-muted-foreground mt-4">Loading...</p>
         </div>
       </div>
     );
@@ -46,10 +45,9 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
   if (!user) {
     // Still show loading if no user yet (might be processing OAuth)
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#0F1115]">
+      <div className="flex min-h-screen items-center justify-center bg-black">
         <div className="text-center">
           <Loader size="lg" />
-          <p className="text-muted-foreground mt-4">Authenticating...</p>
         </div>
       </div>
     );
