@@ -1,9 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
-const supabase = createClient(
+const supabaseAuth = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
+
+const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
 // Webhook for external lab completion sync
@@ -41,8 +46,8 @@ export async function POST(request: NextRequest) {
       }, { status: 401 });
     }
 
-    // Check if already completed
-    const { data: existing } = await supabase
+    // Check if already completed (use admin to bypass RLS)
+    const { data: existing } = await supabaseAdmin
       .from('lab_completions')
       .select('*')
       .eq('student_id', studentId.trim())
@@ -61,8 +66,8 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Insert new completion
-    const { data: completion, error } = await supabase
+    // Insert new completion (use admin to bypass RLS)
+    const { data: completion, error } = await supabaseAdmin
       .from('lab_completions')
       .insert({
         student_id: studentId.trim(),
