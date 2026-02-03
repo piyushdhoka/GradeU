@@ -11,25 +11,32 @@ const supabaseAuth = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
-// Use service role key for database operations (bypasses RLS)
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+// Initialized within the handler using the user's token
+function getSupabaseUserClient(token: string) {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      global: {
+        headers: { Authorization: `Bearer ${token}` }
+      }
+    }
+  );
+}
 
 export async function GET(request: NextRequest) {
   try {
     // Get auth token from header
     const authHeader = request.headers.get('authorization');
     const token = authHeader?.replace('Bearer ', '');
-    
+
     if (!token) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     // Get user from token
     const { data: { user }, error: authError } = await supabaseAuth.auth.getUser(token);
-    
+
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -38,20 +45,22 @@ export async function GET(request: NextRequest) {
 
     await connectDB();
 
+    const userClient = getSupabaseUserClient(token);
+
     // Run all independent queries in parallel
     const [experiences, mongoProgress, labCompletionsResult] = await Promise.all([
       // Get study time from MongoDB
-      StudentExperience.find({ 
+      StudentExperience.find({
         $or: [{ studentId: user.id }, { studentEmail: studentEmail }]
       }).lean(),
-      
+
       // Get progress from MongoDB
-      StudentProgress.find({ 
+      StudentProgress.find({
         $or: [{ studentId: user.id }, { studentEmail: studentEmail }]
       }).sort({ updatedAt: -1 }).lean(),
-      
-      // Get lab completions from Supabase (use admin to bypass RLS)
-      supabaseAdmin
+
+      // Get lab completions from Supabase (use user token to respect RLS)
+      userClient
         .from('lab_completions')
         .select('*', { count: 'exact', head: true })
         .eq('student_id', user.id)
@@ -67,10 +76,10 @@ export async function GET(request: NextRequest) {
 
     // Get unique course IDs and fetch all courses in ONE query
     const courseIds = [...new Set((mongoProgress as any[]).map(p => p.courseId))];
-    const courses = courseIds.length > 0 
+    const courses = courseIds.length > 0
       ? await Course.find({ _id: { $in: courseIds } }).select('title modules description').lean()
       : [];
-    
+
     // Build course lookup map
     const courseMap = new Map<string, any>();
     for (const course of courses) {
@@ -91,7 +100,7 @@ export async function GET(request: NextRequest) {
           total: (course as any).modules?.length || 0,
         });
       }
-      
+
       const courseData = courseProgressMap.get(p.courseId)!;
       if (p.completed) {
         courseData.completed += 1;
@@ -110,11 +119,11 @@ export async function GET(request: NextRequest) {
           const completedModuleIds = (mongoProgress as any[])
             .filter((p: any) => p.courseId === courseId && p.completed)
             .map((p: any) => p.moduleId);
-          
-          const nextModule = (course as any).modules?.find((m: any) => 
+
+          const nextModule = (course as any).modules?.find((m: any) =>
             !completedModuleIds.includes(m._id?.toString())
           );
-          
+
           const progress = data.total > 0 ? Math.round((data.completed / data.total) * 100) : 0;
 
           activeCourse = {
@@ -133,10 +142,10 @@ export async function GET(request: NextRequest) {
     // Build activities - no extra queries, use courseMap
     const activities = (mongoProgress as any[]).slice(0, 5).map((p: any) => {
       const course = courseMap.get(p.courseId);
-      const moduleTitle = (course as any)?.modules?.find((m: any) => 
+      const moduleTitle = (course as any)?.modules?.find((m: any) =>
         m._id?.toString() === p.moduleId
       )?.title || 'Module';
-      
+
       return {
         id: p._id?.toString(),
         type: p.completed ? 'completion' : 'start',

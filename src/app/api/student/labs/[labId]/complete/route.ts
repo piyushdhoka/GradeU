@@ -7,11 +7,18 @@ const supabaseAuth = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
-// Use service role key for database operations (bypasses RLS)
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+// Initialized within the handler using the user's token
+function getSupabaseUserClient(token: string) {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      global: {
+        headers: { Authorization: `Bearer ${token}` }
+      }
+    }
+  );
+}
 
 // Mark lab as completed (alternative endpoint)
 export async function POST(
@@ -20,24 +27,26 @@ export async function POST(
 ) {
   try {
     const { labId } = await params;
-    
+
     // Get auth token from header
     const authHeader = request.headers.get('authorization');
     const token = authHeader?.replace('Bearer ', '');
-    
+
     if (!token) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     // Get user from token (verify auth)
     const { data: { user }, error: authError } = await supabaseAuth.auth.getUser(token);
-    
+
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Check if already completed (use admin client)
-    const { data: existing } = await supabaseAdmin
+    const userClient = getSupabaseUserClient(token);
+
+    // Check if already completed (use user client)
+    const { data: existing } = await userClient
       .from('lab_completions')
       .select('*')
       .eq('student_id', user.id)
@@ -52,8 +61,8 @@ export async function POST(
       });
     }
 
-    // Insert new completion (use admin client to bypass RLS)
-    const { data: completion, error } = await supabaseAdmin
+    // Insert new completion (use user client to respect RLS)
+    const { data: completion, error } = await userClient
       .from('lab_completions')
       .insert({
         student_id: user.id,
