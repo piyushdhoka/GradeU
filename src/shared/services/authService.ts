@@ -245,20 +245,18 @@ class AuthService {
       };
 
       if (!profileError) {
-        const createProfile = async () => {
-          try {
-            await supabase.from('profiles').upsert([
-              {
-                id: user.id,
-                full_name: placeholderUser.name,
-                role: role,
-              },
-            ]);
-          } catch (e) {
-            // Silently fail
-          }
-        };
-        createProfile();
+        // Create profile synchronously to ensure it exists before returning
+        try {
+          await supabase.from('profiles').upsert([
+            {
+              id: user.id,
+              full_name: placeholderUser.name,
+              role: role,
+            },
+          ]);
+        } catch (e) {
+          console.warn('Failed to create profile:', e);
+        }
       }
 
       localStorage.setItem('gradeUUser', JSON.stringify(placeholderUser));
