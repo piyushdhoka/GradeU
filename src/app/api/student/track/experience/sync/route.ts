@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
       sanitizedInteraction = {
         query: String(aiInteraction.query || '').substring(0, 1000),
         responseSnippet: String(aiInteraction.responseSnippet || '').substring(0, 1000),
-        timestamp: now
+        timestamp: now,
       };
     }
 
@@ -36,21 +36,21 @@ export async function POST(request: NextRequest) {
         {
           studentId,
           courseId,
-          "moduleStats.moduleId": moduleId
+          'moduleStats.moduleId': moduleId,
         },
         {
           $inc: {
-            "moduleStats.$.timeSpent": timeSpent,
-            "moduleStats.$.interactions": interactions,
-            totalTimeSpent: timeSpent
+            'moduleStats.$.timeSpent': timeSpent,
+            'moduleStats.$.interactions': interactions,
+            totalTimeSpent: timeSpent,
           },
-          $max: { "moduleStats.$.scrollDepth": scrollDepth },
+          $max: { 'moduleStats.$.scrollDepth': scrollDepth },
           $set: {
-            "moduleStats.$.lastAccessed": now,
+            'moduleStats.$.lastAccessed': now,
             updatedAt: now,
-            ...(studentEmail ? { studentEmail } : {})
+            ...(studentEmail ? { studentEmail } : {}),
           },
-          ...(sanitizedInteraction ? { $push: { aiInteractions: sanitizedInteraction } } : {})
+          ...(sanitizedInteraction ? { $push: { aiInteractions: sanitizedInteraction } } : {}),
         }
       );
 
@@ -65,22 +65,22 @@ export async function POST(request: NextRequest) {
                 timeSpent,
                 scrollDepth,
                 interactions,
-                lastAccessed: now
+                lastAccessed: now,
               },
-              ...(sanitizedInteraction ? { aiInteractions: sanitizedInteraction } : {})
+              ...(sanitizedInteraction ? { aiInteractions: sanitizedInteraction } : {}),
             },
             $inc: { totalTimeSpent: timeSpent },
-            $set: { 
+            $set: {
               updatedAt: now,
-              ...(studentEmail ? { studentEmail } : {})
+              ...(studentEmail ? { studentEmail } : {}),
             },
-            $setOnInsert: { createdAt: now }
+            $setOnInsert: { createdAt: now },
           },
           { upsert: true }
         );
       }
     }
-    
+
     return NextResponse.json({ success: true }, { status: 202 });
   } catch (error) {
     console.error('Experience sync error:', error);

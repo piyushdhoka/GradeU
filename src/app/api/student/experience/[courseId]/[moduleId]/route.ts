@@ -15,18 +15,21 @@ export async function GET(
 ) {
   try {
     const { courseId, moduleId } = await params;
-    
+
     // Get auth token from header
     const authHeader = request.headers.get('authorization');
     const token = authHeader?.replace('Bearer ', '');
-    
+
     if (!token) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     // Get user from token
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-    
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser(token);
+
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -34,11 +37,11 @@ export async function GET(
     await connectDB();
 
     const studentEmail = user.email || '';
-    
+
     // Query by both studentId and studentEmail for compatibility
     const experience = await StudentExperience.findOne({
       $or: [{ studentId: user.id }, { studentEmail: studentEmail }],
-      courseId
+      courseId,
     }).lean();
 
     if (!experience) {
@@ -46,7 +49,7 @@ export async function GET(
         timeSpent: 0,
         scrollDepth: 0,
         canComplete: false,
-        reason: 'No experience data found'
+        reason: 'No experience data found',
       });
     }
 
@@ -59,7 +62,7 @@ export async function GET(
         timeSpent: 0,
         scrollDepth: 0,
         canComplete: false,
-        reason: 'Module not accessed yet'
+        reason: 'Module not accessed yet',
       });
     }
 
@@ -76,9 +79,11 @@ export async function GET(
       canComplete,
       minTimeSpent: MIN_TIME_SPENT,
       minScrollDepth: MIN_SCROLL_DEPTH,
-      reason: canComplete ? 'Engagement requirements met' :
-        timeSpent < MIN_TIME_SPENT ? `Minimum ${MIN_TIME_SPENT} seconds required (spent ${Math.round(timeSpent)}s)` :
-          `Minimum ${MIN_SCROLL_DEPTH}% scroll depth required (reached ${Math.round(scrollDepth)}%)`
+      reason: canComplete
+        ? 'Engagement requirements met'
+        : timeSpent < MIN_TIME_SPENT
+          ? `Minimum ${MIN_TIME_SPENT} seconds required (spent ${Math.round(timeSpent)}s)`
+          : `Minimum ${MIN_SCROLL_DEPTH}% scroll depth required (reached ${Math.round(scrollDepth)}%)`,
     });
   } catch (error) {
     console.error('Experience validation error:', error);

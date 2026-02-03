@@ -11,11 +11,23 @@ interface ModuleTestProps {
   moduleTitle: string;
   onComplete: (score: number, answers: number[]) => void;
   onBack: () => void;
-  questions?: { question: string; options: string[]; correctAnswer: number | string; explanation?: string }[];
+  questions?: {
+    question: string;
+    options: string[];
+    correctAnswer: number | string;
+    explanation?: string;
+  }[];
   isInitialAssessment?: boolean;
 }
 
-export const ModuleTest: React.FC<ModuleTestProps> = ({ moduleId, moduleTitle, onComplete, onBack, questions = [], isInitialAssessment = false }) => {
+export const ModuleTest: React.FC<ModuleTestProps> = ({
+  moduleId,
+  moduleTitle,
+  onComplete,
+  onBack,
+  questions = [],
+  isInitialAssessment = false,
+}) => {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<number[]>([]);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
@@ -67,8 +79,7 @@ export const ModuleTest: React.FC<ModuleTestProps> = ({ moduleId, moduleTitle, o
 
       // Robust comparison for index or text match
       const isCorrect =
-        String(userAnswerIndex) === String(correctAnswer) ||
-        userAnswerText === correctAnswer;
+        String(userAnswerIndex) === String(correctAnswer) || userAnswerText === correctAnswer;
 
       if (isCorrect) {
         correct++;
@@ -83,55 +94,82 @@ export const ModuleTest: React.FC<ModuleTestProps> = ({ moduleId, moduleTitle, o
     return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
   };
 
-
-
   if (showResults) {
     const score = calculateScore(answers);
     const passed = score >= 70;
     const canProceed = passed || isInitialAssessment;
 
     return (
-      <div className="flex flex-col gap-6 p-4 md:p-8 animate-in fade-in duration-500 max-w-4xl mx-auto w-full">
-        <Card className={cn(
-          "border-border/50",
-          isInitialAssessment ? "bg-primary/5 border-primary/20" :
-            passed ? "bg-green-500/5 border-green-500/20" : "bg-destructive/5 border-destructive/20"
-        )}>
+      <div className="animate-in fade-in mx-auto flex w-full max-w-4xl flex-col gap-6 p-4 duration-500 md:p-8">
+        <Card
+          className={cn(
+            'border-border/50',
+            isInitialAssessment
+              ? 'bg-primary/5 border-primary/20'
+              : passed
+                ? 'border-green-500/20 bg-green-500/5'
+                : 'bg-destructive/5 border-destructive/20'
+          )}
+        >
           <CardContent className="flex flex-col items-center justify-center py-12 text-center">
             <div className="mb-6">
               {isInitialAssessment ? (
-                <div className="h-20 w-20 rounded-full bg-primary/10 flex items-center justify-center">
-                  <Shield className="h-10 w-10 text-primary" />
+                <div className="bg-primary/10 flex h-20 w-20 items-center justify-center rounded-full">
+                  <Shield className="text-primary h-10 w-10" />
                 </div>
               ) : passed ? (
-                <div className="h-20 w-20 rounded-full bg-green-500/10 flex items-center justify-center">
+                <div className="flex h-20 w-20 items-center justify-center rounded-full bg-green-500/10">
                   <CheckCircle className="h-10 w-10 text-green-500" />
                 </div>
               ) : (
-                <div className="h-20 w-20 rounded-full bg-destructive/10 flex items-center justify-center">
-                  <XCircle className="h-10 w-10 text-destructive" />
+                <div className="bg-destructive/10 flex h-20 w-20 items-center justify-center rounded-full">
+                  <XCircle className="text-destructive h-10 w-10" />
                 </div>
               )}
             </div>
 
-            <h2 className="text-2xl font-bold tracking-tight mb-2">
+            <h2 className="mb-2 text-2xl font-bold tracking-tight">
               {isInitialAssessment ? 'Assessment Complete!' : 'Test Complete!'}
             </h2>
-            <div className={cn("text-5xl font-black mb-2", isInitialAssessment ? "text-primary" : passed ? "text-green-500" : "text-destructive")}>
+            <div
+              className={cn(
+                'mb-2 text-5xl font-black',
+                isInitialAssessment
+                  ? 'text-primary'
+                  : passed
+                    ? 'text-green-500'
+                    : 'text-destructive'
+              )}
+            >
               {score}%
             </div>
-            <p className="text-lg text-muted-foreground mb-8">
-              {passed ? 'Congratulations! You passed the test.' : isInitialAssessment ? 'Assessment complete. You may proceed to the next module.' : 'You need 70% to pass. Try again!'}
+            <p className="text-muted-foreground mb-8 text-lg">
+              {passed
+                ? 'Congratulations! You passed the test.'
+                : isInitialAssessment
+                  ? 'Assessment complete. You may proceed to the next module.'
+                  : 'You need 70% to pass. Try again!'}
             </p>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full max-w-md mb-8">
-              <div className="bg-background/50 border border-border p-4 rounded-lg flex flex-col items-center">
-                <div className="text-2xl font-bold text-green-500">{answers.filter((answer, index) => Number(answer) === Number(questions[index]?.correctAnswer)).length}</div>
-                <div className="text-sm text-muted-foreground">Correct</div>
+            <div className="mb-8 grid w-full max-w-md grid-cols-1 gap-4 md:grid-cols-2">
+              <div className="bg-background/50 border-border flex flex-col items-center rounded-lg border p-4">
+                <div className="text-2xl font-bold text-green-500">
+                  {
+                    answers.filter(
+                      (answer, index) => Number(answer) === Number(questions[index]?.correctAnswer)
+                    ).length
+                  }
+                </div>
+                <div className="text-muted-foreground text-sm">Correct</div>
               </div>
-              <div className="bg-background/50 border border-border p-4 rounded-lg flex flex-col items-center">
-                <div className="text-2xl font-bold text-destructive">{questions.length - answers.filter((answer, index) => Number(answer) === Number(questions[index]?.correctAnswer)).length}</div>
-                <div className="text-sm text-muted-foreground">Incorrect</div>
+              <div className="bg-background/50 border-border flex flex-col items-center rounded-lg border p-4">
+                <div className="text-destructive text-2xl font-bold">
+                  {questions.length -
+                    answers.filter(
+                      (answer, index) => Number(answer) === Number(questions[index]?.correctAnswer)
+                    ).length}
+                </div>
+                <div className="text-muted-foreground text-sm">Incorrect</div>
               </div>
             </div>
 
@@ -139,13 +177,20 @@ export const ModuleTest: React.FC<ModuleTestProps> = ({ moduleId, moduleTitle, o
               <Button
                 onClick={() => onComplete(score, answers)}
                 disabled={!canProceed}
-                variant={canProceed ? "default" : "secondary"}
+                variant={canProceed ? 'default' : 'secondary'}
                 className={cn(
-                  isInitialAssessment ? "bg-primary hover:bg-primary/90" :
-                    passed ? "bg-green-600 hover:bg-green-700" : ""
+                  isInitialAssessment
+                    ? 'bg-primary hover:bg-primary/90'
+                    : passed
+                      ? 'bg-green-600 hover:bg-green-700'
+                      : ''
                 )}
               >
-                {isInitialAssessment ? 'Begin Your Journey' : canProceed ? 'Complete Module' : 'Retake Required'}
+                {isInitialAssessment
+                  ? 'Begin Your Journey'
+                  : canProceed
+                    ? 'Complete Module'
+                    : 'Retake Required'}
               </Button>
               <Button onClick={onBack} variant="outline">
                 Back to Module
@@ -165,28 +210,37 @@ export const ModuleTest: React.FC<ModuleTestProps> = ({ moduleId, moduleTitle, o
               const isCorrect = Number(userAnswer) === Number(question.correctAnswer);
 
               return (
-                <div key={index} className={cn(
-                  "border rounded-lg p-4 transition-colors",
-                  isCorrect ? "bg-green-500/5 border-green-500/20" : "bg-destructive/5 border-destructive/20"
-                )}>
+                <div
+                  key={index}
+                  className={cn(
+                    'rounded-lg border p-4 transition-colors',
+                    isCorrect
+                      ? 'border-green-500/20 bg-green-500/5'
+                      : 'bg-destructive/5 border-destructive/20'
+                  )}
+                >
                   <div className="flex items-start gap-3">
                     {isCorrect ? (
-                      <CheckCircle className="h-5 w-5 text-green-500 mt-0.5" />
+                      <CheckCircle className="mt-0.5 h-5 w-5 text-green-500" />
                     ) : (
-                      <XCircle className="h-5 w-5 text-destructive mt-0.5" />
+                      <XCircle className="text-destructive mt-0.5 h-5 w-5" />
                     )}
                     <div className="flex-1 space-y-2">
                       <p className="font-medium">{question.question}</p>
-                      <div className="text-sm space-y-1">
+                      <div className="space-y-1 text-sm">
                         <p className="flex gap-2">
-                          <span className="font-medium text-muted-foreground w-24">Your answer:</span>
-                          <span className={isCorrect ? "text-green-500" : "text-destructive"}>
-                            {userAnswer !== undefined ? question.options[Number(userAnswer)] : 'Not answered'}
+                          <span className="text-muted-foreground w-24 font-medium">
+                            Your answer:
+                          </span>
+                          <span className={isCorrect ? 'text-green-500' : 'text-destructive'}>
+                            {userAnswer !== undefined
+                              ? question.options[Number(userAnswer)]
+                              : 'Not answered'}
                           </span>
                         </p>
                         {!isCorrect && (
                           <p className="flex gap-2">
-                            <span className="font-medium text-muted-foreground w-24">Correct:</span>
+                            <span className="text-muted-foreground w-24 font-medium">Correct:</span>
                             <span className="text-green-500">
                               {question.options[Number(question.correctAnswer)]}
                             </span>
@@ -194,8 +248,10 @@ export const ModuleTest: React.FC<ModuleTestProps> = ({ moduleId, moduleTitle, o
                         )}
                       </div>
                       {question.explanation && (
-                        <div className="mt-2 text-sm text-muted-foreground bg-background/50 p-3 rounded border border-border/50">
-                          <span className="font-semibold block mb-1 text-xs uppercase tracking-wider opacity-70">Explanation</span>
+                        <div className="text-muted-foreground bg-background/50 border-border/50 mt-2 rounded border p-3 text-sm">
+                          <span className="mb-1 block text-xs font-semibold tracking-wider uppercase opacity-70">
+                            Explanation
+                          </span>
                           {question.explanation}
                         </div>
                       )}
@@ -211,7 +267,7 @@ export const ModuleTest: React.FC<ModuleTestProps> = ({ moduleId, moduleTitle, o
   }
 
   return (
-    <div className="flex flex-col gap-6 p-4 md:p-8 animate-in fade-in duration-500 max-w-4xl mx-auto w-full">
+    <div className="animate-in fade-in mx-auto flex w-full max-w-4xl flex-col gap-6 p-4 duration-500 md:p-8">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
@@ -219,33 +275,41 @@ export const ModuleTest: React.FC<ModuleTestProps> = ({ moduleId, moduleTitle, o
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back
           </Button>
-          <div className="h-6 w-px bg-border hidden md:block"></div>
-          <h1 className="text-xl font-bold tracking-tight hidden md:block">{moduleTitle}</h1>
+          <div className="bg-border hidden h-6 w-px md:block"></div>
+          <h1 className="hidden text-xl font-bold tracking-tight md:block">{moduleTitle}</h1>
         </div>
-        <div className={cn(
-          "flex items-center gap-2 px-3 py-1.5 rounded-full border bg-background font-mono text-sm font-medium",
-          timeLeft < 120 ? "border-destructive/50 text-destructive bg-destructive/5" : "border-border text-muted-foreground"
-        )}>
+        <div
+          className={cn(
+            'bg-background flex items-center gap-2 rounded-full border px-3 py-1.5 font-mono text-sm font-medium',
+            timeLeft < 120
+              ? 'border-destructive/50 text-destructive bg-destructive/5'
+              : 'border-border text-muted-foreground'
+          )}
+        >
           <Clock className="h-4 w-4" />
           <span>{formatTime(timeLeft)}</span>
         </div>
       </div>
 
       <div className="space-y-1">
-        <div className="flex justify-between text-xs text-muted-foreground">
-          <span>Question {currentQuestionIndex + 1} of {questions.length}</span>
+        <div className="text-muted-foreground flex justify-between text-xs">
+          <span>
+            Question {currentQuestionIndex + 1} of {questions.length}
+          </span>
           <span>{Math.round(((currentQuestionIndex + 1) / questions.length) * 100)}%</span>
         </div>
         <Progress value={((currentQuestionIndex + 1) / questions.length) * 100} className="h-2" />
       </div>
 
       {/* Question Card */}
-      <Card className="border-border/50 min-h-[400px] flex flex-col">
+      <Card className="border-border/50 flex min-h-[400px] flex-col">
         <CardHeader>
-          <div className="bg-primary/5 text-primary text-xs font-bold px-2 py-1 rounded w-fit mb-2">
+          <div className="bg-primary/5 text-primary mb-2 w-fit rounded px-2 py-1 text-xs font-bold">
             QUESTION {currentQuestionIndex + 1}
           </div>
-          <h2 className="text-xl md:text-2xl font-bold leading-tight">{currentQuestion.question}</h2>
+          <h2 className="text-xl leading-tight font-bold md:text-2xl">
+            {currentQuestion.question}
+          </h2>
         </CardHeader>
 
         <CardContent className="flex-1">
@@ -255,22 +319,30 @@ export const ModuleTest: React.FC<ModuleTestProps> = ({ moduleId, moduleTitle, o
                 key={index}
                 onClick={() => handleAnswerSelect(index)}
                 className={cn(
-                  "relative flex items-center gap-3 p-4 rounded-lg border-2 cursor-pointer transition-all hover:bg-muted/50",
+                  'hover:bg-muted/50 relative flex cursor-pointer items-center gap-3 rounded-lg border-2 p-4 transition-all',
                   selectedAnswer === index
-                    ? "border-primary bg-primary/5 shadow-sm ring-1 ring-primary/20"
-                    : "border-muted bg-card hover:border-primary/50"
+                    ? 'border-primary bg-primary/5 ring-primary/20 shadow-sm ring-1'
+                    : 'border-muted bg-card hover:border-primary/50'
                 )}
               >
-                <div className={cn(
-                  "h-5 w-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors",
-                  selectedAnswer === index ? "border-primary bg-primary" : "border-muted-foreground/30"
-                )}>
-                  {selectedAnswer === index && <div className="h-2 w-2 rounded-full bg-primary-foreground" />}
+                <div
+                  className={cn(
+                    'flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full border-2 transition-colors',
+                    selectedAnswer === index
+                      ? 'border-primary bg-primary'
+                      : 'border-muted-foreground/30'
+                  )}
+                >
+                  {selectedAnswer === index && (
+                    <div className="bg-primary-foreground h-2 w-2 rounded-full" />
+                  )}
                 </div>
-                <span className={cn(
-                  "font-medium",
-                  selectedAnswer === index ? "text-primary" : "text-foreground"
-                )}>
+                <span
+                  className={cn(
+                    'font-medium',
+                    selectedAnswer === index ? 'text-primary' : 'text-foreground'
+                  )}
+                >
                   {option}
                 </span>
               </div>
@@ -278,7 +350,7 @@ export const ModuleTest: React.FC<ModuleTestProps> = ({ moduleId, moduleTitle, o
           </div>
         </CardContent>
 
-        <CardFooter className="flex justify-between border-t border-border/50 p-6 bg-muted/5">
+        <CardFooter className="border-border/50 bg-muted/5 flex justify-between border-t p-6">
           <Button
             variant="outline"
             onClick={() => {

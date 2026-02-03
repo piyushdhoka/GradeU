@@ -15,18 +15,21 @@ export async function GET(
 ) {
   try {
     const { courseId, moduleId } = await params;
-    
+
     // Get auth token from header
     const authHeader = request.headers.get('authorization');
     const token = authHeader?.replace('Bearer ', '');
-    
+
     if (!token) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     // Get user from token
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-    
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser(token);
+
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -69,18 +72,21 @@ export async function PUT(
     const { courseId, moduleId } = await params;
     const body = await request.json();
     const { completed, quizScore, completedTopics } = body;
-    
+
     // Get auth token from header
     const authHeader = request.headers.get('authorization');
     const token = authHeader?.replace('Bearer ', '');
-    
+
     if (!token) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     // Get user from token
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-    
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser(token);
+
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -94,7 +100,7 @@ export async function PUT(
     // Query by studentEmail since that's what the existing MongoDB index uses
     // Also include studentId for new records
     const studentEmail = user.email || '';
-    
+
     // Upsert progress in MongoDB - use studentEmail in filter to match existing index
     await StudentProgress.findOneAndUpdate(
       {

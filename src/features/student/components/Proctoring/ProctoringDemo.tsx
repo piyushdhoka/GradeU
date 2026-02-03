@@ -10,11 +10,16 @@ export const ProctoringDemo: React.FC = () => {
   const [violations, setViolations] = useState(0);
   const [lastViolationReason, setLastViolationReason] = useState<string>('');
 
-  const append = (s: string) => setLogs((l) => [new Date().toLocaleTimeString() + ' - ' + s, ...l].slice(0, 200));
+  const append = (s: string) =>
+    setLogs((l) => [new Date().toLocaleTimeString() + ' - ' + s, ...l].slice(0, 200));
 
   const sendLog = async (payload: Record<string, unknown>) => {
     try {
-      await fetch('/proctor-logs', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(payload) });
+      await fetch('/proctor-logs', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
     } catch {
       // ignore send errors
     }
@@ -22,7 +27,10 @@ export const ProctoringDemo: React.FC = () => {
 
   const start = async () => {
     try {
-      const s = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false });
+      const s = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'user' },
+        audio: false,
+      });
       setStream(s);
       if (videoRef.current) videoRef.current.srcObject = s;
       setRunning(true);
@@ -63,25 +71,35 @@ export const ProctoringDemo: React.FC = () => {
         lastViolationReason={lastViolationReason}
       />
 
-      <div className="max-w-4xl mx-auto">
-        <h2 className="text-2xl font-bold mb-4">Proctoring Demo</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="mx-auto max-w-4xl">
+        <h2 className="mb-4 text-2xl font-bold">Proctoring Demo</h2>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <div>
-            <div className="relative bg-black rounded overflow-hidden aspect-video">
-              <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover" />
+            <div className="relative aspect-video overflow-hidden rounded bg-black">
+              <video
+                ref={videoRef}
+                autoPlay
+                playsInline
+                muted
+                className="h-full w-full object-cover"
+              />
             </div>
             <div className="mt-3 flex space-x-2">
               {!running ? (
-                <button onClick={start} className="px-4 py-2 bg-cyan-600 text-white rounded">Start Camera</button>
+                <button onClick={start} className="rounded bg-cyan-600 px-4 py-2 text-white">
+                  Start Camera
+                </button>
               ) : (
-                <button onClick={stop} className="px-4 py-2 bg-red-600 text-white rounded">Stop Camera</button>
+                <button onClick={stop} className="rounded bg-red-600 px-4 py-2 text-white">
+                  Stop Camera
+                </button>
               )}
             </div>
           </div>
 
           <div>
-            <div className="bg-white p-4 rounded shadow">
-              <h3 className="font-semibold mb-2">Proctoring</h3>
+            <div className="rounded bg-white p-4 shadow">
+              <h3 className="mb-2 font-semibold">Proctoring</h3>
               <Proctoring
                 videoRef={videoRef}
                 mediaStream={stream}
@@ -94,17 +112,18 @@ export const ProctoringDemo: React.FC = () => {
               />
             </div>
 
-            <div className="bg-white p-4 rounded shadow mt-4">
-              <h3 className="font-semibold mb-2">Logs</h3>
+            <div className="mt-4 rounded bg-white p-4 shadow">
+              <h3 className="mb-2 font-semibold">Logs</h3>
               <div style={{ maxHeight: 320, overflow: 'auto' }}>
                 {logs.map((l, idx) => (
-                  <div key={idx} className="text-xs font-mono text-gray-700">{l}</div>
+                  <div key={idx} className="font-mono text-xs text-gray-700">
+                    {l}
+                  </div>
                 ))}
               </div>
             </div>
           </div>
         </div>
-
       </div>
     </div>
   );

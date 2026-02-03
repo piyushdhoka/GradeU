@@ -14,8 +14,8 @@ function getSupabaseUserClient(token: string) {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       global: {
-        headers: { Authorization: `Bearer ${token}` }
-      }
+        headers: { Authorization: `Bearer ${token}` },
+      },
     }
   );
 }
@@ -33,7 +33,10 @@ export async function GET(request: NextRequest) {
     }
 
     // Get user from token
-    const { data: { user }, error: authError } = await supabaseAuth.auth.getUser(token);
+    const {
+      data: { user },
+      error: authError,
+    } = await supabaseAuth.auth.getUser(token);
 
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -57,7 +60,7 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    const completedLabIds = (completions || []).map(c => c.lab_id);
+    const completedLabIds = (completions || []).map((c) => c.lab_id);
     const completedLabs = completedLabIds.length;
     const completionPercentage = (completedLabs / LAB_TOTAL) * 100;
 

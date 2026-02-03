@@ -1,7 +1,17 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import mermaid from 'mermaid';
 import { labs } from '@data/labs';
-import { ArrowLeft, ArrowRight, FileText, CheckCircle, Award, Terminal, Play, Shield, ChevronRight } from 'lucide-react';
+import {
+  ArrowLeft,
+  ArrowRight,
+  FileText,
+  CheckCircle,
+  Award,
+  Terminal,
+  Play,
+  Shield,
+  ChevronRight,
+} from 'lucide-react';
 import { CertificateModal } from '../Certificates/CertificateModal';
 import { courseService } from '@services/courseService';
 import type { Module, Course } from '@types';
@@ -31,8 +41,8 @@ mermaid.initialize({
     primaryBorderColor: 'hsl(152 100% 50%)',
     lineColor: 'hsl(152 100% 50%)',
     secondaryColor: 'hsl(120 20% 4%)',
-    tertiaryColor: 'hsl(150 100% 10%)'
-  }
+    tertiaryColor: 'hsl(150 100% 10%)',
+  },
 });
 
 interface ModuleViewerProps {
@@ -44,7 +54,14 @@ interface ModuleViewerProps {
   onModuleStatusChange?: () => void;
 }
 
-export const ModuleViewer: React.FC<ModuleViewerProps> = ({ courseId, moduleId, course, onBack, onNavigateToModule, onModuleStatusChange }) => {
+export const ModuleViewer: React.FC<ModuleViewerProps> = ({
+  courseId,
+  moduleId,
+  course,
+  onBack,
+  onNavigateToModule,
+  onModuleStatusChange,
+}) => {
   const [activeTab, setActiveTab] = useState<'content' | 'test'>('content');
   const [showTest, setShowTest] = useState(false);
   const { user } = useAuth();
@@ -68,7 +85,7 @@ export const ModuleViewer: React.FC<ModuleViewerProps> = ({ courseId, moduleId, 
     studentEmail: user?.email || '',
     courseId,
     moduleId,
-    enabled: !!user?.id
+    enabled: !!user?.id,
   });
 
   // Backend Proctoring Logging - Generate stable attemptId per module session
@@ -77,7 +94,7 @@ export const ModuleViewer: React.FC<ModuleViewerProps> = ({ courseId, moduleId, 
     studentId: user?.id || 'anonymous',
     courseId,
     attemptId,
-    enabled: isProctoringActive
+    enabled: isProctoringActive,
   });
 
   // Set proctoring session ID when proctoring becomes active
@@ -89,17 +106,24 @@ export const ModuleViewer: React.FC<ModuleViewerProps> = ({ courseId, moduleId, 
     }
   }, [isProctoringActive, attemptId, proctoringSessionId]);
 
-  const module: Module | undefined = (course?.course_modules ?? course?.modules ?? []).find((m: Module) => m.id === moduleId);
+  const module: Module | undefined = (course?.course_modules ?? course?.modules ?? []).find(
+    (m: Module) => m.id === moduleId
+  );
 
   const handleProctoringViolation = async (status: 'ok' | 'violation') => {
     if (status === 'violation' && isProctoringActive) {
       logEvent('face-violation', { count: violationCount + 1 });
-      const isFinalExam = moduleId === 'vu-final-exam' || module?.type === 'final_assessment' || module?.type === 'initial_assessment';
+      const isFinalExam =
+        moduleId === 'vu-final-exam' ||
+        module?.type === 'final_assessment' ||
+        module?.type === 'initial_assessment';
       const maxWarnings = 3;
 
       if (violationCount < maxWarnings) {
-        setViolationCount(prev => prev + 1);
-        alert(`PROCTORING WARNING: Suspicious activity detected! You have ${maxWarnings - violationCount} warnings remaining.`);
+        setViolationCount((prev) => prev + 1);
+        alert(
+          `PROCTORING WARNING: Suspicious activity detected! You have ${maxWarnings - violationCount} warnings remaining.`
+        );
       } else {
         console.warn('Proctoring Violation - Locking out!');
         setIsProctoringActive(false);
@@ -123,11 +147,16 @@ export const ModuleViewer: React.FC<ModuleViewerProps> = ({ courseId, moduleId, 
                 vu_email: email,
                 course_id: courseId,
                 module_id: moduleId,
-                locked_until: lockedUntil.toISOString()
-              })
+                locked_until: lockedUntil.toISOString(),
+              }),
             });
-            const durationText = (moduleId === 'vu-final-exam' || module?.type === 'final_assessment') ? '3 hours' : '1 hour';
-            alert(`PROCTORING VIOLATION: Test has been locked for ${durationText} due to suspicious activity.`);
+            const durationText =
+              moduleId === 'vu-final-exam' || module?.type === 'final_assessment'
+                ? '3 hours'
+                : '1 hour';
+            alert(
+              `PROCTORING VIOLATION: Test has been locked for ${durationText} due to suspicious activity.`
+            );
             onBack();
           }
         } catch (e) {
@@ -139,7 +168,10 @@ export const ModuleViewer: React.FC<ModuleViewerProps> = ({ courseId, moduleId, 
 
   useEffect(() => {
     // Only auto-start tests if the module has no topics
-    if ((module?.type === 'final_assessment' || module?.type === 'initial_assessment') && (!module.topics || module.topics.length === 0)) {
+    if (
+      (module?.type === 'final_assessment' || module?.type === 'initial_assessment') &&
+      (!module.topics || module.topics.length === 0)
+    ) {
       setActiveTab('test');
       setShowTest(true);
       setIsProctoringActive(true); // Enable proctoring automatically
@@ -155,14 +187,15 @@ export const ModuleViewer: React.FC<ModuleViewerProps> = ({ courseId, moduleId, 
     if (activeTab === 'content') {
       // Use setTimeout to ensure the DOM has updated with the new HTML
       const timer = setTimeout(() => {
-        mermaid.run({
-          querySelector: '.mermaid'
-        }).catch(err => console.error('Mermaid rendering failed:', err));
+        mermaid
+          .run({
+            querySelector: '.mermaid',
+          })
+          .catch((err) => console.error('Mermaid rendering failed:', err));
       }, 0);
       return () => clearTimeout(timer);
     }
   }, [activeTab, module?.content, moduleId]);
-
 
   const isAllModulesCompleted = (course: Course) => {
     const modules = course.course_modules ?? course.modules ?? [];
@@ -174,15 +207,15 @@ export const ModuleViewer: React.FC<ModuleViewerProps> = ({ courseId, moduleId, 
   // Module Not Found
   if (!course || !module) {
     return (
-      <div className="flex flex-col gap-6 p-4 md:p-8 animate-in fade-in duration-500">
-        <Button variant="ghost" onClick={onBack} className="w-fit -ml-2">
+      <div className="animate-in fade-in flex flex-col gap-6 p-4 duration-500 md:p-8">
+        <Button variant="ghost" onClick={onBack} className="-ml-2 w-fit">
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back to Course
         </Button>
         <Card className="border-destructive/20 bg-destructive/5">
           <CardContent className="flex flex-col items-center justify-center py-16 text-center">
-            <Terminal className="h-12 w-12 text-destructive mb-4" />
-            <h2 className="text-xl font-semibold mb-2">Module Not Found</h2>
+            <Terminal className="text-destructive mb-4 h-12 w-12" />
+            <h2 className="mb-2 text-xl font-semibold">Module Not Found</h2>
             <p className="text-muted-foreground mb-4">The requested module does not exist.</p>
             <Button onClick={onBack}>Return to Course</Button>
           </CardContent>
@@ -266,9 +299,12 @@ export const ModuleViewer: React.FC<ModuleViewerProps> = ({ courseId, moduleId, 
         const token = (await supabase.auth.getSession()).data.session?.access_token;
 
         try {
-          const response = await fetch(getApiUrl(`/api/student/experience/${courseId}/${moduleId}`), {
-            headers: token ? { Authorization: `Bearer ${token}` } : {}
-          });
+          const response = await fetch(
+            getApiUrl(`/api/student/experience/${courseId}/${moduleId}`),
+            {
+              headers: token ? { Authorization: `Bearer ${token}` } : {},
+            }
+          );
 
           if (response.ok) {
             const experienceData = await response.json();
@@ -283,7 +319,7 @@ export const ModuleViewer: React.FC<ModuleViewerProps> = ({ courseId, moduleId, 
       }
 
       if (user?.id) {
-        const topics = module.topics?.map(t => t.title) || [];
+        const topics = module.topics?.map((t) => t.title) || [];
         await completeModule(user.id, courseId, moduleId, module.testScore ?? undefined, topics);
         if (onModuleStatusChange) onModuleStatusChange();
       }
@@ -334,7 +370,7 @@ export const ModuleViewer: React.FC<ModuleViewerProps> = ({ courseId, moduleId, 
           await learningPathService.rebalance(user.id, courseId);
         } else {
           // Legacy fallback / Simple progress update
-          const topics = module.topics?.map(t => t.title) || [];
+          const topics = module.topics?.map((t) => t.title) || [];
           await completeModule(user.id, courseId, moduleId, score, topics);
           if (onModuleStatusChange) onModuleStatusChange();
         }
@@ -350,7 +386,7 @@ export const ModuleViewer: React.FC<ModuleViewerProps> = ({ courseId, moduleId, 
       console.error('Failed to persist progress or rebalance:', e);
       // Fallback
       if (user?.id) {
-        const topics = module.topics?.map(t => t.title) || [];
+        const topics = module.topics?.map((t) => t.title) || [];
         await completeModule(user.id, courseId, moduleId, score, topics);
         if (onModuleStatusChange) onModuleStatusChange();
       }
@@ -382,7 +418,8 @@ export const ModuleViewer: React.FC<ModuleViewerProps> = ({ courseId, moduleId, 
     // YouTube embeds
     content = content.replace(
       /<a\s+(?:[^>]*?\s+)?href=["'](?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w-]+)(?:&[\w%=]*)?["'][^>]*>.*?<\/a>/gi,
-      (_match, videoId) => `<div class="aspect-video w-full my-8 bg-muted rounded-xl overflow-hidden border border-border"><iframe src="https://www.youtube.com/embed/${videoId}" class="w-full h-full" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`
+      (_match, videoId) =>
+        `<div class="aspect-video w-full my-8 bg-muted rounded-xl overflow-hidden border border-border"><iframe src="https://www.youtube.com/embed/${videoId}" class="w-full h-full" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`
     );
 
     const tokens: string[] = [];
@@ -392,11 +429,15 @@ export const ModuleViewer: React.FC<ModuleViewerProps> = ({ courseId, moduleId, 
     };
 
     content = content.replace(/```mermaid([\s\S]*?)```/gi, (_match, code) => {
-      return saveToken(`<div class="mermaid my-8 bg-card p-6 rounded-xl border border-border flex justify-center overflow-x-auto text-left">${code.trim()}</div>`);
+      return saveToken(
+        `<div class="mermaid my-8 bg-card p-6 rounded-xl border border-border flex justify-center overflow-x-auto text-left">${code.trim()}</div>`
+      );
     });
 
     content = content.replace(/```([\s\S]*?)```/gi, (_match, code) => {
-      return saveToken(`<pre class="bg-card border border-border p-4 rounded-lg my-4 overflow-x-auto"><code class="text-primary font-mono">${code.trim().replace(/</g, '&lt;').replace(/>/g, '&gt;')}</code></pre>`);
+      return saveToken(
+        `<pre class="bg-card border border-border p-4 rounded-lg my-4 overflow-x-auto"><code class="text-primary font-mono">${code.trim().replace(/</g, '&lt;').replace(/>/g, '&gt;')}</code></pre>`
+      );
     });
 
     content = content
@@ -408,23 +449,40 @@ export const ModuleViewer: React.FC<ModuleViewerProps> = ({ courseId, moduleId, 
       .replace(/_(.*?)_/g, '<em>$1</em>');
 
     content = content
-      .replace(/^# (.+)$/gm, '<h1 class="text-3xl font-bold mb-6 mt-8 border-b border-border pb-2">$1</h1>')
+      .replace(
+        /^# (.+)$/gm,
+        '<h1 class="text-3xl font-bold mb-6 mt-8 border-b border-border pb-2">$1</h1>'
+      )
       .replace(/^## (.+)$/gm, '<h2 class="text-2xl font-bold mb-4 mt-8">$1</h2>')
       .replace(/^### (.+)$/gm, '<h3 class="text-xl font-bold mb-3 mt-6 text-primary">$1</h3>')
       .replace(/^#### (.+)$/gm, '<h4 class="text-lg font-bold mb-2 mt-4 text-primary">$1</h4>')
       .replace(/^- (.+)$/gm, '<li class="ml-6 mb-2 list-disc marker:text-primary">$1</li>')
       .replace(/^\* (.+)$/gm, '<li class="ml-6 mb-2 list-disc marker:text-primary">$1</li>')
-      .replace(/^(\d+)\. (.+)$/gm, '<li class="ml-6 mb-2 list-decimal marker:text-primary">$2</li>');
+      .replace(
+        /^(\d+)\. (.+)$/gm,
+        '<li class="ml-6 mb-2 list-decimal marker:text-primary">$2</li>'
+      );
 
-    content = content.replace(/`([^`]+)`/g, '<code class="bg-primary/10 px-1.5 py-0.5 rounded text-primary font-mono border border-primary/20">$1</code>');
+    content = content.replace(
+      /`([^`]+)`/g,
+      '<code class="bg-primary/10 px-1.5 py-0.5 rounded text-primary font-mono border border-primary/20">$1</code>'
+    );
 
     const blocks = content.split(/\n\s*\n/);
-    content = blocks.map(block => {
-      if (block.trim().startsWith('<h') || block.trim().startsWith('<li') || block.trim().startsWith('<pre') || block.trim().startsWith('<div') || block.trim().startsWith('__TOKEN')) {
-        return block;
-      }
-      return `<p class="mb-4 leading-relaxed text-muted-foreground">${block.trim().replace(/\n/g, '<br/>')}</p>`;
-    }).join('\n');
+    content = blocks
+      .map((block) => {
+        if (
+          block.trim().startsWith('<h') ||
+          block.trim().startsWith('<li') ||
+          block.trim().startsWith('<pre') ||
+          block.trim().startsWith('<div') ||
+          block.trim().startsWith('__TOKEN')
+        ) {
+          return block;
+        }
+        return `<p class="mb-4 leading-relaxed text-muted-foreground">${block.trim().replace(/\n/g, '<br/>')}</p>`;
+      })
+      .join('\n');
 
     tokens.forEach((token, index) => {
       content = content.replace(`__TOKEN_${index}__`, token);
@@ -433,45 +491,56 @@ export const ModuleViewer: React.FC<ModuleViewerProps> = ({ courseId, moduleId, 
     return content;
   };
 
-  const isAssessment = module.type === 'initial_assessment' || module.type === 'final_assessment' || moduleId === 'vu-final-exam';
+  const isAssessment =
+    module.type === 'initial_assessment' ||
+    module.type === 'final_assessment' ||
+    moduleId === 'vu-final-exam';
 
   // Assessment Landing View (Special) - High Stakes / Diagnostic Home
   if (isAssessment && !module.completed && !showTest) {
     return (
-      <div className="flex flex-col gap-6 p-4 md:p-8 animate-in fade-in duration-500 max-w-4xl mx-auto w-full">
-        <Button variant="ghost" onClick={onBack} className="w-fit -ml-2 text-muted-foreground hover:text-foreground">
+      <div className="animate-in fade-in mx-auto flex w-full max-w-4xl flex-col gap-6 p-4 duration-500 md:p-8">
+        <Button
+          variant="ghost"
+          onClick={onBack}
+          className="text-muted-foreground hover:text-foreground -ml-2 w-fit"
+        >
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back to Course
         </Button>
 
-        <Card className="border-primary/20 bg-primary/5 shadow-2xl shadow-primary/5">
-          <CardHeader className="text-center py-12">
-            <div className="p-4 rounded-full bg-primary/10 border border-primary/20 w-24 h-24 mx-auto mb-6 flex items-center justify-center">
-              <Shield className="h-12 w-12 text-primary" />
+        <Card className="border-primary/20 bg-primary/5 shadow-primary/5 shadow-2xl">
+          <CardHeader className="py-12 text-center">
+            <div className="bg-primary/10 border-primary/20 mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-full border p-4">
+              <Shield className="text-primary h-12 w-12" />
             </div>
-            <CardTitle className="text-4xl font-black tracking-tight bg-linear-to-br from-foreground to-foreground/70 bg-clip-text text-transparent">
+            <CardTitle className="from-foreground to-foreground/70 bg-linear-to-br bg-clip-text text-4xl font-black tracking-tight text-transparent">
               {module.type === 'initial_assessment' ? 'Diagnostic Assessment' : 'Final Examination'}
             </CardTitle>
-            <CardDescription className="text-lg max-w-lg mx-auto mt-4 leading-relaxed">
-              {module.description || "This evaluation helps tailor your learning path and validate your expertise."}
+            <CardDescription className="mx-auto mt-4 max-w-lg text-lg leading-relaxed">
+              {module.description ||
+                'This evaluation helps tailor your learning path and validate your expertise.'}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-10 pb-16">
             {/* Instructions / Content Section */}
             {(module.content || (module.topics && module.topics.length > 0)) && (
-              <div className="bg-background/40 backdrop-blur-sm rounded-2xl p-8 border border-border/50 shadow-inner">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="h-1.5 w-8 rounded-full bg-primary" />
-                  <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-[0.2em]">
+              <div className="bg-background/40 border-border/50 rounded-2xl border p-8 shadow-inner backdrop-blur-sm">
+                <div className="mb-6 flex items-center gap-3">
+                  <div className="bg-primary h-1.5 w-8 rounded-full" />
+                  <h3 className="text-muted-foreground text-xs font-bold tracking-[0.2em] uppercase">
                     Preparation & Instructions
                   </h3>
                 </div>
                 <div
-                  className="prose prose-invert max-w-none text-muted-foreground/90 selection:bg-primary/30"
+                  className="prose prose-invert text-muted-foreground/90 selection:bg-primary/30 max-w-none"
                   dangerouslySetInnerHTML={{
                     __html: processContent(
-                      module.content || (module.topics && module.topics.length > 0 ? module.topics.map(t => `### ${t.title}\n${t.content}`).join('\n\n') : '')
-                    )
+                      module.content ||
+                        (module.topics && module.topics.length > 0
+                          ? module.topics.map((t) => `### ${t.title}\n${t.content}`).join('\n\n')
+                          : '')
+                    ),
                   }}
                 />
               </div>
@@ -480,18 +549,18 @@ export const ModuleViewer: React.FC<ModuleViewerProps> = ({ courseId, moduleId, 
             <div className="flex flex-col items-center gap-6">
               <Button
                 size="lg"
-                className="px-16 py-8 text-xl font-black rounded-2xl shadow-2xl shadow-primary/20 hover:scale-105 active:scale-95 transition-all bg-primary text-primary-foreground"
+                className="shadow-primary/20 bg-primary text-primary-foreground rounded-2xl px-16 py-8 text-xl font-black shadow-2xl transition-all hover:scale-105 active:scale-95"
                 onClick={() => setShowTest(true)}
               >
                 Start Assessment
                 <ArrowRight className="ml-3 h-6 w-6" />
               </Button>
               <div className="flex flex-col items-center gap-2">
-                <p className="text-xs font-medium text-muted-foreground flex items-center gap-2 opacity-70">
-                  <Shield className="h-3.5 w-3.5 text-primary" />
+                <p className="text-muted-foreground flex items-center gap-2 text-xs font-medium opacity-70">
+                  <Shield className="text-primary h-3.5 w-3.5" />
                   Proctored Session Active
                 </p>
-                <p className="text-[10px] text-muted-foreground/50 uppercase tracking-widest">
+                <p className="text-muted-foreground/50 text-[10px] tracking-widest uppercase">
                   Secure Environment Initialized
                 </p>
               </div>
@@ -503,19 +572,31 @@ export const ModuleViewer: React.FC<ModuleViewerProps> = ({ courseId, moduleId, 
   }
 
   return (
-    <div className="flex flex-col gap-6 p-4 md:p-8 animate-in fade-in duration-500">
+    <div className="animate-in fade-in flex flex-col gap-6 p-4 duration-500 md:p-8">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <Button variant="ghost" onClick={onBack} className="w-fit -ml-2 text-muted-foreground hover:text-foreground">
+      <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
+        <Button
+          variant="ghost"
+          onClick={onBack}
+          className="text-muted-foreground hover:text-foreground -ml-2 w-fit"
+        >
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back to Course
         </Button>
         <div className="flex items-center gap-2">
           <Button
-            variant={module.completed ? "outline" : "default"}
+            variant={module.completed ? 'outline' : 'default'}
             onClick={() => markModuleCompleted(true)}
-            disabled={module.completed || module.type === 'initial_assessment' || module.type === 'final_assessment'}
-            className={cn((module.type === 'initial_assessment' || module.type === 'final_assessment') && !module.completed && "hidden")}
+            disabled={
+              module.completed ||
+              module.type === 'initial_assessment' ||
+              module.type === 'final_assessment'
+            }
+            className={cn(
+              (module.type === 'initial_assessment' || module.type === 'final_assessment') &&
+                !module.completed &&
+                'hidden'
+            )}
           >
             {module.completed ? (
               <>
@@ -529,7 +610,11 @@ export const ModuleViewer: React.FC<ModuleViewerProps> = ({ courseId, moduleId, 
           <Button
             variant="outline"
             onClick={goToNextModule}
-            disabled={currentIndex < 0 || currentIndex >= allModules.length - 1 || (!canAccessModule(currentIndex + 1) && user?.role !== 'admin')}
+            disabled={
+              currentIndex < 0 ||
+              currentIndex >= allModules.length - 1 ||
+              (!canAccessModule(currentIndex + 1) && user?.role !== 'admin')
+            }
           >
             Next Module
             <ChevronRight className="ml-2 h-4 w-4" />
@@ -541,22 +626,23 @@ export const ModuleViewer: React.FC<ModuleViewerProps> = ({ courseId, moduleId, 
       <Card className="border-border/50">
         <CardHeader>
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-primary/10 border border-primary/20">
-              <Terminal className="h-6 w-6 text-primary" />
+            <div className="bg-primary/10 border-primary/20 rounded-lg border p-2">
+              <Terminal className="text-primary h-6 w-6" />
             </div>
             <div>
               <CardTitle className="text-2xl">{module.title}</CardTitle>
               <CardDescription>
-                Module {String(currentIndex + 1).padStart(2, '0')} of {String(allModules.length).padStart(2, '0')}
+                Module {String(currentIndex + 1).padStart(2, '0')} of{' '}
+                {String(allModules.length).padStart(2, '0')}
               </CardDescription>
             </div>
           </div>
         </CardHeader>
         <CardContent>
           <p className="text-muted-foreground mb-4">{module.description}</p>
-          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+          <div className="text-muted-foreground flex items-center gap-4 text-sm">
             <div className="flex items-center gap-2">
-              <FileText className="h-4 w-4 text-primary" />
+              <FileText className="text-primary h-4 w-4" />
               <span>Content</span>
             </div>
           </div>
@@ -565,15 +651,15 @@ export const ModuleViewer: React.FC<ModuleViewerProps> = ({ courseId, moduleId, 
 
       {/* Tabs */}
       <Card className="border-border/50">
-        <div className="border-b border-border/50">
+        <div className="border-border/50 border-b">
           <div className="flex gap-1 p-2">
             <button
               onClick={() => setActiveTab('content')}
               className={cn(
-                "flex items-center gap-2 py-2 px-4 rounded-md text-sm font-medium transition-all",
+                'flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-all',
                 activeTab === 'content'
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                  ? 'bg-primary text-primary-foreground'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
               )}
             >
               <FileText className="h-4 w-4" />
@@ -582,10 +668,10 @@ export const ModuleViewer: React.FC<ModuleViewerProps> = ({ courseId, moduleId, 
             <button
               onClick={() => setActiveTab('test')}
               className={cn(
-                "flex items-center gap-2 py-2 px-4 rounded-md text-sm font-medium transition-all",
+                'flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-all',
                 activeTab === 'test'
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                  ? 'bg-primary text-primary-foreground'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
               )}
             >
               <CheckCircle className="h-4 w-4" />
@@ -596,11 +682,11 @@ export const ModuleViewer: React.FC<ModuleViewerProps> = ({ courseId, moduleId, 
 
         <CardContent className="p-6">
           {activeTab === 'content' && (
-            <div className="flex flex-col md:flex-row gap-6">
+            <div className="flex flex-col gap-6 md:flex-row">
               {/* Topics Sidebar (Mobile-friendly list) */}
               {module.topics && module.topics.length > 0 && (
-                <div className="w-full md:w-64 shrink-0 border-r border-border/50 pr-6 space-y-2">
-                  <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4 px-2">
+                <div className="border-border/50 w-full shrink-0 space-y-2 border-r pr-6 md:w-64">
+                  <h4 className="text-muted-foreground mb-4 px-2 text-sm font-semibold tracking-wider uppercase">
                     Topics
                   </h4>
                   {module.topics.map((topic, index) => (
@@ -608,21 +694,25 @@ export const ModuleViewer: React.FC<ModuleViewerProps> = ({ courseId, moduleId, 
                       key={index}
                       onClick={() => setCurrentTopicIndex(index)}
                       className={cn(
-                        "w-full text-left px-3 py-2 rounded-lg text-sm transition-all flex items-center gap-3",
+                        'flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm transition-all',
                         currentTopicIndex === index
-                          ? "bg-primary/10 text-primary border border-primary/20 font-medium"
-                          : "text-muted-foreground hover:bg-muted"
+                          ? 'bg-primary/10 text-primary border-primary/20 border font-medium'
+                          : 'text-muted-foreground hover:bg-muted'
                       )}
                     >
-                      <div className={cn(
-                        "h-2 w-2 rounded-full",
-                        module.completedTopics?.includes(topic.title)
-                          ? "bg-primary"
-                          : currentTopicIndex === index ? "bg-primary/50" : "bg-muted-foreground/30"
-                      )} />
+                      <div
+                        className={cn(
+                          'h-2 w-2 rounded-full',
+                          module.completedTopics?.includes(topic.title)
+                            ? 'bg-primary'
+                            : currentTopicIndex === index
+                              ? 'bg-primary/50'
+                              : 'bg-muted-foreground/30'
+                        )}
+                      />
                       <span className="truncate">{topic.title}</span>
                       {module.completedTopics?.includes(topic.title) && (
-                        <CheckCircle className="h-4 w-4 ml-auto text-primary" />
+                        <CheckCircle className="text-primary ml-auto h-4 w-4" />
                       )}
                     </button>
                   ))}
@@ -631,7 +721,7 @@ export const ModuleViewer: React.FC<ModuleViewerProps> = ({ courseId, moduleId, 
 
               {/* Main Content Area */}
               <div
-                className="prose max-w-none flex-1 module-content"
+                className="prose module-content max-w-none flex-1"
                 onClick={(e) => {
                   const target = e.target as HTMLElement;
                   const labBtn = target.closest('[data-lesson-action="launch-lab"]');
@@ -643,7 +733,7 @@ export const ModuleViewer: React.FC<ModuleViewerProps> = ({ courseId, moduleId, 
                         window.open(lab.liveUrl, '_blank');
                       } else {
                         const evt = new CustomEvent('navigateToTab', {
-                          detail: { tab: 'labs', labId: labId }
+                          detail: { tab: 'labs', labId: labId },
                         });
                         window.dispatchEvent(evt);
                       }
@@ -657,22 +747,22 @@ export const ModuleViewer: React.FC<ModuleViewerProps> = ({ courseId, moduleId, 
                       module.topics && module.topics.length > 0
                         ? module.topics[currentTopicIndex]?.content
                         : module.content || ''
-                    )
+                    ),
                   }}
                 />
 
                 {/* Topic Navigation Buttons */}
                 {module.topics && module.topics.length > 0 && (
-                  <div className="flex items-center justify-between mt-12 pt-8 border-t border-border/50">
+                  <div className="border-border/50 mt-12 flex items-center justify-between border-t pt-8">
                     <Button
                       variant="outline"
                       size="sm"
                       disabled={currentTopicIndex === 0}
-                      onClick={() => setCurrentTopicIndex(prev => Math.max(0, prev - 1))}
+                      onClick={() => setCurrentTopicIndex((prev) => Math.max(0, prev - 1))}
                     >
                       Previous Topic
                     </Button>
-                    <div className="text-sm text-muted-foreground">
+                    <div className="text-muted-foreground text-sm">
                       Topic {currentTopicIndex + 1} of {module.topics.length}
                     </div>
                     {currentTopicIndex < module.topics.length - 1 ? (
@@ -681,10 +771,15 @@ export const ModuleViewer: React.FC<ModuleViewerProps> = ({ courseId, moduleId, 
                         onClick={async () => {
                           // Mark topic as completed
                           const currentTopic = module.topics![currentTopicIndex];
-                          const alreadyCompleted = module.completedTopics?.includes(currentTopic.title);
+                          const alreadyCompleted = module.completedTopics?.includes(
+                            currentTopic.title
+                          );
 
                           if (!alreadyCompleted && user?.id) {
-                            const newCompletedTopics = [...(module.completedTopics || []), currentTopic.title];
+                            const newCompletedTopics = [
+                              ...(module.completedTopics || []),
+                              currentTopic.title,
+                            ];
                             // Check if this was the last topic
                             const isLastTopic = newCompletedTopics.length === module.topics!.length;
 
@@ -698,7 +793,7 @@ export const ModuleViewer: React.FC<ModuleViewerProps> = ({ courseId, moduleId, 
                             );
                             if (onModuleStatusChange) onModuleStatusChange();
                           }
-                          setCurrentTopicIndex(prev => prev + 1);
+                          setCurrentTopicIndex((prev) => prev + 1);
                         }}
                       >
                         Next Topic
@@ -709,11 +804,23 @@ export const ModuleViewer: React.FC<ModuleViewerProps> = ({ courseId, moduleId, 
                         size="sm"
                         onClick={async () => {
                           const currentTopic = module.topics![currentTopicIndex];
-                          const alreadyCompleted = module.completedTopics?.includes(currentTopic.title);
+                          const alreadyCompleted = module.completedTopics?.includes(
+                            currentTopic.title
+                          );
                           if (!alreadyCompleted && user?.id) {
-                            const newCompletedTopics = [...(module.completedTopics || []), currentTopic.title];
+                            const newCompletedTopics = [
+                              ...(module.completedTopics || []),
+                              currentTopic.title,
+                            ];
                             const isLastTopic = newCompletedTopics.length === module.topics!.length;
-                            await courseService.updateProgress(user.id, moduleId, isLastTopic, module.testScore || 0, courseId, newCompletedTopics);
+                            await courseService.updateProgress(
+                              user.id,
+                              moduleId,
+                              isLastTopic,
+                              module.testScore || 0,
+                              courseId,
+                              newCompletedTopics
+                            );
                             if (onModuleStatusChange) onModuleStatusChange();
                           }
                           setShowTest(true);
@@ -730,17 +837,18 @@ export const ModuleViewer: React.FC<ModuleViewerProps> = ({ courseId, moduleId, 
           )}
 
           {activeTab === 'test' && (
-            <div className="text-center py-12">
-              <div className="p-4 rounded-full bg-primary/10 border border-primary/20 w-20 h-20 mx-auto mb-6 flex items-center justify-center">
-                <Shield className="h-10 w-10 text-primary" />
+            <div className="py-12 text-center">
+              <div className="bg-primary/10 border-primary/20 mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full border p-4">
+                <Shield className="text-primary h-10 w-10" />
               </div>
-              <h3 className="text-xl font-bold mb-4">Module Assessment</h3>
-              <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-                Test your understanding of this module with a focused quiz to validate your knowledge.
+              <h3 className="mb-4 text-xl font-bold">Module Assessment</h3>
+              <p className="text-muted-foreground mx-auto mb-6 max-w-md">
+                Test your understanding of this module with a focused quiz to validate your
+                knowledge.
               </p>
               {module.testScore && (
                 <div className="mb-6">
-                  <span className="inline-flex items-center px-4 py-2 rounded-full text-sm font-medium bg-primary/10 text-primary border border-primary/20">
+                  <span className="bg-primary/10 text-primary border-primary/20 inline-flex items-center rounded-full border px-4 py-2 text-sm font-medium">
                     Previous Score: {module.testScore}%
                   </span>
                 </div>
@@ -760,11 +868,11 @@ export const ModuleViewer: React.FC<ModuleViewerProps> = ({ courseId, moduleId, 
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="font-semibold">Ready to prove your skills?</h3>
-                <p className="text-muted-foreground text-sm">Take the assessment to complete this module.</p>
+                <p className="text-muted-foreground text-sm">
+                  Take the assessment to complete this module.
+                </p>
               </div>
-              <Button onClick={() => setShowTest(true)}>
-                Take Module Test
-              </Button>
+              <Button onClick={() => setShowTest(true)}>Take Module Test</Button>
             </div>
           </CardContent>
         </Card>
@@ -773,16 +881,18 @@ export const ModuleViewer: React.FC<ModuleViewerProps> = ({ courseId, moduleId, 
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-primary/10 border border-primary/20">
-                  <CheckCircle className="h-6 w-6 text-primary" />
+                <div className="bg-primary/10 border-primary/20 rounded-lg border p-2">
+                  <CheckCircle className="text-primary h-6 w-6" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-primary">
-                    {module.type === 'initial_assessment' ? 'Diagnostic Complete!' : 'Module Completed!'}
+                  <h3 className="text-primary font-semibold">
+                    {module.type === 'initial_assessment'
+                      ? 'Diagnostic Complete!'
+                      : 'Module Completed!'}
                   </h3>
                   <p className="text-muted-foreground text-sm">
                     {module.type === 'initial_assessment'
-                      ? "Your pre-course assessment is finished. You can now proceed to the main course."
+                      ? 'Your pre-course assessment is finished. You can now proceed to the main course.'
                       : "You've successfully completed this training module."}
                   </p>
                 </div>
@@ -793,10 +903,7 @@ export const ModuleViewer: React.FC<ModuleViewerProps> = ({ courseId, moduleId, 
                   Retake Test
                 </Button>
                 {currentIndex < allModules.length - 1 && (
-                  <Button
-                    onClick={goToNextModule}
-                    disabled={!canAccessModule(currentIndex + 1)}
-                  >
+                  <Button onClick={goToNextModule} disabled={!canAccessModule(currentIndex + 1)}>
                     Next Module
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
@@ -809,16 +916,18 @@ export const ModuleViewer: React.FC<ModuleViewerProps> = ({ courseId, moduleId, 
 
       {/* Certificate Section */}
       {course && isAllModulesCompleted(course) && (
-        <Card className="border-primary/30 bg-linear-to-r from-primary/5 to-primary/10">
+        <Card className="border-primary/30 from-primary/5 to-primary/10 bg-linear-to-r">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
-                <div className="p-3 rounded-full bg-primary/10 border border-primary/20">
-                  <Award className="h-10 w-10 text-primary" />
+                <div className="bg-primary/10 border-primary/20 rounded-full border p-3">
+                  <Award className="text-primary h-10 w-10" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-primary text-lg">Course Complete!</h3>
-                  <p className="text-muted-foreground">Congratulations! You've completed all training modules.</p>
+                  <h3 className="text-primary text-lg font-bold">Course Complete!</h3>
+                  <p className="text-muted-foreground">
+                    Congratulations! You've completed all training modules.
+                  </p>
                 </div>
               </div>
               <div className="flex items-center gap-3">

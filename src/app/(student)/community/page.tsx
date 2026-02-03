@@ -1,14 +1,13 @@
-"use client";
-import { CommunityPage } from "@student/components/Community/CommunityPage";
-import { useRouter } from "next/navigation";
+'use client';
+import { CommunityPage } from '@student/components/Community/CommunityPage';
+import { useRouter } from 'next/navigation';
 
 export default function CommunityPageRoute() {
-    const router = useRouter();
+  const router = useRouter();
 
-    const handleBack = () => {
-        router.push("/dashboard");
-    };
+  const handleBack = () => {
+    router.push('/dashboard');
+  };
 
-    return <CommunityPage onBackAction={handleBack} />;
+  return <CommunityPage onBackAction={handleBack} />;
 }
-

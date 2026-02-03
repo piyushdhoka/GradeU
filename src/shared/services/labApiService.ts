@@ -9,7 +9,9 @@ export interface LabStats {
 }
 
 const getAuthHeaders = async () => {
-  const { data: { session } } = await supabase.auth.getSession();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
   };
@@ -66,7 +68,10 @@ export const labApiService = {
       return await response.json();
     } catch (error) {
       // Network error, backend not running, etc. - just return empty stats
-      console.warn('Lab stats service unavailable:', error instanceof Error ? error.message : 'Unknown error');
+      console.warn(
+        'Lab stats service unavailable:',
+        error instanceof Error ? error.message : 'Unknown error'
+      );
       return emptyStats;
     }
   },

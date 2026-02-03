@@ -1,5 +1,5 @@
 // Re-export all types from the main types file
-export * from "./types";
+export * from './types';
 
 // Additional types not in types.ts
 export interface Lab {
@@ -12,5 +12,3 @@ export interface Lab {
   instructions: string;
   completed: boolean;
 }
-
-

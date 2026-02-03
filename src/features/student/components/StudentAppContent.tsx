@@ -1,9 +1,9 @@
-"use client";
+'use client';
 import { useEffect, useState } from 'react';
 import { useAuth } from '@context/AuthContext';
 import { LandingPage } from './Landing/LandingPage';
 import { Dashboard } from './Dashboard/Dashboard';
-import { DashboardHeader } from "@shared/components/layout/DashboardHeader"
+import { DashboardHeader } from '@shared/components/layout/DashboardHeader';
 import { ProctoringDemo } from './Proctoring/ProctoringDemo';
 import { CourseList } from './Courses/CourseList';
 import { CourseDetail } from './Courses/CourseDetail';
@@ -14,8 +14,8 @@ import { Profile } from './Profile/Profile';
 import { VideoLibrary } from './Video/VideoLibrary';
 
 import { CommunityPage } from './Community/CommunityPage';
-import { SidebarInset, SidebarProvider } from "@shared/components/ui/sidebar"
-import { AppSidebar } from "@shared/components/layout/AppSidebar"
+import { SidebarInset, SidebarProvider } from '@shared/components/ui/sidebar';
+import { AppSidebar } from '@shared/components/layout/AppSidebar';
 import { StickyBanner } from '@shared/components/ui/sticky-banner';
 import '../styles/student.css';
 
@@ -110,29 +110,27 @@ export const StudentAppContent: React.FC<StudentAppContentProps> = ({ initialTab
   }
 
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="flex min-h-screen flex-col">
       <div className="sticky top-0 z-50">
-        <StickyBanner className="bg-blue-600 border-none shrink-0 pointer-events-auto">
-          <p className="text-xs font-medium text-white tracking-wide text-center px-4">
-            Announcing the GradeU Community. Connect with fellow students and share knowledge.{" "}
+        <StickyBanner className="pointer-events-auto shrink-0 border-none bg-blue-600">
+          <p className="px-4 text-center text-xs font-medium tracking-wide text-white">
+            Announcing the GradeU Community. Connect with fellow students and share knowledge.{' '}
             <button
               onClick={() => setActiveTab('community')}
-              className="text-white font-black hover:underline ml-2 uppercase tracking-tighter"
+              className="ml-2 font-black tracking-tighter text-white uppercase hover:underline"
             >
               Join Community &rarr;
             </button>
           </p>
         </StickyBanner>
       </div>
-      <SidebarProvider className="dark w-full bg-background text-foreground">
+      <SidebarProvider className="dark bg-background text-foreground w-full">
         <AppSidebar activeTab={activeTab} onTabChange={setActiveTab} />
         <SidebarInset>
           <div className="sticky top-0 z-40">
             <DashboardHeader activeTab={activeTab} onTabChange={setActiveTab} />
           </div>
-          <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
-            {renderContent()}
-          </div>
+          <div className="flex flex-1 flex-col gap-4 p-4 pt-0">{renderContent()}</div>
         </SidebarInset>
       </SidebarProvider>
     </div>

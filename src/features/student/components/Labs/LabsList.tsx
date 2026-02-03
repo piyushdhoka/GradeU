@@ -1,5 +1,15 @@
 import React from 'react';
-import { FlaskRound as Flask, Clock, CheckCircle, ArrowRight, Terminal, Activity, Lock, BookOpen, Users } from 'lucide-react';
+import {
+  FlaskRound as Flask,
+  Clock,
+  CheckCircle,
+  ArrowRight,
+  Terminal,
+  Activity,
+  Lock,
+  BookOpen,
+  Users,
+} from 'lucide-react';
 import { labs } from '@data/labs';
 import { useAuth } from '@context/AuthContext';
 import { getCompletedLabs } from '@utils/labCompletion';
@@ -43,40 +53,52 @@ export const LabsList: React.FC<LabsListProps> = ({ onLabSelect }) => {
 
   const getDifficultyVariant = (difficulty: string) => {
     switch (difficulty) {
-      case 'beginner': return 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20';
-      case 'intermediate': return 'bg-amber-500/10 text-amber-500 border-amber-500/20';
-      case 'advanced': return 'bg-rose-500/10 text-rose-500 border-rose-500/20';
-      default: return 'bg-muted text-muted-foreground border-border';
+      case 'beginner':
+        return 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20';
+      case 'intermediate':
+        return 'bg-amber-500/10 text-amber-500 border-amber-500/20';
+      case 'advanced':
+        return 'bg-rose-500/10 text-rose-500 border-rose-500/20';
+      default:
+        return 'bg-muted text-muted-foreground border-border';
     }
   };
 
-  const categories = [...new Set(labs.map(l => l.category))];
-  const filteredLabs = labs.filter(lab => lab.category === activeCategory);
-  const completionPercentage = Math.round(labStats?.completionPercentage ?? (labs.length > 0 ? (completedLabs.length / labs.length) * 100 : 0));
+  const categories = [...new Set(labs.map((l) => l.category))];
+  const filteredLabs = labs.filter((lab) => lab.category === activeCategory);
+  const completionPercentage = Math.round(
+    labStats?.completionPercentage ??
+      (labs.length > 0 ? (completedLabs.length / labs.length) * 100 : 0)
+  );
 
   return (
-    <div className="flex flex-col gap-6 p-4 md:p-8 animate-in fade-in duration-500">
+    <div className="animate-in fade-in flex flex-col gap-6 p-4 duration-500 md:p-8">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
         <div className="space-y-1">
-          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Virtual Labs</h1>
-          <p className="text-muted-foreground">Hands-on security simulations and practical exercises</p>
+          <h1 className="text-2xl font-bold tracking-tight md:text-3xl">Virtual Labs</h1>
+          <p className="text-muted-foreground">
+            Hands-on security simulations and practical exercises
+          </p>
         </div>
-        <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-card border border-border/50">
-          <Flask className="h-5 w-5 text-primary" />
-          <span className="text-sm font-medium">{labStats?.completedLabs ?? completedLabs.length} / {labStats?.totalLabs ?? labs.length} Completed</span>
+        <div className="bg-card border-border/50 flex items-center gap-2 rounded-lg border px-4 py-2">
+          <Flask className="text-primary h-5 w-5" />
+          <span className="text-sm font-medium">
+            {labStats?.completedLabs ?? completedLabs.length} / {labStats?.totalLabs ?? labs.length}{' '}
+            Completed
+          </span>
         </div>
       </div>
 
       {/* Progress Overview */}
       <Card className="border-primary/20 bg-primary/5">
         <CardContent className="pt-6">
-          <div className="flex items-center justify-between mb-2">
+          <div className="mb-2 flex items-center justify-between">
             <span className="text-sm font-medium">Overall Progress</span>
-            <span className="text-sm font-bold text-primary">{completionPercentage}%</span>
+            <span className="text-primary text-sm font-bold">{completionPercentage}%</span>
           </div>
           <Progress value={completionPercentage} className="h-2" />
-          <p className="text-xs text-muted-foreground mt-2">
+          <p className="text-muted-foreground mt-2 text-xs">
             Complete all labs to earn your certification
           </p>
         </CardContent>
@@ -84,25 +106,27 @@ export const LabsList: React.FC<LabsListProps> = ({ onLabSelect }) => {
 
       {/* Category Tabs */}
       {categories.length > 1 && (
-        <div className="flex flex-wrap gap-2 p-1 bg-card rounded-lg border border-border/50">
+        <div className="bg-card border-border/50 flex flex-wrap gap-2 rounded-lg border p-1">
           {categories.map((category) => (
             <button
               key={category}
               onClick={() => setActiveCategory(category)}
               className={cn(
-                "px-4 py-2 rounded-md text-sm font-medium transition-all duration-200",
+                'rounded-md px-4 py-2 text-sm font-medium transition-all duration-200',
                 activeCategory === category
-                  ? "bg-primary text-primary-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                  ? 'bg-primary text-primary-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
               )}
             >
               <span className="flex items-center gap-2">
                 {category}
-                <span className={cn(
-                  "text-xs px-1.5 py-0.5 rounded-full",
-                  activeCategory === category ? "bg-primary-foreground/20" : "bg-muted"
-                )}>
-                  {labs.filter(l => l.category === category).length}
+                <span
+                  className={cn(
+                    'rounded-full px-1.5 py-0.5 text-xs',
+                    activeCategory === category ? 'bg-primary-foreground/20' : 'bg-muted'
+                  )}
+                >
+                  {labs.filter((l) => l.category === category).length}
                 </span>
               </span>
             </button>
@@ -132,10 +156,11 @@ export const LabsList: React.FC<LabsListProps> = ({ onLabSelect }) => {
       ) : labs.length === 0 ? (
         <Card className="border-border/50">
           <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-            <Terminal className="h-12 w-12 text-muted-foreground/50 mb-4" />
-            <h2 className="text-xl font-semibold mb-2">No Labs Available</h2>
+            <Terminal className="text-muted-foreground/50 mb-4 h-12 w-12" />
+            <h2 className="mb-2 text-xl font-semibold">No Labs Available</h2>
             <p className="text-muted-foreground max-w-md">
-              Lab simulations are currently being prepared. Check back soon for hands-on security training exercises.
+              Lab simulations are currently being prepared. Check back soon for hands-on security
+              training exercises.
             </p>
           </CardContent>
         </Card>
@@ -150,39 +175,49 @@ export const LabsList: React.FC<LabsListProps> = ({ onLabSelect }) => {
               <Card
                 key={lab.id}
                 className={cn(
-                  "group transition-all duration-200 cursor-pointer",
+                  'group cursor-pointer transition-all duration-200',
                   isLocked
-                    ? "opacity-60 border-border/30"
-                    : "border-border/50 hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5",
-                  isCompleted && "border-primary/30 bg-primary/5"
+                    ? 'border-border/30 opacity-60'
+                    : 'border-border/50 hover:border-primary/30 hover:shadow-primary/5 hover:shadow-lg',
+                  isCompleted && 'border-primary/30 bg-primary/5'
                 )}
                 onClick={() => !isLocked && onLabSelect(lab.id)}
               >
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-center gap-3 flex-1">
-                      <div className={cn(
-                        "p-2 rounded-lg border",
-                        isLocked ? "bg-muted border-border" : "bg-primary/10 border-primary/20"
-                      )}>
-                        {isLocked ? <Lock className="h-5 w-5 text-muted-foreground" /> : <Terminal className="h-5 w-5 text-primary" />}
+                    <div className="flex flex-1 items-center gap-3">
+                      <div
+                        className={cn(
+                          'rounded-lg border p-2',
+                          isLocked ? 'bg-muted border-border' : 'bg-primary/10 border-primary/20'
+                        )}
+                      >
+                        {isLocked ? (
+                          <Lock className="text-muted-foreground h-5 w-5" />
+                        ) : (
+                          <Terminal className="text-primary h-5 w-5" />
+                        )}
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <CardTitle className={cn(
-                          "text-lg line-clamp-1 transition-colors",
-                          !isLocked && "group-hover:text-primary"
-                        )}>
+                      <div className="min-w-0 flex-1">
+                        <CardTitle
+                          className={cn(
+                            'line-clamp-1 text-lg transition-colors',
+                            !isLocked && 'group-hover:text-primary'
+                          )}
+                        >
                           {lab.title}
                         </CardTitle>
-                        <div className="flex items-center gap-2 mt-1">
-                          <span className={cn(
-                            "text-[10px] font-semibold uppercase px-2 py-0.5 rounded-full border",
-                            getDifficultyVariant(lab.difficulty)
-                          )}>
+                        <div className="mt-1 flex items-center gap-2">
+                          <span
+                            className={cn(
+                              'rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase',
+                              getDifficultyVariant(lab.difficulty)
+                            )}
+                          >
                             {lab.difficulty}
                           </span>
                           {isCompleted && (
-                            <span className="flex items-center gap-1 text-[10px] font-semibold text-primary">
+                            <span className="text-primary flex items-center gap-1 text-[10px] font-semibold">
                               <CheckCircle className="h-3 w-3" /> Completed
                             </span>
                           )}
@@ -197,11 +232,9 @@ export const LabsList: React.FC<LabsListProps> = ({ onLabSelect }) => {
                   </div>
                 </CardHeader>
                 <CardContent className="pt-0">
-                  <CardDescription className="line-clamp-2 mb-4">
-                    {lab.description}
-                  </CardDescription>
+                  <CardDescription className="mb-4 line-clamp-2">{lab.description}</CardDescription>
 
-                  <div className="flex items-center gap-4 text-xs text-muted-foreground mb-4">
+                  <div className="text-muted-foreground mb-4 flex items-center gap-4 text-xs">
                     <div className="flex items-center gap-1">
                       <Clock className="h-3.5 w-3.5" />
                       <span>{lab.estimatedTime}</span>
@@ -212,28 +245,25 @@ export const LabsList: React.FC<LabsListProps> = ({ onLabSelect }) => {
                     </div>
                   </div>
 
-                  <div className="flex flex-wrap gap-1.5 mb-4">
+                  <div className="mb-4 flex flex-wrap gap-1.5">
                     {lab.tools.slice(0, 4).map((tool: string, index: number) => (
                       <span
                         key={index}
-                        className="px-2 py-0.5 text-[10px] font-medium bg-muted rounded-md border border-border/50"
+                        className="bg-muted border-border/50 rounded-md border px-2 py-0.5 text-[10px] font-medium"
                       >
                         {tool}
                       </span>
                     ))}
                     {lab.tools.length > 4 && (
-                      <span className="px-2 py-0.5 text-[10px] text-muted-foreground">
+                      <span className="text-muted-foreground px-2 py-0.5 text-[10px]">
                         +{lab.tools.length - 4} more
                       </span>
                     )}
                   </div>
 
                   <Button
-                    variant={isCompleted ? "outline" : "default"}
-                    className={cn(
-                      "w-full",
-                      isLocked && "pointer-events-none"
-                    )}
+                    variant={isCompleted ? 'outline' : 'default'}
+                    className={cn('w-full', isLocked && 'pointer-events-none')}
                     disabled={isLocked}
                   >
                     {isLocked ? (
@@ -266,27 +296,41 @@ export const LabsList: React.FC<LabsListProps> = ({ onLabSelect }) => {
         <Card className="border-border/50">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-lg">
-              <Activity className="h-5 w-5 text-primary" />
+              <Activity className="text-primary h-5 w-5" />
               Lab Statistics
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="text-center p-4 rounded-lg bg-muted/50 border border-border/50">
-                <div className="text-2xl font-bold text-primary">{labStats?.completedLabs ?? completedLabs.length}</div>
-                <div className="text-xs text-muted-foreground uppercase tracking-wide">Completed</div>
+            <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+              <div className="bg-muted/50 border-border/50 rounded-lg border p-4 text-center">
+                <div className="text-primary text-2xl font-bold">
+                  {labStats?.completedLabs ?? completedLabs.length}
+                </div>
+                <div className="text-muted-foreground text-xs tracking-wide uppercase">
+                  Completed
+                </div>
               </div>
-              <div className="text-center p-4 rounded-lg bg-muted/50 border border-border/50">
-                <div className="text-2xl font-bold text-amber-500">{labStats ? labStats.totalLabs - labStats.completedLabs : labs.length - completedLabs.length}</div>
-                <div className="text-xs text-muted-foreground uppercase tracking-wide">Remaining</div>
+              <div className="bg-muted/50 border-border/50 rounded-lg border p-4 text-center">
+                <div className="text-2xl font-bold text-amber-500">
+                  {labStats
+                    ? labStats.totalLabs - labStats.completedLabs
+                    : labs.length - completedLabs.length}
+                </div>
+                <div className="text-muted-foreground text-xs tracking-wide uppercase">
+                  Remaining
+                </div>
               </div>
-              <div className="text-center p-4 rounded-lg bg-muted/50 border border-border/50">
-                <div className="text-2xl font-bold text-primary">{completionPercentage}%</div>
-                <div className="text-xs text-muted-foreground uppercase tracking-wide">Progress</div>
+              <div className="bg-muted/50 border-border/50 rounded-lg border p-4 text-center">
+                <div className="text-primary text-2xl font-bold">{completionPercentage}%</div>
+                <div className="text-muted-foreground text-xs tracking-wide uppercase">
+                  Progress
+                </div>
               </div>
-              <div className="text-center p-4 rounded-lg bg-muted/50 border border-border/50">
+              <div className="bg-muted/50 border-border/50 rounded-lg border p-4 text-center">
                 <div className="text-2xl font-bold">~{labs.length * 60}</div>
-                <div className="text-xs text-muted-foreground uppercase tracking-wide">Total Minutes</div>
+                <div className="text-muted-foreground text-xs tracking-wide uppercase">
+                  Total Minutes
+                </div>
               </div>
             </div>
           </CardContent>

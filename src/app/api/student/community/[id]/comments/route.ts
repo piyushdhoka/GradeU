@@ -2,12 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { Redis } from '@upstash/redis';
 import { v4 as uuidv4 } from 'uuid';
 
-const redis = process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN
-  ? new Redis({
-      url: process.env.UPSTASH_REDIS_REST_URL,
-      token: process.env.UPSTASH_REDIS_REST_TOKEN,
-    })
-  : null;
+const redis =
+  process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN
+    ? new Redis({
+        url: process.env.UPSTASH_REDIS_REST_URL,
+        token: process.env.UPSTASH_REDIS_REST_TOKEN,
+      })
+    : null;
 
 const safeParse = (data: any, fallback: any) => {
   if (!data) return fallback;
@@ -19,10 +20,7 @@ const safeParse = (data: any, fallback: any) => {
 };
 
 // GET comments for a post
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     if (!redis) {
       return NextResponse.json([]);
@@ -41,12 +39,12 @@ export async function GET(
         if (!comment) return null;
         return {
           ...comment,
-          author: safeParse(comment.author, { name: 'Unknown' })
+          author: safeParse(comment.author, { name: 'Unknown' }),
         };
       })
     );
 
-    return NextResponse.json(comments.filter(c => c !== null));
+    return NextResponse.json(comments.filter((c) => c !== null));
   } catch (error) {
     console.error('Error fetching comments:', error);
     return NextResponse.json([]);
@@ -54,10 +52,7 @@ export async function GET(
 }
 
 // ADD a comment
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     if (!redis) {
       return NextResponse.json({ error: 'Redis not configured' }, { status: 503 });
@@ -73,7 +68,7 @@ export async function POST(
       postId,
       author: JSON.stringify(author),
       content,
-      timestamp
+      timestamp,
     };
 
     // Save comment and update post comment count

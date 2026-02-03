@@ -1,9 +1,7 @@
-
 export function getBackendUrl(): string {
-    
-    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || '';
+  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || '';
 
-    return backendUrl;
+  return backendUrl;
 }
 
 /**
@@ -12,28 +10,27 @@ export function getBackendUrl(): string {
  * @returns Full URL or relative path
  */
 export function getApiUrl(path: string): string {
-    const baseUrl = getBackendUrl();
+  const baseUrl = getBackendUrl();
 
-    // If no base URL, use relative path (works with Next.js rewrites)
-    if (!baseUrl) {
-        return path;
-    }
+  // If no base URL, use relative path (works with Next.js rewrites)
+  if (!baseUrl) {
+    return path;
+  }
 
-    // Ensure no double slashes
-    const cleanBase = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
-    const cleanPath = path.startsWith('/') ? path : `/${path}`;
+  // Ensure no double slashes
+  const cleanBase = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
+  const cleanPath = path.startsWith('/') ? path : `/${path}`;
 
-    return `${cleanBase}${cleanPath}`;
+  return `${cleanBase}${cleanPath}`;
 }
 
-
 export function isProduction(): boolean {
-    return process.env.NODE_ENV === 'production';
+  return process.env.NODE_ENV === 'production';
 }
 
 /**
  * Check if backend URL is configured
  */
 export function hasBackendUrl(): boolean {
-    return Boolean(process.env.NEXT_PUBLIC_BACKEND_URL || process.env.VITE_API_URL);
+  return Boolean(process.env.NEXT_PUBLIC_BACKEND_URL || process.env.VITE_API_URL);
 }

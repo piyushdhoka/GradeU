@@ -15,9 +15,8 @@ export async function POST(request: NextRequest) {
     await connectDB();
 
     // Sanitize inputs
-    const sanitizedDetails = details && typeof details === 'object'
-      ? JSON.parse(JSON.stringify(details))
-      : {};
+    const sanitizedDetails =
+      details && typeof details === 'object' ? JSON.parse(JSON.stringify(details)) : {};
 
     const log = new ProctoringLog({
       studentId: String(studentId).trim().substring(0, 200),
@@ -25,7 +24,7 @@ export async function POST(request: NextRequest) {
       attemptId: String(attemptId).trim().substring(0, 200),
       eventType,
       details: sanitizedDetails,
-      timestamp: new Date()
+      timestamp: new Date(),
     });
 
     await log.save();

@@ -50,7 +50,10 @@ export const Proctoring: React.FC<Props> = ({
   const multiFaceCountRef = useRef(0);
   const faceDetectorRef = useRef<any>(null);
   const faceApiRef = useRef<any>(null);
-  const scriptRefs = useRef<{ opencv?: HTMLScriptElement | null; faceapi?: HTMLScriptElement | null }>({ opencv: null, faceapi: null });
+  const scriptRefs = useRef<{
+    opencv?: HTMLScriptElement | null;
+    faceapi?: HTMLScriptElement | null;
+  }>({ opencv: null, faceapi: null });
   const [detectorReady, setDetectorReady] = useState(false);
   const [activeDetector, setActiveDetector] = useState<string>('none');
   const lastUsedDetectorRef = useRef<string | null>(null);
@@ -74,7 +77,11 @@ export const Proctoring: React.FC<Props> = ({
   // helper logging (fire-and-forget)
   const sendLog = async (payload: any) => {
     try {
-      await fetch('/proctor-logs', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(payload) });
+      await fetch('/proctor-logs', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
     } catch {
       // ignore network logging failures
     }
@@ -245,7 +252,10 @@ export const Proctoring: React.FC<Props> = ({
     try {
       if ((window as any).FaceDetector) {
         try {
-          faceDetectorRef.current = new (window as any).FaceDetector({ fastMode: true, maxDetectedFaces: 4 });
+          faceDetectorRef.current = new (window as any).FaceDetector({
+            fastMode: true,
+            maxDetectedFaces: 4,
+          });
           pushLog('Native FaceDetector initialized');
         } catch (e) {
           faceDetectorRef.current = null;
@@ -331,10 +341,17 @@ export const Proctoring: React.FC<Props> = ({
     let cancelled = false;
 
     const detectReady = () => {
-      const haveFaceApiModel = !!(faceApiRef.current && faceApiRef.current.nets && faceApiRef.current.nets.tinyFaceDetector);
+      const haveFaceApiModel = !!(
+        faceApiRef.current &&
+        faceApiRef.current.nets &&
+        faceApiRef.current.nets.tinyFaceDetector
+      );
       const ready = USE_FACE_API_ONLY
         ? haveFaceApiModel
-        : (haveFaceApiModel || !!classifierRef.current || !!(window as any).FaceDetector || !!(window as any).cv);
+        : haveFaceApiModel ||
+          !!classifierRef.current ||
+          !!(window as any).FaceDetector ||
+          !!(window as any).cv;
       if (ready) {
         if (!detectorReady) {
           pushLog('detectorReady => true');
@@ -384,7 +401,9 @@ export const Proctoring: React.FC<Props> = ({
     return () => {
       try {
         if (overlay && overlay.parentNode) overlay.parentNode.removeChild(overlay);
-      } catch (e) { console.debug('overlay removal error', e); }
+      } catch (e) {
+        console.debug('overlay removal error', e);
+      }
     };
   }, []);
 
@@ -430,7 +449,10 @@ export const Proctoring: React.FC<Props> = ({
         return;
       }
 
-      if (shouldLog) pushLog(`video dimensions ${video.videoWidth}x${video.videoHeight} readyState=${video.readyState}`);
+      if (shouldLog)
+        pushLog(
+          `video dimensions ${video.videoWidth}x${video.videoHeight} readyState=${video.readyState}`
+        );
 
       processingRef.current = true;
       let bitmapForDetector: ImageBitmap | null = null;
@@ -468,7 +490,15 @@ export const Proctoring: React.FC<Props> = ({
             const minSize = new cv.Size(30, 30);
             const maxSize = new cv.Size(0, 0);
 
-            classifierRef.current.detectMultiScale(gray, faces, scaleFactor, minNeighbors, flags, minSize, maxSize);
+            classifierRef.current.detectMultiScale(
+              gray,
+              faces,
+              scaleFactor,
+              minNeighbors,
+              flags,
+              minSize,
+              maxSize
+            );
 
             count = faces.size();
             for (let i = 0; i < faces.size(); i++) {
@@ -484,11 +514,27 @@ export const Proctoring: React.FC<Props> = ({
             pushLog(`OpenCV detect error: ${String(err)}`);
             await sendLog({ event: 'opencv-detect-error', error: String(err) });
           } finally {
-            try { if (src) src.delete(); } catch { /* ignore */ }
-            try { if (gray) gray.delete(); } catch { /* ignore */ }
-            try { if (faces) faces.delete(); } catch { /* ignore */ }
+            try {
+              if (src) src.delete();
+            } catch {
+              /* ignore */
+            }
+            try {
+              if (gray) gray.delete();
+            } catch {
+              /* ignore */
+            }
+            try {
+              if (faces) faces.delete();
+            } catch {
+              /* ignore */
+            }
           }
-        } else if (!USE_FACE_API_ONLY && faceDetectorRef.current && faceDetectorRef.current.detect) {
+        } else if (
+          !USE_FACE_API_ONLY &&
+          faceDetectorRef.current &&
+          faceDetectorRef.current.detect
+        ) {
           if (shouldLog) pushLog('entering native FaceDetector branch');
           // native FaceDetector
           try {
@@ -496,7 +542,8 @@ export const Proctoring: React.FC<Props> = ({
             const detected = await faceDetectorRef.current.detect(bitmapForDetector);
             count = Array.isArray(detected) ? detected.length : 0;
             for (const f of detected) {
-              const b = (f as any).boundingBox || (f as any).box || { x: 0, y: 0, width: 0, height: 0 };
+              const b = (f as any).boundingBox ||
+                (f as any).box || { x: 0, y: 0, width: 0, height: 0 };
               facesArray.push({ x: b.x, y: b.y, w: b.width, h: b.height });
             }
             lastUsedDetectorRef.current = 'native';
@@ -507,15 +554,26 @@ export const Proctoring: React.FC<Props> = ({
             pushLog(`native FaceDetector error: ${String(err)}`);
             await sendLog({ event: 'native-detect-error', error: String(err) });
           } finally {
-            try { if (bitmapForDetector) bitmapForDetector.close(); } catch { /* ignore */ }
+            try {
+              if (bitmapForDetector) bitmapForDetector.close();
+            } catch {
+              /* ignore */
+            }
             bitmapForDetector = null;
           }
-        } else if (faceApiRef.current && faceApiRef.current.nets && faceApiRef.current.nets.tinyFaceDetector) {
+        } else if (
+          faceApiRef.current &&
+          faceApiRef.current.nets &&
+          faceApiRef.current.nets.tinyFaceDetector
+        ) {
           if (shouldLog) pushLog('entering face-api branch');
           // face-api.js tiny detector — pass HTMLCanvasElement directly (avoid ImageBitmap toNetInput error)
           try {
             const fa = faceApiRef.current;
-            const detections = await fa.detectAllFaces(canvas, new fa.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.5 }));
+            const detections = await fa.detectAllFaces(
+              canvas,
+              new fa.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.5 })
+            );
             count = Array.isArray(detections) ? detections.length : 0;
             for (const d of detections) {
               const b = d.box || d.boundingBox || { x: 0, y: 0, width: 0, height: 0 };
@@ -580,7 +638,9 @@ export const Proctoring: React.FC<Props> = ({
         processingRef.current = false;
         try {
           rafRef.current = window.requestAnimationFrame((t) => void processFrame(t));
-        } catch { /* ignore */ }
+        } catch {
+          /* ignore */
+        }
       }
     };
 
@@ -601,7 +661,6 @@ export const Proctoring: React.FC<Props> = ({
   const violationsRef = useRef(0);
   const lastViolationTimeRef = useRef(0);
   const VIOLATION_COOLDOWN_MS = 5000; // 5 seconds between violation warnings
-
 
   function incrementViolation(reason: string) {
     violationsRef.current += 1;
@@ -633,7 +692,11 @@ export const Proctoring: React.FC<Props> = ({
         classifierRef.current = null;
       }
       if (cv && (cv as any).FS_unlink) {
-        try { (cv as any).FS_unlink(`/${CASCADE_FILENAME}`); } catch { /* ignore */ }
+        try {
+          (cv as any).FS_unlink(`/${CASCADE_FILENAME}`);
+        } catch {
+          /* ignore */
+        }
       }
     } catch {
       console.debug('stopProcessing error');
@@ -644,19 +707,25 @@ export const Proctoring: React.FC<Props> = ({
       const s1 = scriptRefs.current.opencv;
       if (s1 && s1.parentNode) s1.parentNode.removeChild(s1);
       scriptRefs.current.opencv = null;
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
     try {
       const s2 = scriptRefs.current.faceapi;
       if (s2 && s2.parentNode) s2.parentNode.removeChild(s2);
       scriptRefs.current.faceapi = null;
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
 
     // remove overlay
     try {
       const overlay = overlayRef.current;
       if (overlay && overlay.parentNode) overlay.parentNode.removeChild(overlay);
       overlayRef.current = null;
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
   }
 
   // Cleanup on unmount: stop processing and remove resources
@@ -669,34 +738,57 @@ export const Proctoring: React.FC<Props> = ({
         rafRef.current = null;
       }
     };
-
   }, []);
 
   // UI — hidden in production; render nothing to keep UX seamless
   if (!SHOW_DEBUG_UI) return null;
   return (
     <div className="mt-4">
-      <div className="text-sm text-gray-700 mb-2">Proctoring status: <strong className="capitalize">{status}</strong></div>
-      <div className="mt-2 p-2 border rounded bg-gray-50 text-xs text-gray-700">
-        <div><strong>Detector ready:</strong> {detectorReady ? 'yes' : 'no'}</div>
-        <div><strong>Active detector:</strong> {activeDetector}</div>
-        <div><strong>Processing:</strong> {processingRef.current ? 'yes' : 'no'}</div>
-        <div><strong>Consecutive no-face:</strong> {noFaceCountRef.current}</div>
-        <div><strong>Consecutive multi-face:</strong> {multiFaceCountRef.current}</div>
-        <div className="mt-1 text-xs text-gray-500">Overlay rectangles are drawn to top-left of the page for visual debug.</div>
+      <div className="mb-2 text-sm text-gray-700">
+        Proctoring status: <strong className="capitalize">{status}</strong>
       </div>
-      <div className="mt-2 p-2 border rounded bg-white text-xs text-gray-700">
-        <div className="flex items-center justify-between mb-1">
+      <div className="mt-2 rounded border bg-gray-50 p-2 text-xs text-gray-700">
+        <div>
+          <strong>Detector ready:</strong> {detectorReady ? 'yes' : 'no'}
+        </div>
+        <div>
+          <strong>Active detector:</strong> {activeDetector}
+        </div>
+        <div>
+          <strong>Processing:</strong> {processingRef.current ? 'yes' : 'no'}
+        </div>
+        <div>
+          <strong>Consecutive no-face:</strong> {noFaceCountRef.current}
+        </div>
+        <div>
+          <strong>Consecutive multi-face:</strong> {multiFaceCountRef.current}
+        </div>
+        <div className="mt-1 text-xs text-gray-500">
+          Overlay rectangles are drawn to top-left of the page for visual debug.
+        </div>
+      </div>
+      <div className="mt-2 rounded border bg-white p-2 text-xs text-gray-700">
+        <div className="mb-1 flex items-center justify-between">
           <div className="font-semibold">Proctoring debug</div>
           <div className="space-x-1">
-            <button className="px-2 py-1 border rounded text-xs" onClick={() => { pushLog('retry faceapi'); void loadFaceApiNow(); }}>Retry face-api</button>
+            <button
+              className="rounded border px-2 py-1 text-xs"
+              onClick={() => {
+                pushLog('retry faceapi');
+                void loadFaceApiNow();
+              }}
+            >
+              Retry face-api
+            </button>
           </div>
         </div>
         <div className="h-36 overflow-auto bg-gray-50 p-1">
           {logs.length === 0 ? <div className="text-gray-400">No logs yet</div> : null}
-          <ul className="text-[11px] list-none m-0 p-0">
+          <ul className="m-0 list-none p-0 text-[11px]">
             {logs.map((l) => (
-              <li key={l.id} className="mb-1">{new Date(l.ts).toLocaleTimeString()} — {l.msg}</li>
+              <li key={l.id} className="mb-1">
+                {new Date(l.ts).toLocaleTimeString()} — {l.msg}
+              </li>
             ))}
           </ul>
         </div>

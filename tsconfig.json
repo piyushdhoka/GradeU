@@ -1,11 +1,7 @@
 {
   "compilerOptions": {
     "target": "ES2020",
-    "lib": [
-      "dom",
-      "dom.iterable",
-      "esnext"
-    ],
+    "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
@@ -24,60 +20,24 @@
     ],
     "baseUrl": ".",
     "paths": {
-      "@/*": [
-        "src/*"
-      ],
-      "@frontend/*": [
-        "src/*"
-      ],
-      "@server/*": [
-        "src/server/*"
-      ],
-      "@backend/*": [
-        "src/server/*"
-      ],
-      "@student/*": [
-        "src/features/student/*"
-      ],
-      "@teacher/*": [
-        "src/features/teacher/*"
-      ],
-      "@admin/*": [
-        "src/features/admin/*"
-      ],
-      "@shared/*": [
-        "src/shared/*"
-      ],
-      "@context/*": [
-        "src/shared/context/*"
-      ],
-      "@services/*": [
-        "src/shared/services/*"
-      ],
-      "@data/*": [
-        "src/shared/data/*"
-      ],
-      "@data": [
-        "src/shared/data/index"
-      ],
-      "@lib/*": [
-        "src/shared/lib/*"
-      ],
-      "@styles/*": [
-        "src/shared/styles/*"
-      ],
-      "@types/*": [
-        "src/shared/types/*"
-      ],
-      "@types": [
-        "src/shared/types/index"
-      ],
-      "@utils/*": [
-        "src/shared/utils/*"
-      ],
-      "@components/*": [
-        "src/shared/components/*"
-      ]
+      "@/*": ["src/*"],
+      "@frontend/*": ["src/*"],
+      "@server/*": ["src/server/*"],
+      "@backend/*": ["src/server/*"],
+      "@student/*": ["src/features/student/*"],
+      "@teacher/*": ["src/features/teacher/*"],
+      "@admin/*": ["src/features/admin/*"],
+      "@shared/*": ["src/shared/*"],
+      "@context/*": ["src/shared/context/*"],
+      "@services/*": ["src/shared/services/*"],
+      "@data/*": ["src/shared/data/*"],
+      "@data": ["src/shared/data/index"],
+      "@lib/*": ["src/shared/lib/*"],
+      "@styles/*": ["src/shared/styles/*"],
+      "@types/*": ["src/shared/types/*"],
+      "@types": ["src/shared/types/index"],
+      "@utils/*": ["src/shared/utils/*"],
+      "@components/*": ["src/shared/components/*"]
     }
   },
   "include": [
@@ -87,7 +47,5 @@
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts"
   ],
-  "exclude": [
-    "node_modules"
-  ]
+  "exclude": ["node_modules"]
 }

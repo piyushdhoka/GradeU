@@ -1,4 +1,4 @@
-"use client";
+'use client';
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { authService } from '@services/authService';
 import type { User } from '@types';
@@ -22,7 +22,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     let mounted = true;
-    
+
     // Watchdog: ensure we never stay stuck in loading state
     const watchdog = setTimeout(() => {
       if (mounted && loading) {
@@ -32,29 +32,29 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     async function initializeAuth() {
       try {
-        
-        
         // With implicit flow, Supabase automatically handles tokens in URL hash
         // detectSessionInUrl: true handles this automatically
         // Just need to get the session
-        
+
         // Check if there are auth params in URL (hash fragments)
         const hasAuthHash = window.location.hash && window.location.hash.includes('access_token');
-        
+
         if (hasAuthHash) {
-          
           // Give Supabase a moment to process the hash
-          await new Promise(resolve => setTimeout(resolve, 100));
+          await new Promise((resolve) => setTimeout(resolve, 100));
         }
-        
+
         // Now check for session
-        const { data: { session }, error } = await supabase.auth.getSession();
-        
+        const {
+          data: { session },
+          error,
+        } = await supabase.auth.getSession();
+
         // Clean up URL - remove hash and query params
         if (hasAuthHash || window.location.hash || window.location.search.includes('code=')) {
           window.history.replaceState({}, '', window.location.pathname);
         }
-        
+
         if (error) {
           // Session error - clear any stale local data
           localStorage.removeItem('gradeUUser');
@@ -62,8 +62,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
         if (session) {
           // If we have a session, sync with our DB to get role/profile
-          const syncedUser = await authService.handleAuthStateChange(session) as AuthContextValue['user'];
-          if (mounted && syncedUser && syncedUser.role !== 'admin' as any) {
+          const syncedUser = (await authService.handleAuthStateChange(
+            session
+          )) as AuthContextValue['user'];
+          if (mounted && syncedUser && syncedUser.role !== ('admin' as any)) {
             setUser(syncedUser);
           } else if (mounted && !syncedUser) {
             // Session exists but profile doesn't (user deleted from DB)
@@ -89,13 +91,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     initializeAuth();
 
     // Listen for auth state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
         if (session) {
           try {
-            const syncedUser = await authService.handleAuthStateChange(session) as AuthContextValue['user'];
-            if (syncedUser && syncedUser.role !== 'admin' as any) {
-              setUser(prevUser => {
+            const syncedUser = (await authService.handleAuthStateChange(
+              session
+            )) as AuthContextValue['user'];
+            if (syncedUser && syncedUser.role !== ('admin' as any)) {
+              setUser((prevUser) => {
                 // Protect against state downgrades
                 const isSameUser = prevUser?.id === syncedUser.id;
                 const wasOnboarded = prevUser?.onboarding_completed;
@@ -121,7 +127,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           }
         }
       } else if (event === 'SIGNED_OUT') {
-        
         setUser(null);
         setLoading(false);
       }
@@ -134,8 +139,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
   }, []);
 
-
-
   const loginWithGoogle = async (role: 'student' = 'student') => {
     try {
       await authService.loginWithGoogle(role);
@@ -143,9 +146,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       console.error('Google login failed:', error);
       throw error;
     }
-  }
-
-
+  };
 
   const logout = async () => {
     setUser(null);

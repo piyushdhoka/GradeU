@@ -3,7 +3,8 @@ export const labs: any[] = [
   {
     id: 'broken-access-control',
     title: 'Broken Access Control',
-    description: 'Learn about authorization flaws that allow users to access resources they shouldn\'t have permission to view or modify.',
+    description:
+      "Learn about authorization flaws that allow users to access resources they shouldn't have permission to view or modify.",
     difficulty: 'beginner',
     estimatedTime: '30-45 min',
     completed: false,
@@ -38,7 +39,8 @@ Understand and exploit broken access control vulnerabilities where proper author
   {
     id: 'cryptographic-failures',
     title: 'Cryptographic Failures',
-    description: 'Explore how weak cryptography, poor key management, and insecure data transmission lead to data breaches.',
+    description:
+      'Explore how weak cryptography, poor key management, and insecure data transmission lead to data breaches.',
     difficulty: 'intermediate',
     estimatedTime: '45-60 min',
     completed: false,
@@ -75,7 +77,8 @@ Learn how to identify and exploit weak cryptographic implementations that expose
   {
     id: 'sql-injection',
     title: 'SQL Injection',
-    description: 'Master SQL injection attacks by inserting malicious SQL code into input fields to manipulate database queries.',
+    description:
+      'Master SQL injection attacks by inserting malicious SQL code into input fields to manipulate database queries.',
     difficulty: 'beginner',
     estimatedTime: '30-45 min',
     completed: false,
@@ -113,7 +116,8 @@ Understand and exploit SQL injection vulnerabilities where user input is unsafel
   {
     id: 'insecure-design',
     title: 'Insecure Design',
-    description: 'Discover security flaws that arise from poor architectural decisions and missing security controls in the design phase.',
+    description:
+      'Discover security flaws that arise from poor architectural decisions and missing security controls in the design phase.',
     difficulty: 'intermediate',
     estimatedTime: '45-60 min',
     completed: false,
@@ -152,7 +156,8 @@ Learn how architectural flaws and missing security controls during design phase 
   {
     id: 'security-misconfiguration',
     title: 'Security Misconfiguration',
-    description: 'Identify and exploit misconfigurations in servers, frameworks, and applications that expose sensitive information.',
+    description:
+      'Identify and exploit misconfigurations in servers, frameworks, and applications that expose sensitive information.',
     difficulty: 'beginner',
     estimatedTime: '30-45 min',
     completed: false,
@@ -193,7 +198,8 @@ Discover how improper configuration of security settings exposes applications to
   {
     id: 'vulnerable-components',
     title: 'Vulnerable Components',
-    description: 'Learn how known vulnerabilities in libraries and dependencies can be exploited to compromise applications.',
+    description:
+      'Learn how known vulnerabilities in libraries and dependencies can be exploited to compromise applications.',
     difficulty: 'advanced',
     estimatedTime: '60-90 min',
     completed: false,
@@ -233,7 +239,8 @@ Understand how using libraries and components with known vulnerabilities creates
   {
     id: 'nlp-text-basics',
     title: 'Text Basics',
-    description: 'Introduction to basic text processing techniques including string manipulation, formatting, and regular expressions.',
+    description:
+      'Introduction to basic text processing techniques including string manipulation, formatting, and regular expressions.',
     difficulty: 'beginner',
     estimatedTime: '20-30 min',
     completed: false,
@@ -261,7 +268,8 @@ Learn the fundamental techniques for handling and processing text data.
   {
     id: 'nlp-preprocessing',
     title: 'Text Preprocessing',
-    description: 'Learn essential preprocessing steps like tokenization, stemming, lemmatization, and stop word removal.',
+    description:
+      'Learn essential preprocessing steps like tokenization, stemming, lemmatization, and stop word removal.',
     difficulty: 'beginner',
     estimatedTime: '30-45 min',
     completed: false,
@@ -289,7 +297,8 @@ Master the art of preparing text data for NLP models.
   {
     id: 'nlp-vectorization',
     title: 'Vectorization',
-    description: 'Convert text into numerical vectors using Bag of Words, TF-IDF, and other encoding techniques.',
+    description:
+      'Convert text into numerical vectors using Bag of Words, TF-IDF, and other encoding techniques.',
     difficulty: 'intermediate',
     estimatedTime: '45-60 min',
     completed: false,
@@ -316,7 +325,8 @@ Learn how to transform text into numerical representations for machine learning.
   {
     id: 'nlp-classification',
     title: 'Text Classification',
-    description: 'Build text classification models to categorize documents into predefined classes.',
+    description:
+      'Build text classification models to categorize documents into predefined classes.',
     difficulty: 'intermediate',
     estimatedTime: '45-60 min',
     completed: false,
@@ -424,7 +434,8 @@ Determine the emotional tone behind a series of words.
   {
     id: 'nlp-ner',
     title: 'Named Entity Recognition',
-    description: 'Identify and classify key named entities in text such as people, organizations, and locations.',
+    description:
+      'Identify and classify key named entities in text such as people, organizations, and locations.',
     difficulty: 'intermediate',
     estimatedTime: '45-60 min',
     completed: false,
@@ -451,7 +462,8 @@ Extract structured information from unstructured text.
   {
     id: 'nlp-resume-parser',
     title: 'Resume Parser',
-    description: 'Build a system to extract structured information like skills, education, and experience from resumes.',
+    description:
+      'Build a system to extract structured information like skills, education, and experience from resumes.',
     difficulty: 'advanced',
     estimatedTime: '60-90 min',
     completed: false,

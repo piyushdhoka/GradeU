@@ -19,31 +19,43 @@ export async function POST(request: NextRequest) {
 
     // Validation
     if (!studentId || typeof studentId !== 'string') {
-      return NextResponse.json({
-        error: 'Invalid studentId. Must be a valid UUID string.'
-      }, { status: 400 });
+      return NextResponse.json(
+        {
+          error: 'Invalid studentId. Must be a valid UUID string.',
+        },
+        { status: 400 }
+      );
     }
 
     if (!labId || typeof labId !== 'string' || labId.trim().length === 0) {
-      return NextResponse.json({
-        error: 'Invalid labId. Must be a non-empty string.'
-      }, { status: 400 });
+      return NextResponse.json(
+        {
+          error: 'Invalid labId. Must be a non-empty string.',
+        },
+        { status: 400 }
+      );
     }
 
     // Validate UUID format
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     if (!uuidRegex.test(studentId)) {
-      return NextResponse.json({
-        error: 'Invalid studentId format. Must be a valid UUID.'
-      }, { status: 400 });
+      return NextResponse.json(
+        {
+          error: 'Invalid studentId format. Must be a valid UUID.',
+        },
+        { status: 400 }
+      );
     }
 
     // Verify webhook secret
     const webhookSecret = request.headers.get('x-webhook-secret');
     if (!process.env.LAB_WEBHOOK_SECRET || webhookSecret !== process.env.LAB_WEBHOOK_SECRET) {
-      return NextResponse.json({
-        error: 'Unauthorized: Invalid or missing webhook secret'
-      }, { status: 401 });
+      return NextResponse.json(
+        {
+          error: 'Unauthorized: Invalid or missing webhook secret',
+        },
+        { status: 401 }
+      );
     }
 
     // Check if already completed (use admin to bypass RLS)
@@ -62,7 +74,7 @@ export async function POST(request: NextRequest) {
           id: existing[0].id,
           labId: existing[0].lab_id,
           completedAt: existing[0].completed_at,
-        }
+        },
       });
     }
 
@@ -89,7 +101,7 @@ export async function POST(request: NextRequest) {
         id: completion.id,
         labId: completion.lab_id,
         completedAt: completion.completed_at,
-      }
+      },
     });
   } catch (error) {
     console.error('Lab webhook error:', error);

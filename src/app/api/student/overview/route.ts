@@ -18,8 +18,8 @@ function getSupabaseUserClient(token: string) {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       global: {
-        headers: { Authorization: `Bearer ${token}` }
-      }
+        headers: { Authorization: `Bearer ${token}` },
+      },
     }
   );
 }
@@ -35,7 +35,10 @@ export async function GET(request: NextRequest) {
     }
 
     // Get user from token
-    const { data: { user }, error: authError } = await supabaseAuth.auth.getUser(token);
+    const {
+      data: { user },
+      error: authError,
+    } = await supabaseAuth.auth.getUser(token);
 
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -51,34 +54,43 @@ export async function GET(request: NextRequest) {
     const [experiences, mongoProgress, labCompletionsResult] = await Promise.all([
       // Get study time from MongoDB
       StudentExperience.find({
-        $or: [{ studentId: user.id }, { studentEmail: studentEmail }]
+        $or: [{ studentId: user.id }, { studentEmail: studentEmail }],
       }).lean(),
 
       // Get progress from MongoDB
       StudentProgress.find({
-        $or: [{ studentId: user.id }, { studentEmail: studentEmail }]
-      }).sort({ updatedAt: -1 }).lean(),
+        $or: [{ studentId: user.id }, { studentEmail: studentEmail }],
+      })
+        .sort({ updatedAt: -1 })
+        .lean(),
 
       // Get lab completions from Supabase (use user token to respect RLS)
       userClient
         .from('lab_completions')
         .select('*', { count: 'exact', head: true })
-        .eq('student_id', user.id)
+        .eq('student_id', user.id),
     ]);
 
     const completedLabs = labCompletionsResult.count || 0;
 
     // Calculate study time
-    const totalSeconds = experiences.reduce((acc: number, exp: any) => acc + (exp.totalTimeSpent || 0), 0);
-    const totalStudyTime = totalSeconds < 3600
-      ? `${Math.floor(totalSeconds / 60)} mins`
-      : `${(totalSeconds / 3600).toFixed(1)} hours`;
+    const totalSeconds = experiences.reduce(
+      (acc: number, exp: any) => acc + (exp.totalTimeSpent || 0),
+      0
+    );
+    const totalStudyTime =
+      totalSeconds < 3600
+        ? `${Math.floor(totalSeconds / 60)} mins`
+        : `${(totalSeconds / 3600).toFixed(1)} hours`;
 
     // Get unique course IDs and fetch all courses in ONE query
-    const courseIds = [...new Set((mongoProgress as any[]).map(p => p.courseId))];
-    const courses = courseIds.length > 0
-      ? await Course.find({ _id: { $in: courseIds } }).select('title modules description').lean()
-      : [];
+    const courseIds = [...new Set((mongoProgress as any[]).map((p) => p.courseId))];
+    const courses =
+      courseIds.length > 0
+        ? await Course.find({ _id: { $in: courseIds } })
+            .select('title modules description')
+            .lean()
+        : [];
 
     // Build course lookup map
     const courseMap = new Map<string, any>();
@@ -120,8 +132,8 @@ export async function GET(request: NextRequest) {
             .filter((p: any) => p.courseId === courseId && p.completed)
             .map((p: any) => p.moduleId);
 
-          const nextModule = (course as any).modules?.find((m: any) =>
-            !completedModuleIds.includes(m._id?.toString())
+          const nextModule = (course as any).modules?.find(
+            (m: any) => !completedModuleIds.includes(m._id?.toString())
           );
 
           const progress = data.total > 0 ? Math.round((data.completed / data.total) * 100) : 0;
@@ -142,9 +154,9 @@ export async function GET(request: NextRequest) {
     // Build activities - no extra queries, use courseMap
     const activities = (mongoProgress as any[]).slice(0, 5).map((p: any) => {
       const course = courseMap.get(p.courseId);
-      const moduleTitle = (course as any)?.modules?.find((m: any) =>
-        m._id?.toString() === p.moduleId
-      )?.title || 'Module';
+      const moduleTitle =
+        (course as any)?.modules?.find((m: any) => m._id?.toString() === p.moduleId)?.title ||
+        'Module';
 
       return {
         id: p._id?.toString(),
@@ -165,13 +177,10 @@ export async function GET(request: NextRequest) {
         totalStudyTime,
         activeCourse,
         activities,
-      }
+      },
     });
   } catch (error) {
     console.error('Overview API error:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch overview' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to fetch overview' }, { status: 500 });
   }
 }

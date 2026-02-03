@@ -1,8 +1,8 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
-@plugin "tailwindcss-animate";
+@plugin 'tailwindcss-animate';
 @import './theme.css';
-@import "tw-animate-css";
+@import 'tw-animate-css';
 
 @custom-variant dark (&:is(.dark *));
 
@@ -46,7 +46,7 @@
   --color-brand-100: #dcfce7;
   --color-brand-200: #bbf7d0;
   --color-brand-300: #86efac;
-  --color-brand-400: #6EDB80;
+  --color-brand-400: #6edb80;
   /* Logo Green */
   --color-brand-500: #22c55e;
   --color-brand-600: #16a34a;
@@ -56,9 +56,12 @@
   --color-brand-950: #052e16;
 
   /* Font families */
-  --font-sans: var(--font-inter), 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-sans:
+    var(--font-inter), 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+    'Helvetica Neue', Arial, sans-serif;
   --font-serif: var(--font-inter), 'Inter', sans-serif;
-  --font-mono: 'SF Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
+  --font-mono:
+    'SF Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
   --font-display: var(--font-space), 'Space Grotesk', sans-serif;
 
   /* Box shadows - Cleaned up glows */
@@ -122,7 +125,6 @@
 }
 
 @keyframes float {
-
   0%,
   100% {
     transform: translateY(0px);
@@ -171,12 +173,18 @@
 }
 
 @layer utilities {
-
   /* Custom slider styles for confidence bar */
   .slider {
     -webkit-appearance: none;
     appearance: none;
-    background: linear-gradient(to right, #ef4444 0%, #f97316 25%, #eab308 50%, #3b82f6 75%, #10b981 100%);
+    background: linear-gradient(
+      to right,
+      #ef4444 0%,
+      #f97316 25%,
+      #eab308 50%,
+      #3b82f6 75%,
+      #10b981 100%
+    );
     outline: none;
     border-radius: 15px;
   }
@@ -205,15 +213,15 @@
 
   /* Glass morphism effect */
   .glass {
-    @apply bg-white/5 backdrop-blur-md border border-white/10;
+    @apply border border-white/10 bg-white/5 backdrop-blur-md;
   }
 
   .glass-dark {
-    @apply bg-black/20 backdrop-blur-md border border-white/5;
+    @apply border border-white/5 bg-black/20 backdrop-blur-md;
   }
 
   .glass-panel {
-    @apply bg-gray-900/60 backdrop-blur-xl border border-white/10 shadow-xl;
+    @apply border border-white/10 bg-gray-900/60 shadow-xl backdrop-blur-xl;
   }
 
   /* Gradient text */
@@ -233,12 +241,12 @@
 
   /* Button hover effects */
   .btn-hover {
-    @apply transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-primary/20;
+    @apply hover:shadow-primary/20 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg;
   }
 
   /* Card hover effects */
   .card-hover {
-    @apply transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-primary/10 hover:border-primary/30;
+    @apply hover:shadow-primary/10 hover:border-primary/30 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl;
   }
 
   /* Terminal styles */
@@ -252,7 +260,6 @@
   }
 
   @keyframes blink {
-
     0%,
     50% {
       opacity: 1;
@@ -288,7 +295,6 @@
   }
 
   @keyframes pulse-live {
-
     0%,
     100% {
       opacity: 1;
@@ -310,12 +316,17 @@
 
   /* Focus states */
   .focus-ring {
-    @apply focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background transition-all duration-200;
+    @apply focus:ring-primary focus:ring-offset-background transition-all duration-200 focus:ring-2 focus:ring-offset-2 focus:outline-none;
   }
 
   /* Loading states */
   .loading-shimmer {
-    background: linear-gradient(90deg, transparent 25%, rgba(255, 255, 255, 0.1) 50%, transparent 75%);
+    background: linear-gradient(
+      90deg,
+      transparent 25%,
+      rgba(255, 255, 255, 0.1) 50%,
+      transparent 75%
+    );
     background-size: 200% 100%;
     animation: shimmer 1.5s infinite;
   }
@@ -329,7 +340,6 @@
       background-position: 200% 0;
     }
   }
-
 }
 
 @theme inline {

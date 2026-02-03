@@ -1,7 +1,6 @@
-"use client";
-import { ProctoringDemo } from "@student/components/Proctoring/ProctoringDemo";
+'use client';
+import { ProctoringDemo } from '@student/components/Proctoring/ProctoringDemo';
 
 export default function ProctorDemoPage() {
-    return <ProctoringDemo />;
+  return <ProctoringDemo />;
 }
-

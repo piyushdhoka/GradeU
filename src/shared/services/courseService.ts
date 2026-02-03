@@ -24,7 +24,7 @@ async function fetchWithRetry(
     try {
       const response = await fetch(url, {
         ...options,
-        signal: controller.signal
+        signal: controller.signal,
       });
       clearTimeout(timeoutId);
       return response;
@@ -39,7 +39,7 @@ async function fetchWithRetry(
 
       // Wait before retrying (exponential backoff)
       if (attempt < retries) {
-        await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 500));
+        await new Promise((resolve) => setTimeout(resolve, Math.pow(2, attempt) * 500));
       }
     }
   }
@@ -58,7 +58,7 @@ function normalizeModule(module: any): Module {
     ...module,
     id,
     content: module.content || module.content_markdown || '',
-    order: module.order ?? module.module_order ?? 0
+    order: module.order ?? module.module_order ?? 0,
   };
 }
 
@@ -67,22 +67,22 @@ function normalizeModule(module: any): Module {
  */
 function normalizeCourse(course: any): Course {
   if (!course) return course;
-  const modules = (course.modules || course.course_modules || [])
-    .map(normalizeModule);
+  const modules = (course.modules || course.course_modules || []).map(normalizeModule);
 
   return {
     ...course,
     id: (course.id || course._id || '').toString(),
     modules,
-    module_count: modules.length
+    module_count: modules.length,
   };
 }
 
 class CourseService {
   // Course Management
-  async createCourse(courseData: Omit<Partial<Course>, 'modules'> & { modules?: Partial<Module>[] }) {
+  async createCourse(
+    courseData: Omit<Partial<Course>, 'modules'> & { modules?: Partial<Module>[] }
+  ) {
     try {
-
       let contentJsonUrl = null;
 
       // Hybrid Storage: Upload content to bucket if modules exist
@@ -91,7 +91,7 @@ class CourseService {
           title: courseData.title,
           description: courseData.description,
           modules: courseData.modules,
-          generatedAt: new Date().toISOString()
+          generatedAt: new Date().toISOString(),
         };
 
         const blob = new Blob([JSON.stringify(courseContent)], { type: 'application/json' });
@@ -105,25 +105,27 @@ class CourseService {
           console.error('Failed to upload course content:', uploadError);
           // Continue with DB creation, but warn
         } else {
-          const { data: { publicUrl } } = supabase.storage
-            .from('course-content')
-            .getPublicUrl(fileName);
+          const {
+            data: { publicUrl },
+          } = supabase.storage.from('course-content').getPublicUrl(fileName);
           contentJsonUrl = publicUrl;
         }
       }
       const { data: resultData, error } = await supabase
         .from('courses')
-        .insert([{
-          title: courseData.title,
-          description: courseData.description,
-          category: courseData.category,
-          difficulty: courseData.difficulty,
-          estimated_hours: courseData.estimated_hours || 0,
-          // is_published: removed
-          enrollment_count: 0,
-          rating: 0,
-          content_json_url: contentJsonUrl
-        }])
+        .insert([
+          {
+            title: courseData.title,
+            description: courseData.description,
+            category: courseData.category,
+            difficulty: courseData.difficulty,
+            estimated_hours: courseData.estimated_hours || 0,
+            // is_published: removed
+            enrollment_count: 0,
+            rating: 0,
+            content_json_url: contentJsonUrl,
+          },
+        ])
         .select()
         .limit(1);
 
@@ -137,7 +139,7 @@ class CourseService {
       // Return full course object with modules
       return {
         ...data,
-        modules: courseData.modules || []
+        modules: courseData.modules || [],
       };
     } catch (error) {
       console.error('Create course error:', error);
@@ -145,7 +147,10 @@ class CourseService {
     }
   }
 
-  async updateCourse(id: string, updates: Omit<Partial<Course>, 'modules'> & { modules?: Partial<Module>[] }) {
+  async updateCourse(
+    id: string,
+    updates: Omit<Partial<Course>, 'modules'> & { modules?: Partial<Module>[] }
+  ) {
     try {
       // Hybrid Storage Update: Re-upload content if modules are provided
       if (updates.modules && updates.modules.length > 0) {
@@ -153,7 +158,7 @@ class CourseService {
           title: updates.title, // Note: might need to fetch existing title if not in updates, but assuming full update usually
           description: updates.description,
           modules: updates.modules,
-          updatedAt: new Date().toISOString()
+          updatedAt: new Date().toISOString(),
         };
 
         const blob = new Blob([JSON.stringify(courseContent)], { type: 'application/json' });
@@ -164,9 +169,9 @@ class CourseService {
           .upload(fileName, blob);
 
         if (!uploadError) {
-          const { data: { publicUrl } } = supabase.storage
-            .from('course-content')
-            .getPublicUrl(fileName);
+          const {
+            data: { publicUrl },
+          } = supabase.storage.from('course-content').getPublicUrl(fileName);
 
           // Add the new URL to the updates object for the DB update
           (updates as any).content_json_url = publicUrl;
@@ -189,7 +194,7 @@ class CourseService {
       // Return full course object with modules (if updated)
       return {
         ...data,
-        modules: updates.modules || [] // Note: might need existing modules if not updated, but for now this is safer than nothing
+        modules: updates.modules || [], // Note: might need existing modules if not updated, but for now this is safer than nothing
       };
     } catch (error) {
       console.error('Update course error:', error);
@@ -199,10 +204,7 @@ class CourseService {
 
   async deleteCourse(id: string) {
     try {
-      const { error } = await supabase
-        .from('courses')
-        .delete()
-        .eq('id', id);
+      const { error } = await supabase.from('courses').delete().eq('id', id);
 
       if (error) throw new Error(`Failed to delete course: ${error.message}`);
       return true;
@@ -211,8 +213,6 @@ class CourseService {
       throw error;
     }
   }
-
-
 
   async getVUStudent(email: string): Promise<any> {
     try {
@@ -225,9 +225,7 @@ class CourseService {
         return {
           name: 'VU Student',
           email: email,
-          progress: [
-            { course_id: 'vu-web-security', completed: true }
-          ]
+          progress: [{ course_id: 'vu-web-security', completed: true }],
         };
       }
       return null;
@@ -259,7 +257,7 @@ class CourseService {
         ...course,
         module_count: 0,
         modules: [],
-        skills: []
+        skills: [],
       }));
     } catch (error) {
       console.error('Get all courses error:', error);
@@ -279,7 +277,7 @@ class CourseService {
       const token = (await supabase.auth.getSession()).data.session?.access_token;
 
       const response = await fetch(`/api/student/courses/${id}`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {}
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
 
       if (!response.ok) {
@@ -292,7 +290,6 @@ class CourseService {
 
       const courseData = await response.json();
       return normalizeCourse(courseData);
-
     } catch (error) {
       console.error('Get course by id error:', error);
       return null;
@@ -302,10 +299,7 @@ class CourseService {
   async getModuleCount(courseId: string): Promise<number> {
     if (courseId === 'vu-web-security') return 12;
     try {
-      const { data, error } = await supabase
-        .from('modules')
-        .select('id')
-        .eq('course_id', courseId);
+      const { data, error } = await supabase.from('modules').select('id').eq('course_id', courseId);
 
       if (error) throw new Error(`Failed to count modules: ${error.message}`);
       return data?.length || 0;
@@ -313,7 +307,7 @@ class CourseService {
       console.error('Get module count error:', error);
       throw error;
     }
-  }  // Module Management
+  } // Module Management
   async createModule(moduleData: Partial<Module>) {
     try {
       // Check current module count
@@ -325,11 +319,13 @@ class CourseService {
 
       const { data: resultData, error } = await supabase
         .from('modules')
-        .insert([{
-          ...moduleData,
-          module_order: currentCount + 1
-          // is_published: false // Removed
-        }])
+        .insert([
+          {
+            ...moduleData,
+            module_order: currentCount + 1,
+            // is_published: false // Removed
+          },
+        ])
         .select()
         .limit(1);
 
@@ -373,35 +369,37 @@ class CourseService {
       if (error) throw new Error(`Failed to fetch modules: ${error.message}`);
 
       // Resolve content for modules that have a file path
-      const resolvedModules = await Promise.all((data || []).map(async (module: any) => {
-        let content = module.content_markdown || '';
+      const resolvedModules = await Promise.all(
+        (data || []).map(async (module: any) => {
+          let content = module.content_markdown || '';
 
-        // If content_markdown is a file path (ends with .md), fetch it from CDN
-        if (content.endsWith('.md')) {
-          try {
-            const { data: { publicUrl } } = supabase.storage
-              .from('courses')
-              .getPublicUrl(content);
+          // If content_markdown is a file path (ends with .md), fetch it from CDN
+          if (content.endsWith('.md')) {
+            try {
+              const {
+                data: { publicUrl },
+              } = supabase.storage.from('courses').getPublicUrl(content);
 
-            const response = await fetchWithRetry(publicUrl);
-            if (response.ok) {
-              content = await response.text();
-            } else {
-              console.error(`CDN returned HTTP ${response.status} for ${content}`);
-              content = `## ⚠️ Content Unavailable\n\nThe module content could not be loaded (HTTP ${response.status}). Please try refreshing the page or contact support if the issue persists.`;
+              const response = await fetchWithRetry(publicUrl);
+              if (response.ok) {
+                content = await response.text();
+              } else {
+                console.error(`CDN returned HTTP ${response.status} for ${content}`);
+                content = `## ⚠️ Content Unavailable\n\nThe module content could not be loaded (HTTP ${response.status}). Please try refreshing the page or contact support if the issue persists.`;
+              }
+            } catch (e) {
+              const errorMsg = e instanceof Error ? e.message : 'Unknown error';
+              console.error(`Failed to fetch module content from CDN for ${module.id}:`, e);
+              content = `## ⚠️ Connection Error\n\nFailed to load module content: ${errorMsg.includes('abort') ? 'Request timed out' : errorMsg}. Please check your internet connection and refresh the page.`;
             }
-          } catch (e) {
-            const errorMsg = e instanceof Error ? e.message : 'Unknown error';
-            console.error(`Failed to fetch module content from CDN for ${module.id}:`, e);
-            content = `## ⚠️ Connection Error\n\nFailed to load module content: ${errorMsg.includes('abort') ? 'Request timed out' : errorMsg}. Please check your internet connection and refresh the page.`;
           }
-        }
 
-        return normalizeModule({
-          ...module,
-          content: content
-        });
-      }));
+          return normalizeModule({
+            ...module,
+            content: content,
+          });
+        })
+      );
 
       return resolvedModules;
     } catch (error) {
@@ -411,7 +409,6 @@ class CourseService {
   }
 
   // Progress Tracking
-
 
   async getUserProgress(userId: string) {
     try {
@@ -437,8 +434,8 @@ class CourseService {
 
       const response = await fetch(getApiUrl(`/api/student/progress/${courseId}`), {
         headers: {
-          'Authorization': `Bearer ${token}`
-        }
+          Authorization: `Bearer ${token}`,
+        },
       });
 
       if (!response.ok) {
@@ -453,7 +450,7 @@ class CourseService {
         module_id: moduleId,
         completed: prog.completed,
         quiz_score: prog.quizScore,
-        completedTopics: prog.completedTopics || []
+        completedTopics: prog.completedTopics || [],
       }));
     } catch (error) {
       console.error('Get course progress error:', error);
@@ -461,7 +458,14 @@ class CourseService {
     }
   }
 
-  async updateProgress(userId: string, moduleId: string, completed: boolean, quizScore?: number, courseId?: string, completedTopics?: string[]) {
+  async updateProgress(
+    userId: string,
+    moduleId: string,
+    completed: boolean,
+    quizScore?: number,
+    courseId?: string,
+    completedTopics?: string[]
+  ) {
     try {
       // Try to update via backend API first (handles both MongoDB and Supabase)
       // This ensures unified storage strategy
@@ -473,13 +477,13 @@ class CourseService {
             method: 'PUT',
             headers: {
               'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`
+              Authorization: `Bearer ${token}`,
             },
             body: JSON.stringify({
               completed,
               quizScore,
-              completedTopics
-            })
+              completedTopics,
+            }),
           });
 
           if (response.ok) {
@@ -491,11 +495,13 @@ class CourseService {
           // Fall through to Supabase update
         }
       }
-      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(moduleId);
+      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+        moduleId
+      );
 
       if (!isUUID) {
-        // For non-UUID IDs (like MongoDB ObjectIDs), Supabase sync is skipped 
-        // because the module_id column expects a UUID. 
+        // For non-UUID IDs (like MongoDB ObjectIDs), Supabase sync is skipped
+        // because the module_id column expects a UUID.
         // Normal behavior as primary progress storage for these is MongoDB.
         return;
       }
@@ -505,16 +511,14 @@ class CourseService {
         student_id: userId,
         module_id: moduleId,
         completed,
-        completed_at: new Date().toISOString()
+        completed_at: new Date().toISOString(),
       };
 
       if (quizScore !== undefined) {
         updates.quiz_score = quizScore;
       }
 
-      const { error } = await supabase
-        .from('module_progress')
-        .upsert([updates]);
+      const { error } = await supabase.from('module_progress').upsert([updates]);
 
       if (error) {
         throw new Error(`Supabase progress update failed: ${error.message}`);
@@ -595,12 +599,14 @@ class CourseService {
     try {
       const { data, error } = await supabase
         .from('enrollments')
-        .select(`
+        .select(
+          `
           *,
           course:courses(
             *
           )
-        `)
+        `
+        )
         .eq('student_id', userId)
         .order('enrolled_at', { ascending: false });
 
@@ -623,15 +629,13 @@ class CourseService {
       const fileName = `${Date.now()}.${fileExt}`;
       const filePath = `${folder}/${fileName}`;
 
-      const { error } = await supabase.storage
-        .from('uploads')
-        .upload(filePath, file);
+      const { error } = await supabase.storage.from('uploads').upload(filePath, file);
 
       if (error) throw new Error(`Failed to upload file: ${error.message}`);
 
-      const { data: { publicUrl } } = supabase.storage
-        .from('uploads')
-        .getPublicUrl(filePath);
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from('uploads').getPublicUrl(filePath);
 
       return publicUrl;
     } catch (error) {
@@ -640,14 +644,20 @@ class CourseService {
     }
   }
   // Assessment Submission
-  async submitAssessment(moduleId: string, answers: Record<string, number>, proctoringSessionId?: string) {
+  async submitAssessment(
+    moduleId: string,
+    answers: Record<string, number>,
+    proctoringSessionId?: string
+  ) {
     try {
       // Get the current session token from Supabase client
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       const token = session?.access_token;
 
       const headers: Record<string, string> = {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
       };
 
       if (token) {
@@ -660,8 +670,8 @@ class CourseService {
         body: JSON.stringify({
           moduleId,
           answers,
-          proctoringSessionId
-        })
+          proctoringSessionId,
+        }),
       });
 
       if (!response.ok) {

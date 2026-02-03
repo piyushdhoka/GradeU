@@ -41,13 +41,18 @@ interface ImageKitFile {
 // Extract video info from filename
 // Format: CategoryName_DifficultyLevel_VideoTitle.mp4
 // Example: OWASP_beginner_Introduction-to-SQL-Injection.mp4
-function parseVideoFilename(filename: string): { title: string; category: string; difficulty: 'beginner' | 'intermediate' | 'advanced' } {
+function parseVideoFilename(filename: string): {
+  title: string;
+  category: string;
+  difficulty: 'beginner' | 'intermediate' | 'advanced';
+} {
   const nameWithoutExt = filename.replace(/\.[^/.]+$/, '');
   const parts = nameWithoutExt.split('_');
 
   if (parts.length >= 3) {
     const category = parts[0].replace(/-/g, ' ');
-    const difficulty = (parts[1].toLowerCase() as 'beginner' | 'intermediate' | 'advanced') || 'beginner';
+    const difficulty =
+      (parts[1].toLowerCase() as 'beginner' | 'intermediate' | 'advanced') || 'beginner';
     const title = parts.slice(2).join(' ').replace(/-/g, ' ');
     return { title, category, difficulty };
   }
@@ -56,12 +61,14 @@ function parseVideoFilename(filename: string): { title: string; category: string
   return {
     title: nameWithoutExt.replace(/-/g, ' ').replace(/_/g, ' '),
     category: 'General',
-    difficulty: 'beginner'
+    difficulty: 'beginner',
   };
 }
 
 // Fetch videos from ImageKit via backend proxy (works both locally and on Vercel)
-export async function fetchVideosFromImageKit(folderPath: string = '/gradeu'): Promise<ImageKitVideo[]> {
+export async function fetchVideosFromImageKit(
+  folderPath: string = '/gradeu'
+): Promise<ImageKitVideo[]> {
   try {
     const response = await fetch(`/api/imagekit/videos?folder=${encodeURIComponent(folderPath)}`);
 
@@ -72,9 +79,8 @@ export async function fetchVideosFromImageKit(folderPath: string = '/gradeu'): P
     const files: ImageKitFile[] = await response.json();
 
     // Filter only video files
-    const videoFiles = files.filter(file =>
-      file.fileType === 'video' ||
-      file.name.match(/\.(mp4|webm|mov|avi|mkv)$/i)
+    const videoFiles = files.filter(
+      (file) => file.fileType === 'video' || file.name.match(/\.(mp4|webm|mov|avi|mkv)$/i)
     );
 
     return videoFiles.map((file) => {
@@ -84,16 +90,18 @@ export async function fetchVideosFromImageKit(folderPath: string = '/gradeu'): P
       return {
         id: file.fileId,
         title: customMeta.title || parsed.title,
-        description: customMeta.description || `Learn about ${parsed.title} in this GradeU training video.`,
+        description:
+          customMeta.description || `Learn about ${parsed.title} in this GradeU training video.`,
         instructor: customMeta.instructor || 'GradeU Academy',
         duration: customMeta.duration || 'N/A',
         thumbnail: `${file.url}/tr:w-640,h-360,fo-auto`, // ImageKit thumbnail transformation
         category: customMeta.category || parsed.category,
-        difficulty: (customMeta.difficulty as 'beginner' | 'intermediate' | 'advanced') || parsed.difficulty,
+        difficulty:
+          (customMeta.difficulty as 'beginner' | 'intermediate' | 'advanced') || parsed.difficulty,
         views: Math.floor(Math.random() * 10000) + 500, // Placeholder - you can track this in DB
         uploadDate: file.createdAt.split('T')[0],
         videoUrl: file.url,
-        fileSize: file.size
+        fileSize: file.size,
       };
     });
   } catch (error) {
@@ -103,10 +111,13 @@ export async function fetchVideosFromImageKit(folderPath: string = '/gradeu'): P
 }
 
 // Get video URL with optional transformations
-export function getVideoUrl(fileUrl: string, options?: {
-  quality?: 'auto' | 'low' | 'medium' | 'high';
-  format?: 'mp4' | 'webm';
-}): string {
+export function getVideoUrl(
+  fileUrl: string,
+  options?: {
+    quality?: 'auto' | 'low' | 'medium' | 'high';
+    format?: 'mp4' | 'webm';
+  }
+): string {
   if (!options) return fileUrl;
 
   const transforms: string[] = [];
@@ -126,6 +137,10 @@ export function getVideoUrl(fileUrl: string, options?: {
 }
 
 // Get thumbnail with transformations
-export function getThumbnailUrl(videoUrl: string, width: number = 640, height: number = 360): string {
+export function getThumbnailUrl(
+  videoUrl: string,
+  width: number = 640,
+  height: number = 360
+): string {
   return `${videoUrl}/tr:w-${width},h-${height},fo-auto`;
 }

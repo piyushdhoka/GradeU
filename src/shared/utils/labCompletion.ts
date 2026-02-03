@@ -33,7 +33,7 @@ export const clearLabCompletion = (labId: string): void => {
   if (typeof window === 'undefined') return;
   try {
     const completed = getCompletedLabs();
-    const filtered = completed.filter(id => id !== labId);
+    const filtered = completed.filter((id) => id !== labId);
     localStorage.setItem(COMPLETED_LABS_KEY, JSON.stringify(filtered));
   } catch {
     console.error('Failed to clear lab completion');

@@ -26,14 +26,17 @@ function withTimeout<T>(
     promise,
     new Promise<T>((_, reject) =>
       setTimeout(
-        () => reject(new Error(`${operationName} timed out after ${timeoutMs / 1000} seconds. Please check your internet connection and try again.`)),
+        () =>
+          reject(
+            new Error(
+              `${operationName} timed out after ${timeoutMs / 1000} seconds. Please check your internet connection and try again.`
+            )
+          ),
         timeoutMs
       )
-    )
+    ),
   ]);
 }
-
-
 
 function resolveName(metadata: any, email?: string): string {
   // Priority order for finding a name in OAuth metadata
@@ -67,10 +70,6 @@ function sanitizeUser(dbUser: DBUser, email?: string): User {
 }
 
 class AuthService {
-
-
-
-
   async logout() {
     localStorage.removeItem('gradeUUser');
     localStorage.removeItem('auth_pending_role');
@@ -93,8 +92,6 @@ class AuthService {
       return null;
     }
   }
-
-
 
   isStudent() {
     const user = this.getCurrentUser();
@@ -121,8 +118,8 @@ class AuthService {
             queryParams: {
               access_type: 'offline',
               prompt: 'consent',
-            }
-          }
+            },
+          },
         }),
         15000,
         'Google OAuth'
@@ -131,7 +128,9 @@ class AuthService {
       if (error) throw new Error(`Google login failed: ${error.message}`);
     } catch (error) {
       if (error instanceof Error && error.message.includes('timed out')) {
-        throw new Error('Google login is taking too long. Please check your internet connection and try again.');
+        throw new Error(
+          'Google login is taking too long. Please check your internet connection and try again.'
+        );
       }
       throw error;
     }
@@ -149,7 +148,7 @@ class AuthService {
       // Retry loop to handle race conditions where profile creation might lag behind auth
       let attempts = 0;
       while (attempts < 3) {
-        const result = await withTimeout(
+        const result = (await withTimeout(
           supabase
             .from('profiles')
             .select('*')
@@ -157,7 +156,7 @@ class AuthService {
             .limit(1) as unknown as Promise<any>,
           5000,
           `Profile fetch attempt ${attempts + 1}`
-        ) as any;
+        )) as any;
 
         if (result.data && result.data.length > 0) {
           profile = result.data[0];
@@ -167,7 +166,7 @@ class AuthService {
         }
 
         attempts++;
-        if (attempts < 3) await new Promise(r => setTimeout(r, 1000));
+        if (attempts < 3) await new Promise((r) => setTimeout(r, 1000));
       }
     } catch (err) {
       profileError = err;
@@ -179,7 +178,7 @@ class AuthService {
       let isValidRequest = false;
       if (requestedRole && requestedRoleTs) {
         const ts = parseInt(requestedRoleTs, 10);
-        if (!isNaN(ts) && (Date.now() - ts < 5 * 60 * 1000)) isValidRequest = true;
+        if (!isNaN(ts) && Date.now() - ts < 5 * 60 * 1000) isValidRequest = true;
       }
 
       if (isValidRequest && requestedRole && profile.role !== requestedRole) {
@@ -192,13 +191,14 @@ class AuthService {
       const metadata = user.user_metadata || {};
       const actualName = resolveName(metadata, user.email);
 
-      if (profile.full_name === 'User' || !profile.full_name || profile.full_name === user.email?.split('@')[0]) {
+      if (
+        profile.full_name === 'User' ||
+        !profile.full_name ||
+        profile.full_name === user.email?.split('@')[0]
+      ) {
         if (actualName && actualName !== 'User' && actualName !== profile.full_name) {
           try {
-            await supabase
-              .from('profiles')
-              .update({ full_name: actualName })
-              .eq('id', user.id);
+            await supabase.from('profiles').update({ full_name: actualName }).eq('id', user.id);
             profile.full_name = actualName; // Update local reference
           } catch (e) {
             console.warn('Failed to auto-update profile name:', e);
@@ -224,7 +224,9 @@ class AuthService {
           if (cached && cached.email === user.email) {
             cachedRole = cached.role;
           }
-        } catch (e) { /* ignore */ }
+        } catch (e) {
+          /* ignore */
+        }
       }
 
       // Priority: Pending Role (Login/Signup) > Metadata Role > Cached Role > 'student'
@@ -239,19 +241,19 @@ class AuthService {
         role: role,
         level: 'beginner',
         avatar_url: metadata.avatar_url || metadata.picture,
-        created_at: new Date().toISOString()
+        created_at: new Date().toISOString(),
       };
 
       if (!profileError) {
         const createProfile = async () => {
           try {
-            await supabase
-              .from('profiles')
-              .upsert([{
+            await supabase.from('profiles').upsert([
+              {
                 id: user.id,
                 full_name: placeholderUser.name,
                 role: role,
-              }]);
+              },
+            ]);
           } catch (e) {
             // Silently fail
           }

@@ -12,10 +12,12 @@ export async function GET() {
   try {
     // Try MongoDB first
     await connectDB();
-    
+
     // Only select fields needed for listing (not full content)
     const courses = await Course.find({ published: true })
-      .select('title description code difficulty duration modules._id modules.title modules.type createdAt')
+      .select(
+        'title description code difficulty duration modules._id modules.title modules.type createdAt'
+      )
       .lean();
 
     if (courses && courses.length > 0) {
@@ -28,14 +30,15 @@ export async function GET() {
         difficulty: course.difficulty,
         duration: course.duration,
         module_count: course.modules?.length || 0,
-        modules: course.modules?.map((m: any) => ({
-          id: m._id?.toString(),
-          title: m.title,
-          content: m.content,
-          type: m.type,
-          topics: m.topics,
-          quiz: m.quiz,
-        })) || [],
+        modules:
+          course.modules?.map((m: any) => ({
+            id: m._id?.toString(),
+            title: m.title,
+            content: m.content,
+            type: m.type,
+            topics: m.topics,
+            quiz: m.quiz,
+          })) || [],
         createdAt: course.createdAt,
       }));
 
@@ -50,7 +53,7 @@ export async function GET() {
 
     if (error) throw error;
 
-    const normalizedCourses = (data || []).map(course => ({
+    const normalizedCourses = (data || []).map((course) => ({
       ...course,
       id: course.id?.toString(),
       module_count: 0,
@@ -60,9 +63,6 @@ export async function GET() {
     return NextResponse.json(normalizedCourses);
   } catch (error) {
     console.error('Courses API error:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch courses' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to fetch courses' }, { status: 500 });
   }
 }

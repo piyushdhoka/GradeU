@@ -19,23 +19,21 @@ const supabaseAnonKey = rawKey?.trim().replace(/^"|"$/g, '').replace(/^'|'$/g, '
 export function assertSupabaseEnv() {
   if (typeof window === 'undefined') return; // Skip on server
   if (!supabaseUrl || !supabaseAnonKey) {
-    console.error('Supabase is not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in .env');
+    console.error(
+      'Supabase is not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in .env'
+    );
   }
 }
 
 // Create Supabase client - works on both server and client
-export const supabase = createClient(
-  supabaseUrl, 
-  supabaseAnonKey,
-  {
-    auth: {
-      autoRefreshToken: true,
-      persistSession: true,
-      detectSessionInUrl: true,
-      flowType: 'implicit', // Use implicit flow - tokens come in URL hash
-    }
-  }
-);
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: true,
+    flowType: 'implicit', // Use implicit flow - tokens come in URL hash
+  },
+});
 
 // Call assertion on client side only
 if (typeof window !== 'undefined') {
@@ -51,7 +49,8 @@ export async function testSupabaseConnection(): Promise<void> {
     }
   } catch (err: unknown) {
     // Re-throw with clearer guidance for network/CORS/env issues
-    const hint = 'Check .env values, network connectivity, and that the project URL is reachable from your browser.';
+    const hint =
+      'Check .env values, network connectivity, and that the project URL is reachable from your browser.';
     const message = err instanceof Error ? err.message : String(err);
     throw new Error(`Unable to reach Supabase: ${message}. ${hint}`);
   }

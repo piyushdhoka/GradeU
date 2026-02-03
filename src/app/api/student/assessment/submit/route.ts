@@ -12,14 +12,17 @@ export async function POST(request: NextRequest) {
     // Get auth token from header
     const authHeader = request.headers.get('authorization');
     const token = authHeader?.replace('Bearer ', '');
-    
+
     if (!token) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     // Get user from token
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-    
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser(token);
+
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -32,9 +35,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Store assessment result in module_progress
-    const { error } = await supabase
-      .from('module_progress')
-      .upsert({
+    const { error } = await supabase.from('module_progress').upsert(
+      {
         student_id: user.id,
         course_id: courseId,
         module_id: moduleId,
@@ -42,9 +44,11 @@ export async function POST(request: NextRequest) {
         completed: score >= 70, // Auto-complete if score >= 70%
         completed_at: score >= 70 ? new Date().toISOString() : null,
         updated_at: new Date().toISOString(),
-      }, {
-        onConflict: 'student_id,course_id,module_id'
-      });
+      },
+      {
+        onConflict: 'student_id,course_id,module_id',
+      }
+    );
 
     if (error) {
       console.error('Assessment submit error:', error);

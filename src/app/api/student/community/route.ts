@@ -3,12 +3,13 @@ import { Redis } from '@upstash/redis';
 import { v4 as uuidv4 } from 'uuid';
 
 // Initialize Redis only if credentials are available
-const redis = process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN
-  ? new Redis({
-      url: process.env.UPSTASH_REDIS_REST_URL,
-      token: process.env.UPSTASH_REDIS_REST_TOKEN,
-    })
-  : null;
+const redis =
+  process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN
+    ? new Redis({
+        url: process.env.UPSTASH_REDIS_REST_URL,
+        token: process.env.UPSTASH_REDIS_REST_TOKEN,
+      })
+    : null;
 
 // Helper to safely parse JSON
 const safeParse = (data: any, fallback: any) => {
@@ -44,12 +45,12 @@ export async function GET() {
           tags: safeParse(post.tags, []),
           likes: parseInt(String(post.likes || '0')),
           comments: parseInt(String(post.comments || '0')),
-          author: safeParse(post.author, { name: 'Unknown', role: 'Student' })
+          author: safeParse(post.author, { name: 'Unknown', role: 'Student' }),
         };
       })
     );
 
-    return NextResponse.json(posts.filter(p => p !== null));
+    return NextResponse.json(posts.filter((p) => p !== null));
   } catch (error) {
     console.error('Error fetching posts:', error);
     return NextResponse.json([]);
@@ -74,7 +75,7 @@ export async function POST(request: NextRequest) {
       likes: '0',
       comments: '0',
       timestamp,
-      tags: JSON.stringify(tags || [])
+      tags: JSON.stringify(tags || []),
     };
 
     // Save post data and add to timeline

@@ -1,7 +1,7 @@
 @reference "../../../styles/index.css";
 
 :root {
-  --student-accent: #00FF88;
+  --student-accent: #00ff88;
 }
 
 .student-accent-text {
@@ -10,15 +10,15 @@
 
 /* Module Content Styling */
 .module-content h1 {
-  @apply text-3xl font-bold mb-6 mt-8 text-white border-b border-[#00FF88]/20 pb-2;
+  @apply mt-8 mb-6 border-b border-[#00FF88]/20 pb-2 text-3xl font-bold text-white;
 }
 
 .module-content h2 {
-  @apply text-2xl font-bold mb-4 mt-8 text-white;
+  @apply mt-8 mb-4 text-2xl font-bold text-white;
 }
 
 .module-content h3 {
-  @apply text-xl font-bold mb-3 mt-6 text-[#00FF88];
+  @apply mt-6 mb-3 text-xl font-bold text-[#00FF88];
 }
 
 .module-content p {
@@ -31,11 +31,11 @@
 }
 
 .module-content li {
-  @apply ml-6 mb-2 text-[#EAEAEA]/80;
+  @apply mb-2 ml-6 text-[#EAEAEA]/80;
 }
 
 .module-content strong {
-  @apply text-white font-bold;
+  @apply font-bold text-white;
 }
 
 .module-content em {

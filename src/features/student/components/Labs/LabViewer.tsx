@@ -20,7 +20,7 @@ export const LabViewer: React.FC<LabViewerProps> = ({ labId, onBack }) => {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const completedLabId = params.get('labCompleted');
-    
+
     if (completedLabId === labId) {
       handleExternalCompletion();
       // Clean URL
@@ -39,7 +39,7 @@ export const LabViewer: React.FC<LabViewerProps> = ({ labId, onBack }) => {
       setIsLoading(true);
       const status = await labApiService.getLabStatus(labId);
       setIsCompleted(status.completed);
-      
+
       // Also sync with localStorage
       if (status.completed) {
         markLabAsCompleted(labId);
@@ -78,10 +78,10 @@ export const LabViewer: React.FC<LabViewerProps> = ({ labId, onBack }) => {
     try {
       // Mark in localStorage for offline support
       markLabAsCompleted(labId);
-      
+
       // Also save to database
       await labApiService.markLabAsCompleted(labId);
-      
+
       setIsCompleted(true);
       setShowCompletionMessage(true);
       setTimeout(() => setShowCompletionMessage(false), 3000);
@@ -95,17 +95,19 @@ export const LabViewer: React.FC<LabViewerProps> = ({ labId, onBack }) => {
   };
 
   const lab = labs.find((l) => l.id === labId);
-  
+
   if (!lab) {
     return (
-      <div className="p-6 min-h-screen bg-black">
-        <div className="max-w-4xl mx-auto text-center py-20">
-          <Terminal className="h-16 w-16 text-red-500 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-white mb-2">Lab Not Found</h2>
-          <p className="text-[#00B37A] mb-6">Lab simulations are currently being prepared. Check back soon.</p>
+      <div className="min-h-screen bg-black p-6">
+        <div className="mx-auto max-w-4xl py-20 text-center">
+          <Terminal className="mx-auto mb-4 h-16 w-16 text-red-500" />
+          <h2 className="mb-2 text-2xl font-bold text-white">Lab Not Found</h2>
+          <p className="mb-6 text-[#00B37A]">
+            Lab simulations are currently being prepared. Check back soon.
+          </p>
           <button
             onClick={onBack}
-            className="px-6 py-3 bg-[#00FF88] text-black font-bold rounded-lg hover:bg-[#00CC66] transition-colors"
+            className="rounded-lg bg-[#00FF88] px-6 py-3 font-bold text-black transition-colors hover:bg-[#00CC66]"
           >
             Return to Labs
           </button>
@@ -116,43 +118,49 @@ export const LabViewer: React.FC<LabViewerProps> = ({ labId, onBack }) => {
 
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
-      case 'beginner': return 'text-[#00FF88] border-[#00FF88] bg-[#00FF88]/10';
-      case 'intermediate': return 'text-yellow-400 border-yellow-400 bg-yellow-400/10';
-      case 'advanced': return 'text-red-400 border-red-400 bg-red-400/10';
-      default: return 'text-slate-400 border-slate-400 bg-slate-400/10';
+      case 'beginner':
+        return 'text-[#00FF88] border-[#00FF88] bg-[#00FF88]/10';
+      case 'intermediate':
+        return 'text-yellow-400 border-yellow-400 bg-yellow-400/10';
+      case 'advanced':
+        return 'text-red-400 border-red-400 bg-red-400/10';
+      default:
+        return 'text-slate-400 border-slate-400 bg-slate-400/10';
     }
   };
 
   return (
-    <div className="p-6 min-h-screen bg-black">
-      <div className="max-w-4xl mx-auto">
+    <div className="min-h-screen bg-black p-6">
+      <div className="mx-auto max-w-4xl">
         {/* Back Button */}
         <button
           onClick={onBack}
-          className="flex items-center space-x-2 text-[#00B37A] hover:text-[#00FF88] transition-colors mb-8 group"
+          className="group mb-8 flex items-center space-x-2 text-[#00B37A] transition-colors hover:text-[#00FF88]"
         >
-          <ArrowLeft className="h-5 w-5 group-hover:-translate-x-1 transition-transform" />
+          <ArrowLeft className="h-5 w-5 transition-transform group-hover:-translate-x-1" />
           <span className="font-medium">Back to Labs</span>
         </button>
 
         {/* Lab Header Card */}
-        <div className="bg-[#0A0F0A] rounded-xl border border-[#00FF88]/10 overflow-hidden mb-8">
+        <div className="mb-8 overflow-hidden rounded-xl border border-[#00FF88]/10 bg-[#0A0F0A]">
           <div className="p-8">
-            <div className="flex items-start justify-between mb-6">
+            <div className="mb-6 flex items-start justify-between">
               <div className="flex-1">
-                <div className="flex items-center space-x-3 mb-4">
-                  <div className="p-3 rounded-lg bg-[#00FF88]/10 border border-[#00FF88]/20">
+                <div className="mb-4 flex items-center space-x-3">
+                  <div className="rounded-lg border border-[#00FF88]/20 bg-[#00FF88]/10 p-3">
                     <Terminal className="h-6 w-6 text-[#00FF88]" />
                   </div>
                   <div>
                     <h1 className="text-3xl font-bold text-white">{lab.title}</h1>
-                    <p className="text-[#00B37A] font-mono text-sm mt-1">THEORETICAL TRAINING</p>
+                    <p className="mt-1 font-mono text-sm text-[#00B37A]">THEORETICAL TRAINING</p>
                   </div>
                 </div>
-                <p className="text-[#EAEAEA] text-lg mb-6">{lab.description}</p>
+                <p className="mb-6 text-lg text-[#EAEAEA]">{lab.description}</p>
 
-                <div className="flex items-center space-x-6 text-sm font-mono flex-wrap gap-4">
-                  <span className={`px-3 py-1 rounded border ${getDifficultyColor(lab.difficulty)} uppercase font-bold tracking-wider`}>
+                <div className="flex flex-wrap items-center gap-4 space-x-6 font-mono text-sm">
+                  <span
+                    className={`rounded border px-3 py-1 ${getDifficultyColor(lab.difficulty)} font-bold tracking-wider uppercase`}
+                  >
                     {lab.difficulty}
                   </span>
                   <div className="text-[#00B37A]">
@@ -166,7 +174,11 @@ export const LabViewer: React.FC<LabViewerProps> = ({ labId, onBack }) => {
 
               {/* Launch Lab Button */}
               <a
-                href={lab.liveUrl ? `${lab.liveUrl}?studentId=${user?.id}&returnUrl=${encodeURIComponent(window.location.origin + '/labs/' + labId)}` : '#'}
+                href={
+                  lab.liveUrl
+                    ? `${lab.liveUrl}?studentId=${user?.id}&returnUrl=${encodeURIComponent(window.location.origin + '/labs/' + labId)}`
+                    : '#'
+                }
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={(e) => {
@@ -175,7 +187,7 @@ export const LabViewer: React.FC<LabViewerProps> = ({ labId, onBack }) => {
                     alert('Lab URL not configured');
                   }
                 }}
-                className="flex items-center space-x-2 px-6 py-3 bg-[#00FF88] text-black font-bold rounded-lg hover:bg-[#00CC66] hover:shadow-[0_0_20px_rgba(0,255,136,0.3)] transition-all ml-6 whitespace-nowrap"
+                className="ml-6 flex items-center space-x-2 rounded-lg bg-[#00FF88] px-6 py-3 font-bold whitespace-nowrap text-black transition-all hover:bg-[#00CC66] hover:shadow-[0_0_20px_rgba(0,255,136,0.3)]"
               >
                 <span>{isCompleted ? 'Reopen Lab' : 'Launch Lab'}</span>
                 <ExternalLink className="h-5 w-5" />
@@ -185,9 +197,9 @@ export const LabViewer: React.FC<LabViewerProps> = ({ labId, onBack }) => {
         </div>
 
         {/* Theory Section */}
-        <div className="bg-[#0A0F0A] rounded-xl border border-[#00FF88]/10 overflow-hidden">
-          <div className="p-6 border-b border-[#00FF88]/10">
-            <h2 className="text-xl font-bold text-white flex items-center space-x-2">
+        <div className="overflow-hidden rounded-xl border border-[#00FF88]/10 bg-[#0A0F0A]">
+          <div className="border-b border-[#00FF88]/10 p-6">
+            <h2 className="flex items-center space-x-2 text-xl font-bold text-white">
               <Terminal className="h-5 w-5 text-[#00FF88]" />
               <span>Learning Materials</span>
             </h2>
@@ -200,13 +212,25 @@ export const LabViewer: React.FC<LabViewerProps> = ({ labId, onBack }) => {
                 dangerouslySetInnerHTML={{
                   __html: (() => {
                     let s = lab.instructions.replace(/\n/g, '<br/>');
-                    s = s.replace(/^# (.+)$/gm, '<h2 class="text-2xl font-bold text-white mt-6 mb-4">$1</h2>');
-                    s = s.replace(/^## (.+)$/gm, '<h3 class="text-xl font-bold text-[#00FF88] mt-5 mb-3">$1</h3>');
+                    s = s.replace(
+                      /^# (.+)$/gm,
+                      '<h2 class="text-2xl font-bold text-white mt-6 mb-4">$1</h2>'
+                    );
+                    s = s.replace(
+                      /^## (.+)$/gm,
+                      '<h3 class="text-xl font-bold text-[#00FF88] mt-5 mb-3">$1</h3>'
+                    );
                     s = s.replace(/^- (.+)$/gm, '<li class="ml-6 text-[#EAEAEA] mb-2">• $1</li>');
-                    s = s.replace(/^(\d+)\. (.+)$/gm, '<li class="ml-6 text-[#EAEAEA] mb-2">$1. $2</li>');
-                    s = s.replace(/\*\*(.+?)\*\*/g, '<strong class="text-[#00FF88] font-bold">$1</strong>');
+                    s = s.replace(
+                      /^(\d+)\. (.+)$/gm,
+                      '<li class="ml-6 text-[#EAEAEA] mb-2">$1. $2</li>'
+                    );
+                    s = s.replace(
+                      /\*\*(.+?)\*\*/g,
+                      '<strong class="text-[#00FF88] font-bold">$1</strong>'
+                    );
                     return s;
-                  })()
+                  })(),
                 }}
               />
             </div>
@@ -215,7 +239,7 @@ export const LabViewer: React.FC<LabViewerProps> = ({ labId, onBack }) => {
 
         {/* Completion Status Banner */}
         {showCompletionMessage && (
-          <div className="fixed top-4 right-4 z-50 bg-[#00FF88] text-black px-6 py-4 rounded-lg shadow-lg border-2 border-[#00FF88] animate-slide-in">
+          <div className="animate-slide-in fixed top-4 right-4 z-50 rounded-lg border-2 border-[#00FF88] bg-[#00FF88] px-6 py-4 text-black shadow-lg">
             <div className="flex items-center space-x-3">
               <CheckCircle className="h-6 w-6" />
               <div>
@@ -228,26 +252,31 @@ export const LabViewer: React.FC<LabViewerProps> = ({ labId, onBack }) => {
 
         {/* Loading Indicator */}
         {isLoading && (
-          <div className="fixed top-4 right-4 z-50 bg-[#0A0F0A] border border-[#00FF88]/20 text-[#00FF88] px-6 py-4 rounded-lg shadow-lg">
+          <div className="fixed top-4 right-4 z-50 rounded-lg border border-[#00FF88]/20 bg-[#0A0F0A] px-6 py-4 text-[#00FF88] shadow-lg">
             <div className="flex items-center space-x-3">
-              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#00FF88]"></div>
+              <div className="h-5 w-5 animate-spin rounded-full border-b-2 border-[#00FF88]"></div>
               <span className="font-medium">Syncing lab status...</span>
             </div>
           </div>
         )}
 
         {/* Additional Resources */}
-        <div className="bg-[#0A0F0A] rounded-xl border border-[#00FF88]/10 p-6 mt-8">
-          <h3 className="text-lg font-bold text-white mb-4 flex items-center space-x-2">
+        <div className="mt-8 rounded-xl border border-[#00FF88]/10 bg-[#0A0F0A] p-6">
+          <h3 className="mb-4 flex items-center space-x-2 text-lg font-bold text-white">
             <ExternalLink className="h-5 w-5 text-[#00FF88]" />
             <span>Lab Environment</span>
           </h3>
-          <p className="text-[#00B37A] mb-6">
-            Ready to apply what you've learned? Click the button below to access the live lab environment where you can practice hands-on exploitation techniques.
+          <p className="mb-6 text-[#00B37A]">
+            Ready to apply what you've learned? Click the button below to access the live lab
+            environment where you can practice hands-on exploitation techniques.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 items-start">
+          <div className="flex flex-col items-start gap-4 sm:flex-row">
             <a
-              href={lab.liveUrl ? `${lab.liveUrl}?studentId=${user?.id}&returnUrl=${encodeURIComponent(window.location.origin + '/labs/' + labId)}` : '#'}
+              href={
+                lab.liveUrl
+                  ? `${lab.liveUrl}?studentId=${user?.id}&returnUrl=${encodeURIComponent(window.location.origin + '/labs/' + labId)}`
+                  : '#'
+              }
               target="_blank"
               rel="noopener noreferrer"
               onClick={(e) => {
@@ -256,16 +285,16 @@ export const LabViewer: React.FC<LabViewerProps> = ({ labId, onBack }) => {
                   alert('Lab URL not configured');
                 }
               }}
-              className="inline-flex items-center space-x-2 px-6 py-3 bg-[#00FF88] text-black font-bold rounded-lg hover:bg-[#00CC66] hover:shadow-[0_0_20px_rgba(0,255,136,0.3)] transition-all"
+              className="inline-flex items-center space-x-2 rounded-lg bg-[#00FF88] px-6 py-3 font-bold text-black transition-all hover:bg-[#00CC66] hover:shadow-[0_0_20px_rgba(0,255,136,0.3)]"
             >
               <span>{isCompleted ? 'Reopen Lab Environment' : 'Launch Lab Environment'}</span>
               <ExternalLink className="h-5 w-5" />
             </a>
-            
+
             {isCompleted ? (
               <button
                 disabled
-                className="inline-flex items-center space-x-2 px-6 py-3 bg-[#00FF88]/20 text-[#00FF88] font-bold rounded-lg border border-[#00FF88]/40 cursor-default"
+                className="inline-flex cursor-default items-center space-x-2 rounded-lg border border-[#00FF88]/40 bg-[#00FF88]/20 px-6 py-3 font-bold text-[#00FF88]"
               >
                 <CheckCircle className="h-5 w-5" />
                 <span>Lab Completed</span>
@@ -273,7 +302,7 @@ export const LabViewer: React.FC<LabViewerProps> = ({ labId, onBack }) => {
             ) : (
               <button
                 onClick={handleMarkAsCompleted}
-                className="inline-flex items-center space-x-2 px-6 py-3 bg-green-600 text-white font-bold rounded-lg hover:bg-green-700 hover:shadow-[0_0_20px_rgba(34,197,94,0.3)] transition-all"
+                className="inline-flex items-center space-x-2 rounded-lg bg-green-600 px-6 py-3 font-bold text-white transition-all hover:bg-green-700 hover:shadow-[0_0_20px_rgba(34,197,94,0.3)]"
               >
                 <CheckCircle className="h-5 w-5" />
                 <span>Mark as Completed</span>
