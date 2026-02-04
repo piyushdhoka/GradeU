@@ -1,5 +1,6 @@
 // Frontend service for lab completion API calls
 import { supabase } from '@lib/supabase';
+import { labs } from '@data/labs';
 
 export interface LabStats {
   totalLabs: number;
@@ -23,6 +24,10 @@ const getAuthHeaders = async () => {
   return headers;
 };
 
+// In-memory cache for lab stats to reduce API calls
+let labStatsCache: { data: LabStats; timestamp: number } | null = null;
+const CACHE_DURATION = 30000; // 30 seconds
+
 export const labApiService = {
   async markLabAsCompleted(labId: string): Promise<{ success: boolean; message: string }> {
     try {
@@ -36,6 +41,10 @@ export const labApiService = {
         const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
         throw new Error(errorData.error || 'Failed to mark lab as completed');
       }
+
+      // Invalidate cache on completion
+      labStatsCache = null;
+
       return await response.json();
     } catch (error) {
       console.error('Error marking lab as completed:', error);
@@ -45,11 +54,16 @@ export const labApiService = {
 
   async getLabStats(): Promise<LabStats> {
     const emptyStats: LabStats = {
-      totalLabs: 6,
+      totalLabs: labs.length, // Dynamic count based on actual labs
       completedLabs: 0,
       completionPercentage: 0,
       completedLabIds: [],
     };
+
+    // Check cache first
+    if (labStatsCache && Date.now() - labStatsCache.timestamp < CACHE_DURATION) {
+      return labStatsCache.data;
+    }
 
     try {
       const headers = await getAuthHeaders();
@@ -65,7 +79,16 @@ export const labApiService = {
         }
         return emptyStats;
       }
-      return await response.json();
+
+      const stats = await response.json();
+
+      // Update cache
+      labStatsCache = {
+        data: stats,
+        timestamp: Date.now(),
+      };
+
+      return stats;
     } catch (error) {
       // Network error, backend not running, etc. - just return empty stats
       console.warn(
@@ -95,5 +118,32 @@ export const labApiService = {
       console.error('Error fetching lab status:', error);
       return { labId, completed: false };
     }
+  },
+
+  // Helper function to get completed lab IDs (replaces localStorage getCompletedLabs)
+  async getCompletedLabs(): Promise<string[]> {
+    try {
+      const stats = await this.getLabStats();
+      return stats.completedLabIds;
+    } catch (error) {
+      console.error('Error fetching completed labs:', error);
+      return [];
+    }
+  },
+
+  // Helper function to check if a specific lab is completed (replaces localStorage isLabCompleted)
+  async isLabCompleted(labId: string): Promise<boolean> {
+    try {
+      const status = await this.getLabStatus(labId);
+      return status.completed;
+    } catch (error) {
+      console.error('Error checking lab completion:', error);
+      return false;
+    }
+  },
+
+  // Clear cache (useful for forcing refresh)
+  clearCache(): void {
+    labStatsCache = null;
   },
 };

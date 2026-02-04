@@ -4,6 +4,7 @@ import connectDB from '@/lib/mongodb';
 import { StudentExperience } from '@/lib/models/StudentExperience';
 import { StudentProgress } from '@/lib/models/StudentProgress';
 import { Course } from '@/lib/models/Course';
+import { labs } from '@data/labs';
 
 // Use anon key for auth verification
 const supabaseAuth = createClient(
@@ -186,9 +187,9 @@ export async function GET(request: NextRequest) {
         activities,
       },
       labStats: {
-        totalLabs: 6,
+        totalLabs: labs.length,
         completedLabs: completedLabs,
-        completionPercentage: Math.round((completedLabs / 6) * 100),
+        completionPercentage: Math.round((completedLabs / labs.length) * 100),
         completedLabIds: completedLabIds,
       },
     });

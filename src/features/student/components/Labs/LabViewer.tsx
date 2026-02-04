@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Terminal, ExternalLink, ArrowLeft, CheckCircle } from 'lucide-react';
 import { labs } from '@data/labs';
-import { isLabCompleted, markLabAsCompleted } from '@utils/labCompletion';
 import { labApiService } from '@services/labApiService';
 import { useAuth } from '@context/AuthContext';
 import { Loader } from '@components/ui/loader';
+import { migrateLabCompletionsToSupabase } from '@utils/migrateLabsToSupabase';
 
 interface LabViewerProps {
   labId: string;
@@ -16,6 +16,23 @@ export const LabViewer: React.FC<LabViewerProps> = ({ labId, onBack }) => {
   const [isCompleted, setIsCompleted] = useState(false);
   const [showCompletionMessage, setShowCompletionMessage] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+
+  // Run migration once on mount
+  useEffect(() => {
+    const runMigration = async () => {
+      try {
+        const result = await migrateLabCompletionsToSupabase();
+        if (result.migratedCount > 0) {
+          console.log(`Migrated ${result.migratedCount} labs to Supabase`);
+          // Refresh completion status after migration
+          loadCompletionStatus();
+        }
+      } catch (error) {
+        console.error('Migration failed:', error);
+      }
+    };
+    runMigration();
+  }, []);
 
   // Check for external completion sync from URL
   useEffect(() => {
@@ -40,15 +57,9 @@ export const LabViewer: React.FC<LabViewerProps> = ({ labId, onBack }) => {
       setIsLoading(true);
       const status = await labApiService.getLabStatus(labId);
       setIsCompleted(status.completed);
-
-      // Also sync with localStorage
-      if (status.completed) {
-        markLabAsCompleted(labId);
-      }
     } catch (error) {
       console.error('Error loading lab status:', error);
-      // Fallback to localStorage
-      setIsCompleted(isLabCompleted(labId));
+      setIsCompleted(false);
     } finally {
       setIsLoading(false);
     }
@@ -59,15 +70,11 @@ export const LabViewer: React.FC<LabViewerProps> = ({ labId, onBack }) => {
       setIsLoading(true);
       // Mark as completed via API (webhook may have already done this, but ensure sync)
       await labApiService.markLabAsCompleted(labId);
-      markLabAsCompleted(labId); // Also update localStorage
       setIsCompleted(true);
       setShowCompletionMessage(true);
       setTimeout(() => setShowCompletionMessage(false), 5000);
     } catch (error) {
       console.error('Error syncing external completion:', error);
-      // Still show as completed locally
-      markLabAsCompleted(labId);
-      setIsCompleted(true);
       setShowCompletionMessage(true);
       setTimeout(() => setShowCompletionMessage(false), 5000);
     } finally {
@@ -77,21 +84,13 @@ export const LabViewer: React.FC<LabViewerProps> = ({ labId, onBack }) => {
 
   const handleMarkAsCompleted = async () => {
     try {
-      // Mark in localStorage for offline support
-      markLabAsCompleted(labId);
-
-      // Also save to database
       await labApiService.markLabAsCompleted(labId);
-
       setIsCompleted(true);
       setShowCompletionMessage(true);
       setTimeout(() => setShowCompletionMessage(false), 3000);
     } catch (error) {
       console.error('Error marking lab as completed:', error);
-      // Still mark as completed locally even if API fails
-      setIsCompleted(true);
-      setShowCompletionMessage(true);
-      setTimeout(() => setShowCompletionMessage(false), 3000);
+      alert('Failed to mark lab as completed. Please check your connection and try again.');
     }
   };
 

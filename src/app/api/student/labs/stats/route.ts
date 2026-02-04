@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { labs } from '@data/labs';
 
 // Use anon key for auth verification
 const supabaseAuth = createClient(
@@ -20,7 +21,8 @@ function getSupabaseUserClient(token: string) {
   );
 }
 
-const LAB_TOTAL = 6;
+// Dynamic lab count based on actual labs data
+const LAB_TOTAL = labs.length;
 
 export async function GET(request: NextRequest) {
   try {

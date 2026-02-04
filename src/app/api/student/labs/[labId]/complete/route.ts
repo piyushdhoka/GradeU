@@ -48,30 +48,21 @@ export async function POST(
 
     const userClient = getSupabaseUserClient(token);
 
-    // Check if already completed (use user client)
-    const { data: existing } = await userClient
-      .from('lab_completions')
-      .select('*')
-      .eq('student_id', user.id)
-      .eq('lab_id', labId.trim())
-      .limit(1);
-
-    if (existing && existing.length > 0) {
-      return NextResponse.json({
-        success: true,
-        message: 'Lab already completed',
-        completion: existing[0],
-      });
-    }
-
-    // Insert new completion (use user client to respect RLS)
+    // Use upsert to handle duplicates gracefully
+    // This will insert if not exists, or update if already exists
     const { data: completion, error } = await userClient
       .from('lab_completions')
-      .insert({
-        student_id: user.id,
-        lab_id: labId.trim(),
-        completed_at: new Date().toISOString(),
-      })
+      .upsert(
+        {
+          student_id: user.id,
+          lab_id: labId.trim(),
+          completed_at: new Date().toISOString(),
+        },
+        {
+          onConflict: 'student_id,lab_id',
+          ignoreDuplicates: false, // Update the completed_at timestamp
+        }
+      )
       .select()
       .single();
 

@@ -20,6 +20,7 @@ import {
   ActiveOperation,
 } from '@services/studentService';
 import { labApiService, LabStats } from '@services/labApiService';
+import { labs } from '@data/labs';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@components/ui/card';
 import { Button } from '@components/ui/button';
 import { formatDistanceToNow } from 'date-fns';
@@ -68,7 +69,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onTabChange }) => {
       } else {
         // Fallback for lab stats if for some reason missing
         const labStatsData = await labApiService.getLabStats().catch(() => ({
-          totalLabs: 6,
+          totalLabs: labs.length,
           completedLabs: 0,
           completionPercentage: 0,
           completedLabIds: [],
@@ -84,7 +85,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onTabChange }) => {
         studyTime: '0 hours',
       });
       setLabStats({
-        totalLabs: 6,
+        totalLabs: labs.length,
         completedLabs: 0,
         completionPercentage: 0,
         completedLabIds: [],

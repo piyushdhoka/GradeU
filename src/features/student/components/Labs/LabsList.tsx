@@ -12,8 +12,8 @@ import {
 } from 'lucide-react';
 import { labs } from '@data/labs';
 import { useAuth } from '@context/AuthContext';
-import { getCompletedLabs } from '@utils/labCompletion';
 import { labApiService, LabStats } from '@services/labApiService';
+import { migrateLabCompletionsToSupabase } from '@utils/migrateLabsToSupabase';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@components/ui/card';
 import { Button } from '@components/ui/button';
 import { Progress } from '@shared/components/ui/progress';
@@ -32,23 +32,30 @@ export const LabsList: React.FC<LabsListProps> = ({ onLabSelect }) => {
   const [loading, setLoading] = React.useState(true);
 
   React.useEffect(() => {
-    setCompletedLabs(getCompletedLabs());
-
-    const loadLabStats = async () => {
+    const loadLabData = async () => {
       try {
         setLoading(true);
+
+        // Run migration first
+        const migrationResult = await migrateLabCompletionsToSupabase();
+        if (migrationResult.migratedCount > 0) {
+          console.log(`Migrated ${migrationResult.migratedCount} labs to Supabase`);
+        }
+
+        // Load stats from Supabase
         const stats = await labApiService.getLabStats();
         setLabStats(stats);
         setCompletedLabs(stats.completedLabIds);
       } catch (error) {
         console.error('Error fetching lab stats:', error);
-        setCompletedLabs(getCompletedLabs());
+        // Set empty state on error
+        setCompletedLabs([]);
       } finally {
         setLoading(false);
       }
     };
 
-    loadLabStats();
+    loadLabData();
   }, []);
 
   const getDifficultyVariant = (difficulty: string) => {
