@@ -184,7 +184,7 @@ export default function OnboardingPage() {
           </h1>
           <p className="text-sm text-zinc-500">
             Just a few details to get you started with{' '}
-            <span className="font-medium text-emerald-500/80">CyberCoach</span>
+            <span className="font-medium text-emerald-500/80">GradeU</span>
           </p>
         </div>
 
@@ -280,7 +280,7 @@ export default function OnboardingPage() {
         </div>
 
         <p className="text-center text-[10px] font-medium tracking-widest text-zinc-700 uppercase">
-          &copy; {new Date().getFullYear()} CYBERCOACH
+          &copy; {new Date().getFullYear()} GRADEU
         </p>
       </div>
     </div>

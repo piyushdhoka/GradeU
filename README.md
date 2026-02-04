@@ -1,6 +1,6 @@
-# CyberCoach - Advanced Learning Management System
+# GradeU - Advanced Learning Management System
 
-CyberCoach is a next-generation education platform designed to deliver high-quality, interactive learning experiences. It features a robust student dashboard, automated course generation, proctoring capabilities, and a community-driven learning environment.
+GradeU is a next-generation education platform designed to deliver high-quality, interactive learning experiences. It features a robust student dashboard, automated course generation, proctoring capabilities, and a community-driven learning environment.
 
 ## 🚀 Tech Stack
 
@@ -27,8 +27,8 @@ CyberCoach is a next-generation education platform designed to deliver high-qual
 1.  **Clone the repository:**
 
     ```bash
-    git clone https://github.com/your-username/cybercoach.git
-    cd cybercoach
+    git clone https://github.com/your-username/grade-u.git
+    cd grade-u
     ```
 
 2.  **Install dependencies:**
