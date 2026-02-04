@@ -80,6 +80,11 @@ export const metadata: Metadata = {
       'max-snippet': -1,
     },
   },
+  verification: {
+    other: {
+      'google-adsense-account': ['ca-pub-7950461190607083'],
+    },
+  },
 };
 
 import Script from 'next/script';
@@ -112,7 +117,7 @@ export default function RootLayout({
           async
           src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7950461190607083"
           crossOrigin="anonymous"
-          strategy="afterInteractive"
+          strategy="beforeInteractive"
         />
       </body>
     </html>
