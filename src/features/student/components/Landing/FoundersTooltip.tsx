@@ -29,7 +29,7 @@ const people = [
     name: 'Vedant Pandhare',
     designation: 'Founder',
     image: '/founders/vedant.png',
-    url: 'https://www.linkedin.com/in/vedant-pandhare',
+    url: 'https://vedant.sparkstudio.co.in',
   },
 ];
 

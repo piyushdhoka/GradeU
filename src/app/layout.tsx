@@ -31,11 +31,17 @@ export const metadata: Metadata = {
   },
   description: siteConfig.description,
   keywords: siteConfig.keywords,
-  authors: [siteConfig.author],
+  authors: [{ name: siteConfig.author.name, url: siteConfig.author.url }],
   creator: siteConfig.creator,
+  publisher: siteConfig.name,
+  formatDetection: {
+    email: false,
+    address: false,
+    telephone: false,
+  },
   icons: {
     icon: [{ url: '/favicon.ico' }, { url: '/logo.png', sizes: '192x192', type: 'image/png' }],
-    apple: '/logo.png',
+    apple: [{ url: '/logo.png' }],
   },
   openGraph: {
     title: siteConfig.title,
@@ -46,10 +52,10 @@ export const metadata: Metadata = {
     type: 'website',
     images: [
       {
-        url: `${siteConfig.url}/og.png`,
+        url: siteConfig.ogImage,
         width: 1200,
         height: 630,
-        alt: 'GradeU - Master Any Subject With Hands-on Labs',
+        alt: siteConfig.title,
       },
     ],
   },
@@ -57,8 +63,11 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: siteConfig.title,
     description: siteConfig.description,
-    creator: '@gradeu',
-    images: [`${siteConfig.url}/og.png`],
+    creator: '@GradeU_Edu',
+    images: [siteConfig.ogImage],
+  },
+  alternates: {
+    canonical: siteConfig.url,
   },
   robots: {
     index: true,
@@ -97,6 +106,14 @@ export default function RootLayout({
             strategy="lazyOnload"
           />
         )}
+
+        {/* Google AdSense */}
+        <Script
+          async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7950461190607083"
+          crossOrigin="anonymous"
+          strategy="afterInteractive"
+        />
       </body>
     </html>
   );
