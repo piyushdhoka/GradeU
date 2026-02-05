@@ -139,31 +139,96 @@ export default function ProfilePage() {
             setSaving(true)
             setMessage('')
 
-            // Update profiles table
-            const { error: profileError } = await supabase
-                .from('profiles')
-                .update({ full_name: fullName })
-                .eq('id', user?.id)
+            if (!user?.id) throw new Error("No user ID found");
 
-            if (profileError) throw profileError
+            // 1. Manage PROFILES table
+            try {
+                const { data: existingProfile } = await supabase
+                    .from('profiles')
+                    .select('id, full_name')
+                    .eq('id', user.id)
+                    .single();
 
-            // Upsert teacher_details
-            const { error: teacherError } = await supabase
-                .from('teacher_details')
-                .upsert({
-                    id: user?.id,
-                    specialization: specialization,
-                    bio: bio,
-                    signature_url: signatureUrl,
-                    updated_at: new Date().toISOString()
-                })
+                if (existingProfile) {
+                    // Update only if changed
+                    if (existingProfile.full_name !== fullName) {
+                        const { error: updateError } = await supabase
+                            .from('profiles')
+                            .update({ full_name: fullName })
+                            .eq('id', user.id);
 
-            if (teacherError) throw teacherError
+                        if (updateError) throw new Error(`Profiles update failed: ${updateError.message}`);
+                    }
+                } else {
+                    // Insert
+                    const { error: insertError } = await supabase
+                        .from('profiles')
+                        .insert({
+                            id: user.id,
+                            full_name: fullName
+                        });
+
+                    if (insertError) throw new Error(`Profiles insert failed: ${insertError.message}`);
+                }
+            } catch (err: any) {
+                console.error("Profiles Table Error:", err);
+                throw err; // Re-throw to stop execution
+            }
+
+            // 2. Manage TEACHER_DETAILS table
+            try {
+                const { data: existingTeacherDetails } = await supabase
+                    .from('teacher_details')
+                    .select('*')
+                    .eq('id', user.id)
+                    .single();
+
+                if (existingTeacherDetails) {
+                    // Check if anything actually changed
+                    const needsUpdate =
+                        existingTeacherDetails.teacher_name !== fullName ||
+                        existingTeacherDetails.specialization !== specialization ||
+                        existingTeacherDetails.bio !== bio ||
+                        existingTeacherDetails.signature_url !== signatureUrl;
+
+                    if (needsUpdate) {
+                        // Update
+                        const { error: teacherUpdateError } = await supabase
+                            .from('teacher_details')
+                            .update({
+                                teacher_name: fullName,
+                                specialization: specialization,
+                                bio: bio,
+                                signature_url: signatureUrl
+                            })
+                            .eq('id', user.id);
+
+                        if (teacherUpdateError) throw new Error(`Teacher Details update failed: ${teacherUpdateError.message}`);
+                    }
+                } else {
+                    // Insert
+                    const { error: teacherInsertError } = await supabase
+                        .from('teacher_details')
+                        .insert({
+                            id: user.id,
+                            teacher_name: fullName,
+                            specialization: specialization,
+                            bio: bio,
+                            signature_url: signatureUrl
+                        });
+
+                    if (teacherInsertError) throw new Error(`Teacher Details insert failed: ${teacherInsertError.message}`);
+                }
+            } catch (err: any) {
+                console.error("Teacher Details Table Error:", err);
+                throw err;
+            }
 
             setIsFirstLogin(false)
             setMessage('Profile updated successfully!')
         } catch (error: any) {
-            setMessage('Error updating profile: ' + error.message)
+            console.error("Update Profile Logic Error:", error);
+            setMessage('Error: ' + error.message)
         } finally {
             setSaving(false)
         }

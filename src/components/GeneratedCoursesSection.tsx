@@ -84,7 +84,14 @@ export default function GeneratedCoursesSection() {
                         >
                             <div className="flex flex-col">
                                 <h3 className="font-bold text-lg text-zinc-900 dark:text-white">{course.title}</h3>
-                                <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1 line-clamp-1">{course.description}</p>
+                                <div className="flex flex-col gap-1 mt-1">
+                                    <p className="text-xs text-zinc-500 dark:text-zinc-400 line-clamp-1">{course.description}</p>
+                                    {course.created_by && (
+                                        <p className="text-xs font-medium text-indigo-500 dark:text-indigo-400">
+                                            Created by: {course.created_by}
+                                        </p>
+                                    )}
+                                </div>
                             </div>
                             {openCourses[course.id] ? (
                                 <ChevronUp className="w-5 h-5 text-zinc-400" />

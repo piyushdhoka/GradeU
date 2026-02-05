@@ -15,7 +15,7 @@ if (!process.env.REDIS_URL || !process.env.NEXT_PUBLIC_SUPABASE_URL) {
 console.log('🚀 Worker started. Listening for jobs...');
 
 const worker = new Worker('course-generation', async (job: Job) => {
-    const { jobId, courseTitle, modules, generalQuiz, finalAssessment } = job.data;
+    const { jobId, courseTitle, modules, generalQuiz, finalAssessment, createdBy } = job.data;
     console.log(`[Job ${jobId}] Starting processing: ${courseTitle}`);
 
     // Accumulator for MongoDB Sync
@@ -32,7 +32,11 @@ const worker = new Worker('course-generation', async (job: Job) => {
         // 2. Create Course Record (Draft Mode)
         const { data: course, error: courseError } = await supabaseAdmin
             .from('courses')
-            .insert({ title: courseTitle, is_published: false }) // Initially hidden/draft
+            .insert({
+                title: courseTitle,
+                is_published: false,
+                created_by: createdBy || null // Save authenticated user name
+            })
             .select().single();
 
         if (courseError) throw courseError;

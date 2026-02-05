@@ -7,6 +7,7 @@ export interface GeneratedCourse {
     title: string;
     description: string;
     created_at: string;
+    created_by?: string | null; // Added field for teacher name
     modules: GeneratedModule[];
 }
 
@@ -27,10 +28,20 @@ export interface GeneratedQuiz {
 
 export async function getGeneratedCourses(): Promise<GeneratedCourse[]> {
     try {
-        // 1. Fetch Courses
+        // 1. Fetch Courses with Creator Name
         const { data: courses, error: coursesError } = await supabaseAdmin
             .from("courses")
-            .select("id, title, description, created_at")
+            .select(`
+                id, 
+                title, 
+                description, 
+                created_at,
+                profiles:profiles!courses_created_by_fkey (
+                    teacher_details (
+                        teacher_name
+                    )
+                )
+            `) // Join: courses -> profiles -> teacher_details
             .eq("is_published", true)
             .order("created_at", { ascending: false });
 
@@ -42,6 +53,7 @@ export async function getGeneratedCourses(): Promise<GeneratedCourse[]> {
         const result: GeneratedCourse[] = [];
 
         for (const course of courses) {
+            // ... (Modules Logic remains same)
             // 2. Fetch Modules for each course
             const { data: modules, error: modulesError } = await supabaseAdmin
                 .from("modules")
@@ -79,11 +91,22 @@ export async function getGeneratedCourses(): Promise<GeneratedCourse[]> {
                 }
             }
 
+            // Extract teacher name from the nested join
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const profileData = course.profiles as any;
+            // Access teacher_details which might be an object or array depending on relation (usually object for 1:1)
+            const teacherDetails = profileData?.teacher_details;
+            // Handle if it's an array (sometimes PostgREST returns array for 1:1 if not specified) or object
+            const teacherName = Array.isArray(teacherDetails)
+                ? teacherDetails[0]?.teacher_name
+                : teacherDetails?.teacher_name;
+
             result.push({
                 id: course.id,
                 title: course.title,
                 description: course.description || "",
                 created_at: course.created_at,
+                created_by: teacherName || "Unknown Teacher", // Fallback
                 modules: courseModules
             });
         }
