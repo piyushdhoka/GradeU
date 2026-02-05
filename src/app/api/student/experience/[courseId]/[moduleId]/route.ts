@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import connectDB from '@/lib/mongodb';
-import { StudentExperience } from '@/lib/models/StudentExperience';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -34,30 +32,32 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    await connectDB();
-
-    const studentEmail = user.email || '';
-
-    // Query by both studentId and studentEmail for compatibility
-    const experience = await StudentExperience.findOne({
-      $or: [{ studentId: user.id }, { studentEmail: studentEmail }],
-      courseId,
-    }).lean();
-
-    if (!experience) {
-      return NextResponse.json({
-        timeSpent: 0,
-        scrollDepth: 0,
-        canComplete: false,
-        reason: 'No experience data found',
-      });
-    }
-
-    const moduleStat = (experience as any).moduleStats?.find(
-      (stat: any) => stat.moduleId === moduleId
+    // Create user-scoped client for RLS
+    const userClient = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        global: {
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      }
     );
 
-    if (!moduleStat) {
+    // Fetch experience from Supabase
+    const { data: experience, error } = await userClient
+      .from('module_experience')
+      .select('time_spent, scroll_depth, interactions')
+      .eq('student_id', user.id)
+      .eq('course_id', courseId)
+      .eq('module_id', moduleId)
+      .single();
+
+    if (error && error.code !== 'PGRST116') {
+      console.error('Experience fetch error:', error);
+      return NextResponse.json({ error: 'Failed to fetch experience' }, { status: 500 });
+    }
+
+    if (!experience) {
       return NextResponse.json({
         timeSpent: 0,
         scrollDepth: 0,
@@ -69,8 +69,8 @@ export async function GET(
     const MIN_TIME_SPENT = 60; // Minimum 60 seconds (1 minute)
     const MIN_SCROLL_DEPTH = 50; // Minimum 50% scroll depth
 
-    const timeSpent = moduleStat.timeSpent || 0;
-    const scrollDepth = moduleStat.scrollDepth || 0;
+    const timeSpent = experience.time_spent || 0;
+    const scrollDepth = experience.scroll_depth || 0;
     const canComplete = timeSpent >= MIN_TIME_SPENT && scrollDepth >= MIN_SCROLL_DEPTH;
 
     return NextResponse.json({

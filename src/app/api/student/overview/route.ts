@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import connectDB from '@/lib/mongodb';
-import { StudentExperience } from '@/lib/models/StudentExperience';
 import { labs } from '@data/labs';
 
 // Use anon key for auth verification
@@ -43,26 +41,23 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const studentEmail = user.email || '';
     const userClient = getSupabaseUserClient(token);
-
-    // Connect to MongoDB for experience tracking only
-    await connectDB();
 
     // Run all independent queries in parallel
     const [
-      experiences,
+      experienceResult,
       progressResult,
       labCompletionsResult,
       certificatesResult,
       coursesResult,
     ] = await Promise.all([
-      // Get study time from MongoDB (experience tracking)
-      StudentExperience.find({
-        $or: [{ studentId: user.id }, { studentEmail: studentEmail }],
-      }).lean(),
+      // Get experience from Supabase (for study time)
+      userClient
+        .from('module_experience')
+        .select('course_id, module_id, time_spent, scroll_depth, updated_at')
+        .eq('student_id', user.id),
 
-      // Get progress from Supabase (unified source of truth)
+      // Get progress from Supabase
       userClient
         .from('module_progress')
         .select('*')
@@ -82,15 +77,16 @@ export async function GET(request: NextRequest) {
       userClient.from('courses').select('id, title, description'),
     ]);
 
+    const experiences = experienceResult.data || [];
     const progress = progressResult.data || [];
     const completedLabs = labCompletionsResult.data?.length || 0;
     const completedLabIds = labCompletionsResult.data?.map((l: any) => l.lab_id) || [];
     const certificatesEarned = certificatesResult.count || 0;
     const courses = coursesResult.data || [];
 
-    // Calculate study time from MongoDB experience
+    // Calculate study time from experience
     const totalSeconds = experiences.reduce(
-      (acc: number, exp: any) => acc + (exp.totalTimeSpent || 0),
+      (acc: number, exp: any) => acc + (exp.time_spent || 0),
       0
     );
     const totalStudyTime =

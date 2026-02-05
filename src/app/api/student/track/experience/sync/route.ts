@@ -8,8 +8,9 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
-// Experience sync endpoint for tracking time spent, scroll depth, etc.
-// Now requires authentication to prevent spoofing
+// Experience sync endpoint
+// - Module stats (time, scroll, interactions) → Supabase
+// - AI interactions → MongoDB
 export async function POST(request: NextRequest) {
   try {
     // Get auth token from header
@@ -33,81 +34,82 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { courseId, moduleStats, aiInteraction } = body;
 
-    // Use authenticated user's ID and email instead of trusting client
-    const studentId = user.id;
-    const studentEmail = user.email || '';
-
     if (!courseId) {
       return NextResponse.json({ error: 'Missing courseId' }, { status: 400 });
     }
 
-    await connectDB();
+    // Create user-scoped client for RLS
+    const userClient = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        global: {
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      }
+    );
 
-    const now = new Date();
-    let sanitizedInteraction = null;
+    // Handle module stats → Supabase
+    if (moduleStats && moduleStats.moduleId) {
+      const moduleId = String(moduleStats.moduleId).trim();
+      const timeSpent = Math.max(0, Math.floor(moduleStats.timeSpent || 0));
+      const scrollDepth = Math.max(0, Math.min(100, Math.floor(moduleStats.scrollDepth || 0)));
+      const interactions = Math.max(0, Math.floor(moduleStats.interactions || 0));
 
-    if (aiInteraction && typeof aiInteraction === 'object' && !Array.isArray(aiInteraction)) {
-      sanitizedInteraction = {
-        query: String(aiInteraction.query || '').substring(0, 1000),
-        responseSnippet: String(aiInteraction.responseSnippet || '').substring(0, 1000),
-        timestamp: now,
-      };
+      // Check if record exists
+      const { data: existing } = await userClient
+        .from('module_experience')
+        .select('id, time_spent, scroll_depth, interactions')
+        .eq('student_id', user.id)
+        .eq('course_id', courseId)
+        .eq('module_id', moduleId)
+        .single();
+
+      if (existing) {
+        // Update existing
+        await userClient
+          .from('module_experience')
+          .update({
+            time_spent: existing.time_spent + timeSpent,
+            scroll_depth: Math.max(existing.scroll_depth, scrollDepth),
+            interactions: existing.interactions + interactions,
+            last_accessed: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', existing.id);
+      } else {
+        // Insert new
+        await userClient.from('module_experience').insert({
+          student_id: user.id,
+          course_id: courseId,
+          module_id: moduleId,
+          time_spent: timeSpent,
+          scroll_depth: scrollDepth,
+          interactions: interactions,
+          last_accessed: new Date().toISOString(),
+        });
+      }
     }
 
-    if (moduleStats) {
-      const moduleId = String(moduleStats.moduleId).trim();
-      const interactions = moduleStats.interactions || 0;
-      const timeSpent = Math.max(0, moduleStats.timeSpent || 0);
-      const scrollDepth = Math.max(0, Math.min(100, moduleStats.scrollDepth || 0));
+    // Handle AI interactions → MongoDB
+    if (aiInteraction && typeof aiInteraction === 'object') {
+      await connectDB();
 
-      // Try to update existing module entry
-      const updated = await StudentExperience.findOneAndUpdate(
+      const sanitizedInteraction = {
+        query: String(aiInteraction.query || '').substring(0, 1000),
+        responseSnippet: String(aiInteraction.responseSnippet || '').substring(0, 1000),
+        timestamp: new Date(),
+      };
+
+      await StudentExperience.findOneAndUpdate(
+        { studentId: user.id, courseId },
         {
-          studentId,
-          courseId,
-          'moduleStats.moduleId': moduleId,
+          $push: { aiInteractions: sanitizedInteraction },
+          $set: { updatedAt: new Date(), studentEmail: user.email || '' },
+          $setOnInsert: { createdAt: new Date(), moduleStats: [] },
         },
-        {
-          $inc: {
-            'moduleStats.$.timeSpent': timeSpent,
-            'moduleStats.$.interactions': interactions,
-            totalTimeSpent: timeSpent,
-          },
-          $max: { 'moduleStats.$.scrollDepth': scrollDepth },
-          $set: {
-            'moduleStats.$.lastAccessed': now,
-            updatedAt: now,
-            studentEmail,
-          },
-          ...(sanitizedInteraction ? { $push: { aiInteractions: sanitizedInteraction } } : {}),
-        }
+        { upsert: true }
       );
-
-      if (!updated) {
-        // Create new or add module to existing experience
-        await StudentExperience.findOneAndUpdate(
-          { studentId, courseId },
-          {
-            $push: {
-              moduleStats: {
-                moduleId,
-                timeSpent,
-                scrollDepth,
-                interactions,
-                lastAccessed: now,
-              },
-              ...(sanitizedInteraction ? { aiInteractions: sanitizedInteraction } : {}),
-            },
-            $inc: { totalTimeSpent: timeSpent },
-            $set: {
-              updatedAt: now,
-              studentEmail,
-            },
-            $setOnInsert: { createdAt: now },
-          },
-          { upsert: true }
-        );
-      }
     }
 
     return NextResponse.json({ success: true }, { status: 202 });
