@@ -324,6 +324,51 @@ const worker = new Worker('course-generation', async (job: Job) => {
         console.error(`[Job ${jobId}] Failed:`, error);
         await addCourseLog(jobId, courseTitle, `Job failed: ${error.message}`, 'ERROR', { error });
 
+        // ROLLBACK: Clean up orphaned data
+        const courseIdForRollback = job.data.courseIdForRollback;
+        if (courseIdForRollback) {
+            console.log(`[Job ${jobId}] Rolling back: deleting orphaned course ${courseIdForRollback}`);
+            await addCourseLog(jobId, courseTitle, `Rolling back: deleting course ${courseIdForRollback}`, 'WARN');
+
+            try {
+                // 1. Delete modules and quizzes (cascade should handle quizzes if FK is set)
+                await supabaseAdmin.from('modules').delete().eq('course_id', courseIdForRollback);
+
+                // 2. Delete embeddings (if any were created)
+                // Note: module_embeddings FK might cascade, but let's be safe
+                const { data: moduleIds } = await supabaseAdmin
+                    .from('modules')
+                    .select('id')
+                    .eq('course_id', courseIdForRollback);
+
+                if (moduleIds && moduleIds.length > 0) {
+                    await supabaseAdmin.from('module_embeddings')
+                        .delete()
+                        .in('module_id', moduleIds.map(m => m.id));
+                }
+
+                // 3. Delete storage files for this course
+                const { data: files } = await supabaseAdmin.storage
+                    .from('courses')
+                    .list(courseIdForRollback);
+
+                if (files && files.length > 0) {
+                    // Recursively list and delete all files
+                    const filePaths = files.map(f => `${courseIdForRollback}/${f.name}`);
+                    await supabaseAdmin.storage.from('courses').remove(filePaths);
+                }
+
+                // 4. Delete the course record itself
+                await supabaseAdmin.from('courses').delete().eq('id', courseIdForRollback);
+
+                await addCourseLog(jobId, courseTitle, `Rollback complete: course ${courseIdForRollback} deleted`, 'INFO');
+                console.log(`[Job ${jobId}] Rollback complete.`);
+            } catch (rollbackError: any) {
+                console.error(`[Job ${jobId}] Rollback failed:`, rollbackError);
+                await addCourseLog(jobId, courseTitle, `Rollback failed: ${rollbackError.message}`, 'ERROR');
+            }
+        }
+
         await supabaseAdmin.from('generation_jobs').update({
             status: 'FAILED',
             error: error.message
