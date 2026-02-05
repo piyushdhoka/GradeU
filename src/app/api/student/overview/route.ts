@@ -2,8 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import connectDB from '@/lib/mongodb';
 import { StudentExperience } from '@/lib/models/StudentExperience';
-import { StudentProgress } from '@/lib/models/StudentProgress';
-import { Course } from '@/lib/models/Course';
 import { labs } from '@data/labs';
 
 // Use anon key for auth verification
@@ -46,41 +44,51 @@ export async function GET(request: NextRequest) {
     }
 
     const studentEmail = user.email || '';
-
-    await connectDB();
-
     const userClient = getSupabaseUserClient(token);
 
+    // Connect to MongoDB for experience tracking only
+    await connectDB();
+
     // Run all independent queries in parallel
-    const [experiences, mongoProgress, labCompletionsResult, certificatesResult] =
-      await Promise.all([
-        // Get study time from MongoDB
-        StudentExperience.find({
-          $or: [{ studentId: user.id }, { studentEmail: studentEmail }],
-        }).lean(),
+    const [
+      experiences,
+      progressResult,
+      labCompletionsResult,
+      certificatesResult,
+      coursesResult,
+    ] = await Promise.all([
+      // Get study time from MongoDB (experience tracking)
+      StudentExperience.find({
+        $or: [{ studentId: user.id }, { studentEmail: studentEmail }],
+      }).lean(),
 
-        // Get progress from MongoDB
-        StudentProgress.find({
-          $or: [{ studentId: user.id }, { studentEmail: studentEmail }],
-        })
-          .sort({ updatedAt: -1 })
-          .lean(),
+      // Get progress from Supabase (unified source of truth)
+      userClient
+        .from('module_progress')
+        .select('*')
+        .eq('student_id', user.id)
+        .order('updated_at', { ascending: false }),
 
-        // Get lab completions from Supabase (use user token to respect RLS)
-        userClient.from('lab_completions').select('lab_id'),
+      // Get lab completions from Supabase
+      userClient.from('lab_completions').select('lab_id'),
 
-        // Get certificates count from Supabase
-        userClient
-          .from('certificates')
-          .select('*', { count: 'exact', head: true })
-          .eq('student_id', user.id),
-      ]);
+      // Get certificates count from Supabase
+      userClient
+        .from('certificates')
+        .select('*', { count: 'exact', head: true })
+        .eq('student_id', user.id),
 
+      // Get courses from Supabase
+      userClient.from('courses').select('id, title, description'),
+    ]);
+
+    const progress = progressResult.data || [];
     const completedLabs = labCompletionsResult.data?.length || 0;
     const completedLabIds = labCompletionsResult.data?.map((l: any) => l.lab_id) || [];
     const certificatesEarned = certificatesResult.count || 0;
+    const courses = coursesResult.data || [];
 
-    // Calculate study time
+    // Calculate study time from MongoDB experience
     const totalSeconds = experiences.reduce(
       (acc: number, exp: any) => acc + (exp.totalTimeSpent || 0),
       0
@@ -90,96 +98,110 @@ export async function GET(request: NextRequest) {
         ? `${Math.floor(totalSeconds / 60)} mins`
         : `${(totalSeconds / 3600).toFixed(1)} hours`;
 
-    // Get unique course IDs and fetch all courses in ONE query
-    const courseIds = [...new Set((mongoProgress as any[]).map((p) => p.courseId))];
-    const courses =
-      courseIds.length > 0
-        ? await Course.find({ _id: { $in: courseIds } })
-            .select('title modules description')
-            .lean()
-        : [];
-
     // Build course lookup map
     const courseMap = new Map<string, any>();
     for (const course of courses) {
-      courseMap.set((course as any)._id.toString(), course);
+      courseMap.set(course.id, course);
+    }
+
+    // Get unique course IDs from progress
+    const courseIds = [...new Set(progress.map((p: any) => p.course_id))];
+
+    // Fetch modules for these courses
+    const { data: modules } = await userClient
+      .from('modules')
+      .select('id, course_id, title, order_index')
+      .in('course_id', courseIds.length > 0 ? courseIds : ['none']);
+
+    // Build module lookup by course
+    const modulesByCourse = new Map<string, any[]>();
+    for (const mod of modules || []) {
+      if (!modulesByCourse.has(mod.course_id)) {
+        modulesByCourse.set(mod.course_id, []);
+      }
+      modulesByCourse.get(mod.course_id)!.push(mod);
+    }
+
+    // Sort modules by order_index
+    for (const [, mods] of modulesByCourse) {
+      mods.sort((a: any, b: any) => (a.order_index || 0) - (b.order_index || 0));
     }
 
     // Calculate progress per course
     const courseProgressMap = new Map<string, { completed: number; total: number }>();
     const completedCourseIds = new Set<string>();
 
-    for (const p of mongoProgress as any[]) {
-      const course = courseMap.get(p.courseId);
-      if (!course) continue;
+    for (const p of progress) {
+      const courseMods = modulesByCourse.get(p.course_id) || [];
 
-      if (!courseProgressMap.has(p.courseId)) {
-        courseProgressMap.set(p.courseId, {
+      if (!courseProgressMap.has(p.course_id)) {
+        courseProgressMap.set(p.course_id, {
           completed: 0,
-          total: (course as any).modules?.length || 0,
+          total: courseMods.length,
         });
       }
 
-      const courseData = courseProgressMap.get(p.courseId)!;
+      const courseData = courseProgressMap.get(p.course_id)!;
       if (p.completed) {
         courseData.completed += 1;
         if (courseData.completed >= courseData.total && courseData.total > 0) {
-          completedCourseIds.add(p.courseId);
+          completedCourseIds.add(p.course_id);
         }
       }
     }
 
-    // Find active course (most recent incomplete) - no extra queries needed
+    // Find active course (most recent incomplete)
     let activeCourse = null;
     for (const [courseId, data] of courseProgressMap.entries()) {
       if (data.completed < data.total && data.total > 0) {
         const course = courseMap.get(courseId);
-        if (course) {
-          const completedModuleIds = (mongoProgress as any[])
-            .filter((p: any) => p.courseId === courseId && p.completed)
-            .map((p: any) => p.moduleId);
+        const courseMods = modulesByCourse.get(courseId) || [];
 
-          const nextModule = (course as any).modules?.find(
-            (m: any) => !completedModuleIds.includes(m._id?.toString())
+        if (course) {
+          const completedModuleIds = progress
+            .filter((p: any) => p.course_id === courseId && p.completed)
+            .map((p: any) => p.module_id);
+
+          const nextModule = courseMods.find(
+            (m: any) => !completedModuleIds.includes(m.id)
           );
 
-          const progress = data.total > 0 ? Math.round((data.completed / data.total) * 100) : 0;
+          const progressPct = data.total > 0 ? Math.round((data.completed / data.total) * 100) : 0;
 
           activeCourse = {
             courseId: courseId,
-            title: (course as any).title,
-            description: (course as any).description || '',
-            currentModuleId: nextModule?._id?.toString() || '',
+            title: course.title,
+            description: course.description || '',
+            currentModuleId: nextModule?.id || '',
             currentModuleTitle: nextModule?.title || 'Next Module',
-            progress: progress,
+            progress: progressPct,
           };
           break;
         }
       }
     }
 
-    // Build activities - no extra queries, use courseMap
-    const activities = (mongoProgress as any[]).slice(0, 5).map((p: any) => {
-      const course = courseMap.get(p.courseId);
-      const moduleTitle =
-        (course as any)?.modules?.find((m: any) => m._id?.toString() === p.moduleId)?.title ||
-        'Module';
+    // Build activities from progress
+    const activities = progress.slice(0, 5).map((p: any) => {
+      const course = courseMap.get(p.course_id);
+      const courseMods = modulesByCourse.get(p.course_id) || [];
+      const moduleTitle = courseMods.find((m: any) => m.id === p.module_id)?.title || 'Module';
 
       return {
-        id: p._id?.toString(),
+        id: `${p.student_id}-${p.course_id}-${p.module_id}`,
         type: p.completed ? 'completion' : 'start',
         action: `${p.completed ? 'Completed' : 'Started'} ${moduleTitle}`,
-        course: (course as any)?.title || 'Course',
-        timestamp: p.updatedAt,
-        courseId: p.courseId,
-        moduleId: p.moduleId,
+        course: course?.title || 'Course',
+        timestamp: p.updated_at,
+        courseId: p.course_id,
+        moduleId: p.module_id,
       };
     });
 
     return NextResponse.json({
       stats: {
         completedCourses: completedCourseIds.size,
-        completedModules: mongoProgress.filter((p: any) => p.completed).length,
+        completedModules: progress.filter((p: any) => p.completed).length,
         completedLabs: completedLabs || 0,
         certificatesEarned,
         totalStudyTime,

@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import connectDB from '@/lib/mongodb';
-import { StudentProgress } from '@/lib/models/StudentProgress';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -34,23 +32,26 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    await connectDB();
+    // Fetch all module progress for this course from Supabase
+    const { data: progress, error } = await supabase
+      .from('module_progress')
+      .select('*')
+      .eq('student_id', user.id)
+      .eq('course_id', courseId);
 
-    // Fetch all module progress for this course from MongoDB
-    // Use studentEmail to match existing MongoDB index
-    const progress = await StudentProgress.find({
-      studentEmail: user.email || '',
-      courseId: courseId,
-    }).lean();
+    if (error) {
+      console.error('Course progress error:', error);
+      return NextResponse.json({ error: 'Failed to fetch progress' }, { status: 500 });
+    }
 
     // Convert to a map of moduleId -> progress
     const progressMap: Record<string, any> = {};
     (progress || []).forEach((p: any) => {
-      progressMap[p.moduleId] = {
+      progressMap[p.module_id] = {
         completed: p.completed,
-        quizScore: p.quizScore,
-        completedAt: p.updatedAt,
-        completedTopics: p.completedTopics || [],
+        quizScore: p.quiz_score,
+        completedAt: p.completed_at,
+        completedTopics: p.completed_topics || [],
       };
     });
 

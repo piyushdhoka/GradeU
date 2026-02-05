@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import connectDB from '@/lib/mongodb';
-import { StudentProgress } from '@/lib/models/StudentProgress';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -34,13 +32,20 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    await connectDB();
+    // Fetch progress from Supabase
+    const { data: progress, error } = await supabase
+      .from('module_progress')
+      .select('*')
+      .eq('student_id', user.id)
+      .eq('course_id', courseId)
+      .eq('module_id', moduleId)
+      .single();
 
-    const progress = await StudentProgress.findOne({
-      studentEmail: user.email || '',
-      courseId: courseId,
-      moduleId: moduleId,
-    }).lean();
+    if (error && error.code !== 'PGRST116') {
+      // PGRST116 = no rows returned (which is fine)
+      console.error('Module progress GET error:', error);
+      return NextResponse.json({ error: 'Failed to fetch progress' }, { status: 500 });
+    }
 
     if (!progress) {
       return NextResponse.json({
@@ -52,10 +57,10 @@ export async function GET(
     }
 
     return NextResponse.json({
-      completed: (progress as any).completed,
-      quizScore: (progress as any).quizScore,
-      completedAt: (progress as any).updatedAt,
-      completedTopics: (progress as any).completedTopics || [],
+      completed: progress.completed,
+      quizScore: progress.quiz_score,
+      completedAt: progress.completed_at,
+      completedTopics: progress.completed_topics || [],
     });
   } catch (error) {
     console.error('Module progress GET error:', error);
@@ -95,34 +100,27 @@ export async function PUT(
       return NextResponse.json({ error: 'completed must be a boolean' }, { status: 400 });
     }
 
-    await connectDB();
-
-    // Query by studentEmail since that's what the existing MongoDB index uses
-    // Also include studentId for new records
-    const studentEmail = user.email || '';
-
-    // Upsert progress in MongoDB - use studentEmail in filter to match existing index
-    await StudentProgress.findOneAndUpdate(
+    // Upsert progress in Supabase
+    const { error } = await supabase.from('module_progress').upsert(
       {
-        studentEmail: studentEmail,
-        courseId: courseId,
-        moduleId: moduleId,
+        student_id: user.id,
+        course_id: courseId,
+        module_id: moduleId,
+        completed,
+        quiz_score: quizScore || null,
+        completed_topics: completedTopics || [],
+        completed_at: completed ? new Date().toISOString() : null,
+        updated_at: new Date().toISOString(),
       },
       {
-        $set: {
-          studentId: user.id,
-          studentEmail: studentEmail,
-          completed,
-          quizScore: quizScore || null,
-          completedTopics: completedTopics || [],
-          updatedAt: new Date(),
-        },
-        $setOnInsert: {
-          createdAt: new Date(),
-        },
-      },
-      { upsert: true, new: true }
+        onConflict: 'student_id,course_id,module_id',
+      }
     );
+
+    if (error) {
+      console.error('Module progress PUT error:', error);
+      return NextResponse.json({ error: 'Failed to update progress' }, { status: 500 });
+    }
 
     return NextResponse.json({ success: true, message: 'Progress updated successfully' });
   } catch (error) {

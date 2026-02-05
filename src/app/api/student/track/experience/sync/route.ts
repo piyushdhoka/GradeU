@@ -1,15 +1,44 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@supabase/supabase-js';
 import connectDB from '@/lib/mongodb';
 import { StudentExperience } from '@/lib/models/StudentExperience';
 
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
+
 // Experience sync endpoint for tracking time spent, scroll depth, etc.
+// Now requires authentication to prevent spoofing
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { studentId, studentEmail, courseId, moduleStats, aiInteraction } = body;
+    // Get auth token from header
+    const authHeader = request.headers.get('authorization');
+    const token = authHeader?.replace('Bearer ', '');
 
-    if (!studentId) {
-      return NextResponse.json({ error: 'Missing studentId' }, { status: 400 });
+    if (!token) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Verify user from token
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser(token);
+
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const body = await request.json();
+    const { courseId, moduleStats, aiInteraction } = body;
+
+    // Use authenticated user's ID and email instead of trusting client
+    const studentId = user.id;
+    const studentEmail = user.email || '';
+
+    if (!courseId) {
+      return NextResponse.json({ error: 'Missing courseId' }, { status: 400 });
     }
 
     await connectDB();
@@ -31,7 +60,7 @@ export async function POST(request: NextRequest) {
       const timeSpent = Math.max(0, moduleStats.timeSpent || 0);
       const scrollDepth = Math.max(0, Math.min(100, moduleStats.scrollDepth || 0));
 
-      // Try to update existing module entry - query by both studentId and courseId
+      // Try to update existing module entry
       const updated = await StudentExperience.findOneAndUpdate(
         {
           studentId,
@@ -48,7 +77,7 @@ export async function POST(request: NextRequest) {
           $set: {
             'moduleStats.$.lastAccessed': now,
             updatedAt: now,
-            ...(studentEmail ? { studentEmail } : {}),
+            studentEmail,
           },
           ...(sanitizedInteraction ? { $push: { aiInteractions: sanitizedInteraction } } : {}),
         }
@@ -72,7 +101,7 @@ export async function POST(request: NextRequest) {
             $inc: { totalTimeSpent: timeSpent },
             $set: {
               updatedAt: now,
-              ...(studentEmail ? { studentEmail } : {}),
+              studentEmail,
             },
             $setOnInsert: { createdAt: now },
           },
