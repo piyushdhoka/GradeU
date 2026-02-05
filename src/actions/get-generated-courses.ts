@@ -8,6 +8,7 @@ export interface GeneratedCourse {
     description: string;
     created_at: string;
     created_by?: string | null; // Added field for teacher name
+    is_published: boolean;
     modules: GeneratedModule[];
 }
 
@@ -36,21 +37,47 @@ export async function getGeneratedCourses(): Promise<GeneratedCourse[]> {
                 title, 
                 description, 
                 created_at,
-                profiles:profiles!courses_created_by_fkey (
-                    teacher_details (
-                        teacher_name
-                    )
-                )
-            `) // Join: courses -> profiles -> teacher_details
-            .eq("is_published", true)
+                is_published,
+                created_by
+            `)
             .order("created_at", { ascending: false });
 
-        if (coursesError || !courses) {
-            console.error("Error fetching courses:", coursesError);
+        console.log("Fetching courses...");
+        if (coursesError) {
+            console.error("Supabase Error fetching courses:", coursesError);
+            return [];
+        }
+        console.log(`Found ${courses ? courses.length : 0} courses.`);
+        if (courses && courses.length > 0) {
+            console.log("First course sample:", courses[0]);
+        }
+
+        if (!courses) {
             return [];
         }
 
         const result: GeneratedCourse[] = [];
+
+        // Collect all unique user IDs to fetch teacher details
+        const userIds = Array.from(new Set(courses.map(c => c.created_by).filter(Boolean)));
+
+        let teacherMap: Record<string, string> = {};
+
+        if (userIds.length > 0) {
+            const { data: teachers, error: teachersError } = await supabaseAdmin
+                .from('teacher_details')
+                .select('id, teacher_name')
+                .in('id', userIds);
+
+            if (teachersError) {
+                console.error("Error fetching teacher details:", teachersError);
+            } else if (teachers) {
+                teacherMap = teachers.reduce((acc, t) => {
+                    acc[t.id] = t.teacher_name;
+                    return acc;
+                }, {} as Record<string, string>);
+            }
+        }
 
         for (const course of courses) {
             // ... (Modules Logic remains same)
@@ -91,22 +118,17 @@ export async function getGeneratedCourses(): Promise<GeneratedCourse[]> {
                 }
             }
 
-            // Extract teacher name from the nested join
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const profileData = course.profiles as any;
-            // Access teacher_details which might be an object or array depending on relation (usually object for 1:1)
-            const teacherDetails = profileData?.teacher_details;
-            // Handle if it's an array (sometimes PostgREST returns array for 1:1 if not specified) or object
-            const teacherName = Array.isArray(teacherDetails)
-                ? teacherDetails[0]?.teacher_name
-                : teacherDetails?.teacher_name;
+            // Resolve Teacher Name
+            const teacherId = course.created_by;
+            const teacherName = teacherMap[teacherId] || "Unknown Teacher";
 
             result.push({
                 id: course.id,
                 title: course.title,
                 description: course.description || "",
                 created_at: course.created_at,
-                created_by: teacherName || "Unknown Teacher", // Fallback
+                created_by: teacherName,
+                is_published: course.is_published,
                 modules: courseModules
             });
         }

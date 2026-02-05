@@ -293,8 +293,7 @@ const worker = new Worker('course-generation', async (job: Job) => {
         // 4. Finalize
         // Update Supabase course record to be published and include metadata
         await supabaseAdmin.from('courses').update({
-            is_published: true,
-            description: job.data.description || `AI Generated Course: ${courseTitle}`,
+            description: job.data.description || `Comprehensive course on ${courseTitle}`,
             // Assuming these columns exist or will be ignored/handled
             // If they don't exist in Supabase schema, this might error. 
             // However, the user request implies they want these variables used.

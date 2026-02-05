@@ -2,12 +2,14 @@
 
 import { useState, useEffect } from 'react';
 import { getGeneratedCourses, GeneratedCourse } from '@/actions/get-generated-courses';
-import { BookOpen, ChevronDown, ChevronRight, ListChecks, CheckCircle2, GraduationCap, ChevronUp } from 'lucide-react';
+import { publishCourse } from '@/actions/publish-course';
+import { BookOpen, ChevronDown, ChevronRight, ListChecks, CheckCircle2, GraduationCap, ChevronUp, Globe, Lock } from 'lucide-react';
 import { supabase as supabaseClient } from '@/lib/supabaseClient';
 
 export default function GeneratedCoursesSection() {
     const [courses, setCourses] = useState<GeneratedCourse[]>([]);
     const [loading, setLoading] = useState(true);
+    const [publishingId, setPublishingId] = useState<string | null>(null);
     const [openCourses, setOpenCourses] = useState<Record<string, boolean>>({});
     const [openModules, setOpenModules] = useState<Record<string, boolean>>({});
 
@@ -33,21 +35,31 @@ export default function GeneratedCoursesSection() {
         setOpenModules(prev => ({ ...prev, [moduleId]: !prev[moduleId] }));
     };
 
+    const handlePublish = async (e: React.MouseEvent, courseId: string) => {
+        e.stopPropagation(); // Prevent toggling accordion
+        if (confirm("Are you sure you want to publish this course? It will be visible to all users.")) {
+            setPublishingId(courseId);
+            try {
+                const result = await publishCourse(courseId);
+                if (result.success) {
+                    // Update local state to reflect change
+                    setCourses(courses.map(c => c.id === courseId ? { ...c, is_published: true } : c));
+                } else {
+                    alert("Failed to publish course: " + result.error);
+                }
+            } catch (err) {
+                console.error("Error publishing:", err);
+                alert("An unexpected error occurred.");
+            } finally {
+                setPublishingId(null);
+            }
+        }
+    };
+
     const downloadTopic = async (topicName: string, path: string) => {
         if (!path) return;
 
         try {
-            // Retrieve public URL or download directly
-            // Since the path in DB is likely just the relative path 'courseId/module/topic.md'
-            // We can construct a download link or content display
-
-            // For now, let's just alert or log, as actual viewing requires a viewer component
-            // But based on user request "keep expandable structure... markdown... topics", 
-            // maybe I should show content inline? 
-            // "Parsing the Markdown... for the Test and quiz" 
-            // The user request says "showcase the course which are generated... keep expandable structure"
-            // I will implement a basic download/view link strategy for now.
-
             const { data } = supabaseClient.storage.from('courses').getPublicUrl(path);
             if (data) {
                 window.open(data.publicUrl, '_blank');
@@ -63,7 +75,11 @@ export default function GeneratedCoursesSection() {
     }
 
     if (courses.length === 0) {
-        return null; // Don't show section if no courses
+        return (
+            <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-12 text-center shadow-lg">
+                <p className="text-zinc-500 dark:text-zinc-400">No generated courses found. Create one to get started!</p>
+            </div>
+        );
     }
 
     return (
@@ -77,13 +93,24 @@ export default function GeneratedCoursesSection() {
 
             <div className="space-y-4">
                 {courses.map((course) => (
-                    <div key={course.id} className="border border-zinc-200 dark:border-zinc-800 rounded-xl overflow-hidden transition-all hover:border-indigo-500/30">
+                    <div key={course.id} className={`border rounded-xl overflow-hidden transition-all ${course.is_published ? 'border-zinc-200 dark:border-zinc-800 hover:border-indigo-500/30' : 'border-yellow-200 dark:border-yellow-800 bg-yellow-50/10 dark:bg-yellow-900/10'}`}>
                         <button
                             onClick={() => toggleCourse(course.id)}
                             className="w-full flex items-center justify-between p-5 bg-zinc-50 dark:bg-zinc-800/50 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors text-left"
                         >
                             <div className="flex flex-col">
-                                <h3 className="font-bold text-lg text-zinc-900 dark:text-white">{course.title}</h3>
+                                <div className="flex items-center gap-3">
+                                    <h3 className="font-bold text-lg text-zinc-900 dark:text-white">{course.title}</h3>
+                                    {!course.is_published ? (
+                                        <span className="px-2 py-0.5 text-[10px] font-black uppercase tracking-wider bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400 rounded-full flex items-center gap-1">
+                                            <Lock className="w-3 h-3" /> Draft
+                                        </span>
+                                    ) : (
+                                        <span className="px-2 py-0.5 text-[10px] font-black uppercase tracking-wider bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 rounded-full flex items-center gap-1">
+                                            <Globe className="w-3 h-3" /> Published
+                                        </span>
+                                    )}
+                                </div>
                                 <div className="flex flex-col gap-1 mt-1">
                                     <p className="text-xs text-zinc-500 dark:text-zinc-400 line-clamp-1">{course.description}</p>
                                     {course.created_by && (
@@ -93,11 +120,21 @@ export default function GeneratedCoursesSection() {
                                     )}
                                 </div>
                             </div>
-                            {openCourses[course.id] ? (
-                                <ChevronUp className="w-5 h-5 text-zinc-400" />
-                            ) : (
-                                <ChevronDown className="w-5 h-5 text-zinc-400" />
-                            )}
+                            <div className="flex items-center gap-4">
+                                {!course.is_published && (
+                                    <div
+                                        onClick={(e) => handlePublish(e, course.id)}
+                                        className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wide transition-all ${publishingId === course.id ? 'bg-zinc-100 text-zinc-400 cursor-not-allowed' : 'bg-blue-600 text-white hover:bg-blue-700 shadow-md shadow-blue-500/20'}`}
+                                    >
+                                        {publishingId === course.id ? 'Publishing...' : 'Publish Course'}
+                                    </div>
+                                )}
+                                {openCourses[course.id] ? (
+                                    <ChevronUp className="w-5 h-5 text-zinc-400" />
+                                ) : (
+                                    <ChevronDown className="w-5 h-5 text-zinc-400" />
+                                )}
+                            </div>
                         </button>
 
                         {/* Course Content */}
