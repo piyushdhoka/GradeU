@@ -28,6 +28,14 @@ const NLP_LABS = [
   { title: "Text Generation", url: "https://vulnarable-labs.onrender.com/lab/nlp/text-gen" }
 ];
 
+const WEB_SEC_LABS = [
+  { title: "Access Control", url: "https://vulnarable-labs.onrender.com/lab/access-control?studentId=de1e69b7-6736-4dfe-98f0-cc27628228f7&returnUrl=https%3A%2F%2Fwww.gradeu.in%2Flabs%2Fbroken-access-control" },
+  { title: "Cryptographic Failures", url: "https://vulnarable-labs.onrender.com/lab/crypto?studentId=de1e69b7-6736-4dfe-98f0-cc27628228f7&returnUrl=https%3A%2F%2Fwww.gradeu.in%2Flabs%2Fcryptographic-failures" },
+  { title: "SQL Injection", url: "https://vulnarable-labs.onrender.com/lab/sqli?studentId=de1e69b7-6736-4dfe-98f0-cc27628228f7&returnUrl=https%3A%2F%2Fwww.gradeu.in%2Flabs%2Fsql-injection" },
+  { title: "Insecure Design", url: "https://vulnarable-labs.onrender.com/lab/insecure-design?studentId=de1e69b7-6736-4dfe-98f0-cc27628228f7&returnUrl=https%3A%2F%2Fwww.gradeu.in%2Flabs%2Finsecure-design" },
+  { title: "Security Misconfiguration", url: "https://vulnarable-labs.onrender.com/lab/misconfig?studentId=de1e69b7-6736-4dfe-98f0-cc27628228f7&returnUrl=https%3A%2F%2Fwww.gradeu.in%2Flabs%2Fsecurity-misconfiguration" }
+];
+
 interface QuizQuestion {
   id: string;
   question: string;
@@ -197,6 +205,55 @@ export default function GeneratorPage() {
     return keys[Math.floor(Math.random() * keys.length)];
   };
 
+  const repairMalformedJSON = (jsonString: string): any => {
+    try {
+      return JSON.parse(jsonString);
+    } catch (e) {
+      console.warn('Standard JSON parse failed, attempting repair...', e);
+      let fixed = jsonString.trim();
+
+      // 1. Remove markdown code blocks if present
+      fixed = fixed.replace(/```json/g, '').replace(/```/g, '').trim();
+
+      // 2. Extract JSON object from text if surrounded by other text
+      const firstBrace = fixed.indexOf('{');
+      const lastBrace = fixed.lastIndexOf('}');
+      if (firstBrace !== -1 && lastBrace !== -1) {
+        fixed = fixed.substring(firstBrace, lastBrace + 1);
+      }
+
+      // 3. Remove trailing commas (before closing braces/brackets)
+      fixed = fixed.replace(/,(\s*[}\]])/g, '$1');
+
+      // 4. Fix unescaped quotes in values (risky, but common)
+      // This is hard to do perfectly with RegEx, skipping for now to avoid false positives
+
+      // 5. Attempt to balance braces if truncated
+      // Count open vs closed
+      let openBraces = (fixed.match(/{/g) || []).length;
+      let closedBraces = (fixed.match(/}/g) || []).length;
+      let openBrackets = (fixed.match(/\[/g) || []).length;
+      let closedBrackets = (fixed.match(/\]/g) || []).length;
+
+      while (openBraces > closedBraces) {
+        fixed += '}';
+        closedBraces++;
+      }
+      while (openBrackets > closedBrackets) {
+        fixed += ']';
+        closedBrackets++;
+      }
+
+      try {
+        return JSON.parse(fixed);
+      } catch (e2) {
+        console.error('Manual JSON repair failed:', e2);
+        console.log('Failed content:', fixed);
+        throw new Error('Failed to parse (and repair) generated JSON.');
+      }
+    }
+  };
+
   const generateStructure = async () => {
     const apiKey = getApiKey();
     if (!apiKey) {
@@ -214,53 +271,33 @@ export default function GeneratorPage() {
 
     try {
       const prompt = `Generate a comprehensive course structure for: "${courseTitle}".
-Return a JSON object with:
-1. "modules": array of objects. Each module has:
-    - "name": string (Module Name)
-    - "topics": array of objects (Sub-topics), cover the module comprehensively. Each object:
-        - "name": string (Topic Name)
-        - "content": string (Brief summary of what this topic covers, approx 1-2 sentences)
-    - "quiz": array of 3 objects (Module specific quiz), each having:
-        - "question": string
-        - "options": array of 4 strings
-        - "correctAnswer": number (0-3 index)
-2. "generalQuiz": array of objects. An INITIAL general course assessment based on the Course Title.
-   - The number of questions must be EXACTLY equal to the number of modules generated.
-   - "question": string
-   - "options": array of 4 strings
-   - "correctAnswer": number (0-3 index)
-3. "finalAssessment": array of objects. A COMPREHENSIVE Final Assessment based on the Course Title (approx 20 questions).
-   - "question": string
-   - "options": array of 4 strings
-   - "correctAnswer": number (0-3 index)
-
-Return ONLY valid JSON. Do not use markdown formatting. Do not include trailing commas. Ensure valid JSON syntax.`;
+Strictly return ONLY a valid JSON object. No other text, no markdown formatting, no comments.
+Structure:
+{
+  "modules": [
+    {
+      "name": "Module Name",
+      "topics": [
+        { "name": "Topic Name", "content": "Topic summary" }
+      ],
+      "quiz": [
+        { "question": "...", "options": ["A", "B", "C", "D"], "correctAnswer": 0 }
+      ]
+    }
+  ],
+  "generalQuiz": [ ... ],
+  "finalAssessment": [ ... ]
+}
+Requirements:
+1. "modules": array of objects.
+    - "topics": array of objects covering the module.
+    - "quiz": array of 3 objects.
+2. "generalQuiz": array of objects. Exactly equal to number of modules.
+3. "finalAssessment": array of objects. Approx 20 questions.
+4. Ensure all arrays and objects are properly closed. Do not leave trailing commas.`;
 
       const response = await callLLM(apiKey, prompt);
-
-      // Robust JSON extraction and parsing
-      let cleaned = response.replace(/```json/g, '').replace(/```/g, '').trim();
-      const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
-      if (jsonMatch) cleaned = jsonMatch[0];
-
-      let data;
-      try {
-        data = JSON.parse(cleaned);
-      } catch (e) {
-        console.warn('Initial JSON parse failed, attempting repairs...', e);
-        // Attempt to fix common JSON errors
-        // 1. Remove trailing commas
-        const fixed = cleaned.replace(/,(\s*[}\]])/g, '$1');
-        try {
-          data = JSON.parse(fixed);
-        } catch (e2) {
-          console.error('JSON Repair failed:', e2);
-          // One last desperate attempt: if it looks like it was truncated (no closing brace)
-          // This is harder to fix safely without a library, so we will throw for now but log the content
-          console.log('Failed JSON content:', cleaned);
-          throw new Error('Failed to parse (and repair) generated JSON.');
-        }
-      }
+      const data = repairMalformedJSON(response);
 
       if (data.modules && Array.isArray(data.modules)) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -669,6 +706,55 @@ ${m.topics && m.topics.length > 0 ? m.topics.map(t => `  - ${t.name}: ${t.conten
               )}
 
 
+
+              {/* Web Security Labs Catalog */}
+              {(courseTitle.toLowerCase().includes('web application security') || courseTitle.toLowerCase().includes('web security')) && modules.length > 0 && (
+                <div className="mt-8 border border-red-200 dark:border-red-800 rounded-2xl overflow-hidden shadow-sm transition-all bg-red-50/50 dark:bg-red-900/10">
+                  <div className="p-6">
+                    <div className="flex items-center gap-4 mb-4">
+                      <div className="w-10 h-10 rounded-xl bg-red-500/10 dark:bg-red-500/20 flex items-center justify-center text-red-600 dark:text-red-400">
+                        <AlertCircle className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-bold text-zinc-900 dark:text-white">Web Security Hands-On Labs</h3>
+                        <p className="text-[10px] text-zinc-500 dark:text-red-300 font-bold uppercase tracking-widest mt-1">
+                          Interactive Labs detected for this topic
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                      {WEB_SEC_LABS.map((lab, idx) => (
+                        <div key={idx} className="bg-white dark:bg-zinc-900 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm flex flex-col gap-3">
+                          <div className="flex justify-between items-start">
+                            <h4 className="text-sm font-bold text-zinc-800 dark:text-zinc-200">{lab.title}</h4>
+                            <a href={lab.url} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline text-xs">View</a>
+                          </div>
+
+                          <div className="mt-auto">
+                            <label className="text-[10px] uppercase font-bold text-zinc-400 block mb-1">Assign to Module:</label>
+                            <select
+                              className="w-full text-xs bg-zinc-50 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 rounded-lg p-2 focus:ring-red-500"
+                              onChange={(e) => {
+                                if (e.target.value) {
+                                  addLabToModule(lab, e.target.value);
+                                  e.target.value = ""; // Reset select
+                                }
+                              }}
+                              defaultValue=""
+                            >
+                              <option value="" disabled>Select Module...</option>
+                              {modules.map(m => (
+                                <option key={m.id} value={m.id}>{m.name}</option>
+                              ))}
+                            </select>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Section 1: Initial Assessment */}
               {generalQuiz.length > 0 && (
