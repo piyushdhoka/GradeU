@@ -189,21 +189,8 @@ export default function GeneratorPage() {
     setGenerationLog(prev => [...prev, logMessage]);
   };
 
-  const getApiKey = () => {
-    const keys = [
-      process.env.NEXT_PUBLIC_GEMINI_API_KEY,
-      process.env.NEXT_PUBLIC_GEMINI_API_KEY_1,
-      process.env.NEXT_PUBLIC_GEMINI_API_KEY_2,
-      process.env.NEXT_PUBLIC_GEMINI_API_KEY_3,
-      process.env.GROQ_API_KEY,
-      process.env.GROQ_API_KEY_1,
-      process.env.GROQ_API_KEY_2,
-      process.env.GROQ_API_KEY_3
-    ].filter(k => k && k.length > 10 && k !== 'your_api_key_here');
-
-    if (keys.length === 0) return '';
-    return keys[Math.floor(Math.random() * keys.length)];
-  };
+  // Removed: getApiKey function that exposed NEXT_PUBLIC_ API keys
+  // API keys are now securely handled on the server via /api/llm
 
   const repairMalformedJSON = (jsonString: string): any => {
     try {
@@ -255,12 +242,6 @@ export default function GeneratorPage() {
   };
 
   const generateStructure = async () => {
-    const apiKey = getApiKey();
-    if (!apiKey) {
-      setError('No valid API keys found in .env file');
-      return;
-    }
-
     if (!courseTitle.trim()) {
       setError('Please enter a course title first');
       return;
@@ -296,8 +277,19 @@ Requirements:
 3. "finalAssessment": array of objects. Approx 20 questions.
 4. Ensure all arrays and objects are properly closed. Do not leave trailing commas.`;
 
-      const response = await callLLM(apiKey, prompt);
-      const data = repairMalformedJSON(response);
+      // Call secure server-side API
+      const response = await fetch('/api/llm', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt })
+      });
+
+      const apiResult = await response.json();
+      if (!apiResult.success) {
+        throw new Error(apiResult.error || 'Server LLM call failed');
+      }
+
+      const data = repairMalformedJSON(apiResult.result);
 
       if (data.modules && Array.isArray(data.modules)) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -432,73 +424,8 @@ Requirements:
     }
   };
 
-  const callLLM = async (key: string, prompt: string): Promise<string> => {
-    const isGroq = key.startsWith('gsk_');
-
-    if (isGroq) {
-      const url = 'https://api.groq.com/openai/v1/chat/completions';
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${key}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          messages: [{ role: 'user', content: prompt }],
-          model: 'llama3-70b-8192',
-          temperature: 0.7,
-        })
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Groq API Error ${response.status}: ${errorText}`);
-      }
-
-      const data = await response.json();
-      return data.choices?.[0]?.message?.content || '';
-    } else {
-      // Gemini Logic
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`;
-
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          contents: [{
-            parts: [{ text: prompt }]
-          }],
-          generationConfig: {
-            temperature: 0.7,
-            maxOutputTokens: 8192,
-            topP: 0.95,
-            topK: 40
-          }
-        })
-      });
-
-      if (response.status === 503) {
-        console.warn('Model overloaded (503). Retrying in 2 seconds...');
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        return callLLM(key, prompt);
-      }
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Gemini API Error ${response.status}: ${errorText}`);
-      }
-
-      const data = await response.json();
-
-      if (data.candidates?.[0]?.content?.parts?.[0]?.text) {
-        return data.candidates[0].content.parts[0].text;
-      }
-
-      throw new Error(`Invalid response structure: ${JSON.stringify(data)}`);
-    }
-  };
+  // Removed: callLLM function that exposed API keys client-side
+  // All LLM calls now go through /api/llm
 
   useEffect(() => {
     if (!isSyllabusEdited) {
