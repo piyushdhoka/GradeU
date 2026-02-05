@@ -8,6 +8,7 @@ GradeU is a next-generation education platform designed to deliver high-quality,
 - **Language:** [TypeScript](https://www.typescriptlang.org/)
 - **Styling:** [Tailwind CSS](https://tailwindcss.com/) with [Shadcn UI](https://ui.shadcn.com/)
 - **Authentication:** [Supabase Auth](https://supabase.com/auth) (SSR + PCKE Flow)
+
 - **Database:**
   - [Supabase](https://supabase.com/) (PostgreSQL) for Auth & User Profiles
   - [MongoDB](https://www.mongodb.com/) for Course Content & Proctoring Logs
