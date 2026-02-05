@@ -35,7 +35,6 @@ export const Profile: React.FC = () => {
   });
   const [courseProgress, setCourseProgress] = useState<{ title: string; progress: number }[]>([]);
   const [certificates, setCertificates] = useState<any[]>([]);
-  const [vuDetails, setVuDetails] = useState<any>(null);
 
   const [viewCertificate, setViewCertificate] = useState<{
     isOpen: boolean;
@@ -50,27 +49,6 @@ export const Profile: React.FC = () => {
       try {
         const certs = await studentService.getCertificates(user.id);
         setCertificates(certs);
-        const vuEmail =
-          typeof localStorage !== 'undefined' ? localStorage.getItem('vu_student_email') : null;
-        if (vuEmail) {
-          const vuStudent = await courseService.getVUStudent(vuEmail);
-          if (vuStudent) {
-            setVuDetails(vuStudent);
-            const vuTotal = 11;
-            const vuCompleted = (vuStudent.progress || []).filter(
-              (p: any) => p.course_id === 'vu-web-security' && p.completed
-            ).length;
-            const percent = Math.round((vuCompleted / vuTotal) * 100);
-            setCourseProgress([{ title: 'Web Application Security', progress: percent }]);
-            setStats({
-              totalModules: 11,
-              completedModules: vuCompleted,
-              coursesEnrolled: 1,
-              certificatesEarned: certs.length,
-              hoursActive: Math.round(vuCompleted * 2 + 12),
-            });
-          }
-        }
       } catch (err) {
         console.error('Profile load error:', err);
       } finally {
@@ -143,9 +121,7 @@ export const Profile: React.FC = () => {
 
             <div className="mb-2 flex-1 space-y-2">
               <div className="flex flex-wrap items-center gap-3">
-                <h1 className="text-3xl font-bold tracking-tight">
-                  {vuDetails?.name || user.name}
-                </h1>
+                <h1 className="text-3xl font-bold tracking-tight">{user.name}</h1>
                 <Badge
                   variant="outline"
                   className="text-primary border-primary/20 bg-primary/5 text-[10px] tracking-wider uppercase"
@@ -157,7 +133,7 @@ export const Profile: React.FC = () => {
               <div className="text-muted-foreground flex flex-col gap-4 text-sm sm:flex-row sm:items-center">
                 <div className="flex items-center gap-2">
                   <Terminal className="h-4 w-4" />
-                  <span className="font-mono">{vuDetails?.email || user.email}</span>
+                  <span className="font-mono">{user.email}</span>
                 </div>
                 <div className="bg-border hidden h-4 w-px sm:block"></div>
                 <div className="flex items-center gap-2">
@@ -409,9 +385,8 @@ export const Profile: React.FC = () => {
           isOpen={viewCertificate.isOpen}
           onClose={() => setViewCertificate(null)}
           courseName={viewCertificate.courseName}
-          studentName={vuDetails?.name || user?.name || 'Student'}
+          studentName={user?.name || 'Student'}
           completionDate={viewCertificate.date}
-          isVU={true}
           facultyName="Kiran Deshpande"
         />
       )}

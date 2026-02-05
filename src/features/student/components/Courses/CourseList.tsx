@@ -39,15 +39,7 @@ export interface CourseCategory {
   color: string;
 }
 
-const courseCategories: CourseCategory[] = [
-  {
-    id: 'vishwakarma-university',
-    title: 'Vishwakarma University',
-    description: 'Exclusive curriculum and specialized tracks from VU',
-    icon: '🎓',
-    color: 'from-purple-500/20 to-pink-500/20',
-  },
-];
+const courseCategories: CourseCategory[] = [];
 
 const DYNAMIC_CATEGORY: CourseCategory = {
   id: 'cyber-ops',
@@ -208,23 +200,7 @@ export const CourseList: React.FC<CourseListProps> = ({ onCourseSelect }) => {
 
     let courses: CourseData[] = [];
 
-    if (selectedCategory === 'vishwakarma-university') {
-      courses = [
-        {
-          id: 'vu-web-security',
-          title: 'Web Application Security',
-          category: 'vishwakarma-university',
-          url: '#',
-          description:
-            'Learn to identify and exploit vulnerabilities in web applications, understanding the OWASP Top 10 and secure coding practices, tailored for VU curriculum.',
-          disclaimer:
-            'Exclusive for VU students. This course contains practical exercises involving security testing.',
-          difficulty: 'Intermediate',
-          duration: '8 weeks',
-          skills: ['OWASP Top 10', 'SQL Injection', 'XSS', 'VU-Certified'],
-        },
-      ];
-    } else if (selectedCategory === 'cyber-ops') {
+    if (selectedCategory === 'cyber-ops') {
       courses = dynamicCourses.map((c) => ({
         id: c.id,
         title: c.title,
@@ -419,12 +395,7 @@ export const CourseList: React.FC<CourseListProps> = ({ onCourseSelect }) => {
       {/* Categories Grid */}
       <div className="grid gap-4 md:grid-cols-2">
         {allCategories.map((category) => {
-          const coursesCount =
-            category.id === 'cyber-ops'
-              ? dynamicCourses.length
-              : category.id === 'vishwakarma-university'
-                ? 1
-                : 0;
+          const coursesCount = category.id === 'cyber-ops' ? dynamicCourses.length : 0;
 
           return (
             <Card

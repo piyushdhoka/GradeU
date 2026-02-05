@@ -12,7 +12,9 @@ import {
   Shield,
   ChevronRight,
 } from 'lucide-react';
+import { AiTutorChat } from './AiTutorChat';
 import { CertificateModal } from '../Certificates/CertificateModal';
+
 import { courseService } from '@services/courseService';
 import type { Module, Course } from '@types';
 import { ModuleTest } from './ModuleTest';
@@ -109,6 +111,17 @@ export const ModuleViewer: React.FC<ModuleViewerProps> = ({
   const module: Module | undefined = (course?.course_modules ?? course?.modules ?? []).find(
     (m: Module) => m.id === moduleId
   );
+
+  // Calculate current context for AI Tutor
+  const currentContext = {
+    courseTitle: course?.title || '',
+    moduleTitle: module?.title || '',
+    moduleDescription: module?.description || '',
+    topicContent:
+      module?.topics && module?.topics.length > 0
+        ? module?.topics[currentTopicIndex]?.content
+        : module?.content || '',
+  };
 
   const handleProctoringViolation = async (status: 'ok' | 'violation') => {
     if (status === 'violation' && isProctoringActive) {
@@ -962,6 +975,8 @@ export const ModuleViewer: React.FC<ModuleViewerProps> = ({
       )}
 
       {/* ProctoringComponent is rendered inside the showTest block above */}
+      {/* AI Tutor Chat Widget */}
+      <AiTutorChat context={currentContext} />
     </div>
   );
 };

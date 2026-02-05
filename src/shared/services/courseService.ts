@@ -214,27 +214,6 @@ class CourseService {
     }
   }
 
-  async getVUStudent(email: string): Promise<any> {
-    try {
-      // Attempt to match with static web security course data if applicable
-      // valid emails for demo
-      const validEmails = ['demo@vu.com', 'test@example.com', email];
-
-      if (validEmails.includes(email)) {
-        // Return a mock student object that matches what Profile.tsx expects
-        return {
-          name: 'VU Student',
-          email: email,
-          progress: [{ course_id: 'vu-web-security', completed: true }],
-        };
-      }
-      return null;
-    } catch (error) {
-      console.error('Get VU Student error:', error);
-      return null;
-    }
-  }
-
   async getAllCourses(): Promise<Course[]> {
     try {
       // Primary: Fetch from backend API (MongoDB) for consistency with getCourseById
@@ -266,12 +245,6 @@ class CourseService {
   }
 
   async getCourseById(id: string): Promise<Course | null> {
-    // 0. Static Override for VU Course
-    if (id === 'vu-web-security') {
-      const { vuWebSecurityCourse } = await import('@data/vu-courses/web-application-security');
-      return vuWebSecurityCourse;
-    }
-
     try {
       // 1. Fetch from Backend API (MongoDB)
       const token = (await supabase.auth.getSession()).data.session?.access_token;
@@ -297,7 +270,6 @@ class CourseService {
   }
 
   async getModuleCount(courseId: string): Promise<number> {
-    if (courseId === 'vu-web-security') return 12;
     try {
       const { data, error } = await supabase.from('modules').select('id').eq('course_id', courseId);
 
@@ -532,40 +504,6 @@ class CourseService {
   // Enrollment Management
   async enrollInCourse(userId: string, courseId: string) {
     try {
-      // Handle static VU courses - store in Supabase instead of localStorage
-      if (courseId === 'vu-web-security') {
-        // Check if already enrolled in Supabase
-        const { data: existingData } = await supabase
-          .from('enrollments')
-          .select('*')
-          .eq('student_id', userId)
-          .eq('course_id', courseId)
-          .limit(1);
-
-        const existing = existingData?.[0];
-
-        if (existing) {
-          return existing;
-        }
-
-        // Create enrollment in Supabase
-        const { data: insertedData, error } = await supabase
-          .from('enrollments')
-          .insert([{ student_id: userId, course_id: courseId }])
-          .select()
-          .limit(1);
-
-        const enrollment = insertedData?.[0];
-
-        if (error) {
-          console.error('Error enrolling in VU course:', error);
-          // Fallback: return mock enrollment
-          return { user_id: userId, course_id: courseId, enrolled_at: new Date().toISOString() };
-        }
-
-        return enrollment;
-      }
-
       // Avoid double-enrollments
       const { data: existingData, error: existingErr } = await supabase
         .from('enrollments')
