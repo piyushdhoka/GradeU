@@ -182,7 +182,8 @@ export const ModuleViewer: React.FC<ModuleViewerProps> = ({
 
   useEffect(() => {
     // Assessment behavior: Show landing page first, or auto-start if configured
-    const isModuleAssessment = module?.type === 'initial_assessment' || module?.type === 'final_assessment';
+    const isModuleAssessment =
+      module?.type === 'initial_assessment' || module?.type === 'final_assessment';
 
     if (isModuleAssessment) {
       setIsProctoringActive(true);
@@ -240,6 +241,15 @@ export const ModuleViewer: React.FC<ModuleViewerProps> = ({
 
   const allModules = course.course_modules ?? course.modules ?? [];
   const currentIndex = allModules.findIndex((m: Module) => m.id === moduleId);
+  const normalizedTopics = (module.topics || []).map((topic: any, index: number) => ({
+    ...topic,
+    title:
+      (typeof topic?.title === 'string' && topic.title.trim()) ||
+      (typeof topic?.name === 'string' && topic.name.trim()) ||
+      `Topic ${index + 1}`,
+    content: typeof topic?.content === 'string' ? topic.content : '',
+  }));
+  const currentTopic = normalizedTopics[currentTopicIndex];
 
   // Check if a module can be accessed (prerequisites met)
   const canAccessModule = (moduleIndex: number): boolean => {
@@ -523,9 +533,9 @@ export const ModuleViewer: React.FC<ModuleViewerProps> = ({
           Back to Course
         </Button>
 
-        <Card className="relative overflow-hidden border-primary/20 bg-black/40 shadow-2xl backdrop-blur-xl transition-all duration-500 hover:shadow-primary/10">
+        <Card className="border-primary/20 hover:shadow-primary/10 relative overflow-hidden bg-black/40 shadow-2xl backdrop-blur-xl transition-all duration-500">
           {/* Animated background gradient */}
-          <div className="absolute inset-0 -z-10 bg-linear-to-br from-primary/5 via-transparent to-primary/5" />
+          <div className="from-primary/5 to-primary/5 absolute inset-0 -z-10 bg-linear-to-br via-transparent" />
           <div className="bg-primary/5 absolute -top-24 -right-24 h-64 w-64 rounded-full blur-3xl" />
           <div className="bg-primary/5 absolute -bottom-24 -left-24 h-64 w-64 rounded-full blur-3xl" />
 
@@ -536,7 +546,7 @@ export const ModuleViewer: React.FC<ModuleViewerProps> = ({
             <CardTitle className="from-foreground to-foreground/60 bg-linear-to-b bg-clip-text text-5xl font-black tracking-tight text-transparent md:text-6xl">
               {module.type === 'initial_assessment' ? 'Diagnostic Assessment' : 'Final Examination'}
             </CardTitle>
-            <CardDescription className="mx-auto mt-6 max-w-xl text-balance text-lg leading-relaxed text-muted-foreground/80">
+            <CardDescription className="text-muted-foreground/80 mx-auto mt-6 max-w-xl text-lg leading-relaxed text-balance">
               {module.description ||
                 'This evaluation helps tailor your learning path and validate your expertise in the field.'}
             </CardDescription>
@@ -545,18 +555,24 @@ export const ModuleViewer: React.FC<ModuleViewerProps> = ({
             {/* Stats / Overview Row */}
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               <div className="flex flex-col items-center justify-center rounded-2xl border border-white/5 bg-white/5 p-6 text-center backdrop-blur-md">
-                <Clock className="mb-2 h-5 w-5 text-primary" />
-                <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Duration</span>
+                <Clock className="text-primary mb-2 h-5 w-5" />
+                <span className="text-muted-foreground text-xs font-bold tracking-widest uppercase">
+                  Duration
+                </span>
                 <span className="text-lg font-bold">15 Minutes</span>
               </div>
               <div className="flex flex-col items-center justify-center rounded-2xl border border-white/5 bg-white/5 p-6 text-center backdrop-blur-md">
-                <FileText className="mb-2 h-5 w-5 text-primary" />
-                <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Questions</span>
+                <FileText className="text-primary mb-2 h-5 w-5" />
+                <span className="text-muted-foreground text-xs font-bold tracking-widest uppercase">
+                  Questions
+                </span>
                 <span className="text-lg font-bold">{module.quiz?.length || 10} Items</span>
               </div>
               <div className="flex flex-col items-center justify-center rounded-2xl border border-white/5 bg-white/5 p-6 text-center backdrop-blur-md">
                 <Shield className="mb-2 h-5 w-5 text-green-500" />
-                <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Status</span>
+                <span className="text-muted-foreground text-xs font-bold tracking-widest uppercase">
+                  Status
+                </span>
                 <span className="text-lg font-bold text-green-500">Secure</span>
               </div>
             </div>
@@ -565,8 +581,8 @@ export const ModuleViewer: React.FC<ModuleViewerProps> = ({
             {(module.content || (module.topics && module.topics.length > 0)) && (
               <div className="group relative rounded-3xl border border-white/10 bg-white/5 p-10 shadow-inner transition-all hover:bg-white/[0.07]">
                 <div className="mb-8 flex items-center gap-4">
-                  <div className="h-0.5 w-12 rounded-full bg-primary" />
-                  <h3 className="text-sm font-black uppercase tracking-[0.3em] text-primary/80">
+                  <div className="bg-primary h-0.5 w-12 rounded-full" />
+                  <h3 className="text-primary/80 text-sm font-black tracking-[0.3em] uppercase">
                     Mission Briefing
                   </h3>
                 </div>
@@ -575,9 +591,9 @@ export const ModuleViewer: React.FC<ModuleViewerProps> = ({
                   dangerouslySetInnerHTML={{
                     __html: processContent(
                       module.content ||
-                      (module.topics && module.topics.length > 0
-                        ? module.topics.map((t) => `### ${t.title}\n${t.content}`).join('\n\n')
-                        : '')
+                        (module.topics && module.topics.length > 0
+                          ? module.topics.map((t) => `### ${t.title}\n${t.content}`).join('\n\n')
+                          : '')
                     ),
                   }}
                 />
@@ -587,10 +603,10 @@ export const ModuleViewer: React.FC<ModuleViewerProps> = ({
             <div className="flex flex-col items-center gap-8">
               <Button
                 size="lg"
-                className="group relative h-20 overflow-hidden rounded-2xl bg-primary px-16 text-xl font-black text-primary-foreground shadow-2xl shadow-primary/20 transition-all hover:scale-[1.02] hover:shadow-primary/30 active:scale-95"
+                className="group bg-primary text-primary-foreground shadow-primary/20 hover:shadow-primary/30 relative h-20 overflow-hidden rounded-2xl px-16 text-xl font-black shadow-2xl transition-all hover:scale-[1.02] active:scale-95"
                 onClick={() => setShowTest(true)}
               >
-                <div className="bg-white/20 absolute inset-0 -translate-x-full skew-x-12 transition-transform duration-500 group-hover:translate-x-full" />
+                <div className="absolute inset-0 -translate-x-full skew-x-12 bg-white/20 transition-transform duration-500 group-hover:translate-x-full" />
                 <span className="relative z-10 flex items-center gap-3">
                   Initialize Assessment
                   <ArrowRight className="h-6 w-6 transition-transform group-hover:translate-x-1" />
@@ -600,11 +616,11 @@ export const ModuleViewer: React.FC<ModuleViewerProps> = ({
               <div className="flex flex-col items-center gap-3">
                 <div className="flex items-center gap-2 rounded-full border border-white/5 bg-white/5 px-4 py-2">
                   <div className="h-2 w-2 animate-pulse rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]" />
-                  <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
+                  <span className="text-muted-foreground text-[10px] font-bold tracking-[0.2em] uppercase">
                     Proctored Session Ready
                   </span>
                 </div>
-                <p className="max-w-xs text-center text-xs text-muted-foreground/50">
+                <p className="text-muted-foreground/50 max-w-xs text-center text-xs">
                   By starting, you agree to follow the standard investigation protocols.
                 </p>
               </div>
@@ -638,8 +654,8 @@ export const ModuleViewer: React.FC<ModuleViewerProps> = ({
             }
             className={cn(
               (module.type === 'initial_assessment' || module.type === 'final_assessment') &&
-              !module.completed &&
-              'hidden'
+                !module.completed &&
+                'hidden'
             )}
           >
             {module.completed ? (
@@ -728,12 +744,12 @@ export const ModuleViewer: React.FC<ModuleViewerProps> = ({
           {activeTab === 'content' && (
             <div className="flex flex-col gap-6 md:flex-row">
               {/* Topics Sidebar (Mobile-friendly list) */}
-              {module.topics && module.topics.length > 0 && (
+              {normalizedTopics.length > 0 && (
                 <div className="border-border/50 w-full shrink-0 space-y-2 border-r pr-6 md:w-64">
                   <h4 className="text-muted-foreground mb-4 px-2 text-sm font-semibold tracking-wider uppercase">
                     Topics
                   </h4>
-                  {module.topics.map((topic, index) => (
+                  {normalizedTopics.map((topic, index) => (
                     <button
                       key={index}
                       onClick={() => setCurrentTopicIndex(index)}
@@ -788,15 +804,15 @@ export const ModuleViewer: React.FC<ModuleViewerProps> = ({
                 <div
                   dangerouslySetInnerHTML={{
                     __html: processContent(
-                      module.topics && module.topics.length > 0
-                        ? module.topics[currentTopicIndex]?.content
+                      normalizedTopics.length > 0
+                        ? currentTopic?.content?.trim() || module.content || ''
                         : module.content || ''
                     ),
                   }}
                 />
 
                 {/* Topic Navigation Buttons */}
-                {module.topics && module.topics.length > 0 && (
+                {normalizedTopics.length > 0 && (
                   <div className="border-border/50 mt-12 flex items-center justify-between border-t pt-8">
                     <Button
                       variant="outline"
@@ -807,25 +823,26 @@ export const ModuleViewer: React.FC<ModuleViewerProps> = ({
                       Previous Topic
                     </Button>
                     <div className="text-muted-foreground text-sm">
-                      Topic {currentTopicIndex + 1} of {module.topics.length}
+                      Topic {currentTopicIndex + 1} of {normalizedTopics.length}
                     </div>
-                    {currentTopicIndex < module.topics.length - 1 ? (
+                    {currentTopicIndex < normalizedTopics.length - 1 ? (
                       <Button
                         size="sm"
                         onClick={async () => {
                           // Mark topic as completed
-                          const currentTopic = module.topics![currentTopicIndex];
+                          const topicAtIndex = normalizedTopics[currentTopicIndex];
                           const alreadyCompleted = module.completedTopics?.includes(
-                            currentTopic.title
+                            topicAtIndex.title
                           );
 
                           if (!alreadyCompleted && user?.id) {
                             const newCompletedTopics = [
                               ...(module.completedTopics || []),
-                              currentTopic.title,
+                              topicAtIndex.title,
                             ];
                             // Check if this was the last topic
-                            const isLastTopic = newCompletedTopics.length === module.topics!.length;
+                            const isLastTopic =
+                              newCompletedTopics.length === normalizedTopics.length;
 
                             await courseService.updateProgress(
                               user.id,
@@ -847,16 +864,17 @@ export const ModuleViewer: React.FC<ModuleViewerProps> = ({
                       <Button
                         size="sm"
                         onClick={async () => {
-                          const currentTopic = module.topics![currentTopicIndex];
+                          const topicAtIndex = normalizedTopics[currentTopicIndex];
                           const alreadyCompleted = module.completedTopics?.includes(
-                            currentTopic.title
+                            topicAtIndex.title
                           );
                           if (!alreadyCompleted && user?.id) {
                             const newCompletedTopics = [
                               ...(module.completedTopics || []),
-                              currentTopic.title,
+                              topicAtIndex.title,
                             ];
-                            const isLastTopic = newCompletedTopics.length === module.topics!.length;
+                            const isLastTopic =
+                              newCompletedTopics.length === normalizedTopics.length;
                             await courseService.updateProgress(
                               user.id,
                               moduleId,
