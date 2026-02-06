@@ -45,17 +45,17 @@ export const useProctoring = ({ studentId, courseId, attemptId, enabled }: Proct
 
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'hidden') {
-        logEvent('tab-switch', { state: 'hidden' });
+        logEvent('tab_switch', { state: 'hidden' });
       }
     };
 
     const handleBlur = () => {
-      logEvent('window-blur');
+      logEvent('window_blur');
     };
 
     const handleFullscreenChange = () => {
       if (!document.fullscreenElement) {
-        logEvent('exit-fullscreen');
+        logEvent('exit_fullscreen');
       }
     };
 

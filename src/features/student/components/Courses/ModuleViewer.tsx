@@ -10,6 +10,7 @@ import {
   Terminal,
   Play,
   Shield,
+  Clock,
   ChevronRight,
 } from 'lucide-react';
 import { AiTutorChat } from './AiTutorChat';
@@ -180,35 +181,35 @@ export const ModuleViewer: React.FC<ModuleViewerProps> = ({
   };
 
   useEffect(() => {
-    // Only auto-start tests if the module has no topics
-    if (
-      (module?.type === 'final_assessment' || module?.type === 'initial_assessment') &&
-      (!module.topics || module.topics.length === 0)
-    ) {
-      setActiveTab('test');
-      setShowTest(true);
-      setIsProctoringActive(true); // Enable proctoring automatically
-    } else if (module?.type === 'final_assessment' || module?.type === 'initial_assessment') {
-      // If it has topics, we stay on content tab but enable proctoring readiness
+    // Assessment behavior: Show landing page first, or auto-start if configured
+    const isModuleAssessment = module?.type === 'initial_assessment' || module?.type === 'final_assessment';
+
+    if (isModuleAssessment) {
       setIsProctoringActive(true);
+      // If it's an assessment with no content/topics, we skip landing and go straight to test
+      if (!module?.content && (!module?.topics || module?.topics.length === 0)) {
+        setActiveTab('test');
+        setShowTest(true);
+      }
     } else {
       setIsProctoringActive(false);
+      setShowTest(false);
+      setActiveTab('content');
     }
-  }, [module?.id, module?.type, module?.topics]);
+  }, [module?.id, module?.type, module?.content, module?.topics]);
 
   useEffect(() => {
     if (activeTab === 'content') {
-      // Use setTimeout to ensure the DOM has updated with the new HTML
       const timer = setTimeout(() => {
         mermaid
           .run({
             querySelector: '.mermaid',
           })
           .catch((err) => console.error('Mermaid rendering failed:', err));
-      }, 0);
+      }, 100);
       return () => clearTimeout(timer);
     }
-  }, [activeTab, module?.content, moduleId]);
+  }, [activeTab, currentTopicIndex, module?.content, moduleId]);
 
   const isAllModulesCompleted = (course: Course) => {
     const modules = course.course_modules ?? course.modules ?? [];
@@ -377,7 +378,7 @@ export const ModuleViewer: React.FC<ModuleViewerProps> = ({
         });
 
         if (Object.keys(answersMap).length > 0) {
-          await courseService.submitAssessment(moduleId, answersMap, proctoringSessionId);
+          await courseService.submitAssessment(moduleId, answersMap, score, proctoringSessionId);
           // Just to be sure sync with store's full reload but after optimistic update
           if (onModuleStatusChange) onModuleStatusChange();
           await learningPathService.rebalance(user.id, courseId);
@@ -522,59 +523,89 @@ export const ModuleViewer: React.FC<ModuleViewerProps> = ({
           Back to Course
         </Button>
 
-        <Card className="border-primary/20 bg-primary/5 shadow-primary/5 shadow-2xl">
-          <CardHeader className="py-12 text-center">
-            <div className="bg-primary/10 border-primary/20 mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-full border p-4">
-              <Shield className="text-primary h-12 w-12" />
+        <Card className="relative overflow-hidden border-primary/20 bg-black/40 shadow-2xl backdrop-blur-xl transition-all duration-500 hover:shadow-primary/10">
+          {/* Animated background gradient */}
+          <div className="absolute inset-0 -z-10 bg-linear-to-br from-primary/5 via-transparent to-primary/5" />
+          <div className="bg-primary/5 absolute -top-24 -right-24 h-64 w-64 rounded-full blur-3xl" />
+          <div className="bg-primary/5 absolute -bottom-24 -left-24 h-64 w-64 rounded-full blur-3xl" />
+
+          <CardHeader className="py-16 text-center">
+            <div className="bg-primary/10 border-primary/20 ring-primary/20 mx-auto mb-8 flex h-28 w-28 animate-pulse items-center justify-center rounded-3xl border p-4 shadow-2xl ring-4">
+              <Shield className="text-primary h-14 w-14" />
             </div>
-            <CardTitle className="from-foreground to-foreground/70 bg-linear-to-br bg-clip-text text-4xl font-black tracking-tight text-transparent">
+            <CardTitle className="from-foreground to-foreground/60 bg-linear-to-b bg-clip-text text-5xl font-black tracking-tight text-transparent md:text-6xl">
               {module.type === 'initial_assessment' ? 'Diagnostic Assessment' : 'Final Examination'}
             </CardTitle>
-            <CardDescription className="mx-auto mt-4 max-w-lg text-lg leading-relaxed">
+            <CardDescription className="mx-auto mt-6 max-w-xl text-balance text-lg leading-relaxed text-muted-foreground/80">
               {module.description ||
-                'This evaluation helps tailor your learning path and validate your expertise.'}
+                'This evaluation helps tailor your learning path and validate your expertise in the field.'}
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-10 pb-16">
-            {/* Instructions / Content Section */}
+          <CardContent className="space-y-12 pb-20">
+            {/* Stats / Overview Row */}
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              <div className="flex flex-col items-center justify-center rounded-2xl border border-white/5 bg-white/5 p-6 text-center backdrop-blur-md">
+                <Clock className="mb-2 h-5 w-5 text-primary" />
+                <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Duration</span>
+                <span className="text-lg font-bold">15 Minutes</span>
+              </div>
+              <div className="flex flex-col items-center justify-center rounded-2xl border border-white/5 bg-white/5 p-6 text-center backdrop-blur-md">
+                <FileText className="mb-2 h-5 w-5 text-primary" />
+                <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Questions</span>
+                <span className="text-lg font-bold">{module.quiz?.length || 10} Items</span>
+              </div>
+              <div className="flex flex-col items-center justify-center rounded-2xl border border-white/5 bg-white/5 p-6 text-center backdrop-blur-md">
+                <Shield className="mb-2 h-5 w-5 text-green-500" />
+                <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Status</span>
+                <span className="text-lg font-bold text-green-500">Secure</span>
+              </div>
+            </div>
+
+            {/* Preparation Section */}
             {(module.content || (module.topics && module.topics.length > 0)) && (
-              <div className="bg-background/40 border-border/50 rounded-2xl border p-8 shadow-inner backdrop-blur-sm">
-                <div className="mb-6 flex items-center gap-3">
-                  <div className="bg-primary h-1.5 w-8 rounded-full" />
-                  <h3 className="text-muted-foreground text-xs font-bold tracking-[0.2em] uppercase">
-                    Preparation & Instructions
+              <div className="group relative rounded-3xl border border-white/10 bg-white/5 p-10 shadow-inner transition-all hover:bg-white/[0.07]">
+                <div className="mb-8 flex items-center gap-4">
+                  <div className="h-0.5 w-12 rounded-full bg-primary" />
+                  <h3 className="text-sm font-black uppercase tracking-[0.3em] text-primary/80">
+                    Mission Briefing
                   </h3>
                 </div>
                 <div
-                  className="prose prose-invert text-muted-foreground/90 selection:bg-primary/30 max-w-none"
+                  className="prose prose-invert prose-p:text-muted-foreground/90 prose-headings:text-foreground prose-strong:text-primary max-w-none space-y-4"
                   dangerouslySetInnerHTML={{
                     __html: processContent(
                       module.content ||
-                        (module.topics && module.topics.length > 0
-                          ? module.topics.map((t) => `### ${t.title}\n${t.content}`).join('\n\n')
-                          : '')
+                      (module.topics && module.topics.length > 0
+                        ? module.topics.map((t) => `### ${t.title}\n${t.content}`).join('\n\n')
+                        : '')
                     ),
                   }}
                 />
               </div>
             )}
 
-            <div className="flex flex-col items-center gap-6">
+            <div className="flex flex-col items-center gap-8">
               <Button
                 size="lg"
-                className="shadow-primary/20 bg-primary text-primary-foreground rounded-2xl px-16 py-8 text-xl font-black shadow-2xl transition-all hover:scale-105 active:scale-95"
+                className="group relative h-20 overflow-hidden rounded-2xl bg-primary px-16 text-xl font-black text-primary-foreground shadow-2xl shadow-primary/20 transition-all hover:scale-[1.02] hover:shadow-primary/30 active:scale-95"
                 onClick={() => setShowTest(true)}
               >
-                Start Assessment
-                <ArrowRight className="ml-3 h-6 w-6" />
+                <div className="bg-white/20 absolute inset-0 -translate-x-full skew-x-12 transition-transform duration-500 group-hover:translate-x-full" />
+                <span className="relative z-10 flex items-center gap-3">
+                  Initialize Assessment
+                  <ArrowRight className="h-6 w-6 transition-transform group-hover:translate-x-1" />
+                </span>
               </Button>
-              <div className="flex flex-col items-center gap-2">
-                <p className="text-muted-foreground flex items-center gap-2 text-xs font-medium opacity-70">
-                  <Shield className="text-primary h-3.5 w-3.5" />
-                  Proctored Session Active
-                </p>
-                <p className="text-muted-foreground/50 text-[10px] tracking-widest uppercase">
-                  Secure Environment Initialized
+
+              <div className="flex flex-col items-center gap-3">
+                <div className="flex items-center gap-2 rounded-full border border-white/5 bg-white/5 px-4 py-2">
+                  <div className="h-2 w-2 animate-pulse rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]" />
+                  <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
+                    Proctored Session Ready
+                  </span>
+                </div>
+                <p className="max-w-xs text-center text-xs text-muted-foreground/50">
+                  By starting, you agree to follow the standard investigation protocols.
                 </p>
               </div>
             </div>
@@ -607,8 +638,8 @@ export const ModuleViewer: React.FC<ModuleViewerProps> = ({
             }
             className={cn(
               (module.type === 'initial_assessment' || module.type === 'final_assessment') &&
-                !module.completed &&
-                'hidden'
+              !module.completed &&
+              'hidden'
             )}
           >
             {module.completed ? (

@@ -59,6 +59,7 @@ function normalizeModule(module: any): Module {
     id,
     content: module.content || module.content_markdown || '',
     order: module.order ?? module.module_order ?? 0,
+    quiz: module.quiz || module.quizzes || [],
   };
 }
 
@@ -340,38 +341,13 @@ class CourseService {
 
       if (error) throw new Error(`Failed to fetch modules: ${error.message}`);
 
-      // Resolve content for modules that have a file path
-      const resolvedModules = await Promise.all(
-        (data || []).map(async (module: any) => {
-          let content = module.content_markdown || '';
-
-          // If content_markdown is a file path (ends with .md), fetch it from CDN
-          if (content.endsWith('.md')) {
-            try {
-              const {
-                data: { publicUrl },
-              } = supabase.storage.from('courses').getPublicUrl(content);
-
-              const response = await fetchWithRetry(publicUrl);
-              if (response.ok) {
-                content = await response.text();
-              } else {
-                console.error(`CDN returned HTTP ${response.status} for ${content}`);
-                content = `## ⚠️ Content Unavailable\n\nThe module content could not be loaded (HTTP ${response.status}). Please try refreshing the page or contact support if the issue persists.`;
-              }
-            } catch (e) {
-              const errorMsg = e instanceof Error ? e.message : 'Unknown error';
-              console.error(`Failed to fetch module content from CDN for ${module.id}:`, e);
-              content = `## ⚠️ Connection Error\n\nFailed to load module content: ${errorMsg.includes('abort') ? 'Request timed out' : errorMsg}. Please check your internet connection and refresh the page.`;
-            }
-          }
-
-          return normalizeModule({
-            ...module,
-            content: content,
-          });
-        })
-      );
+      // We still normalize the modules to ensure consistency
+      const resolvedModules = (data || []).map((module: any) => {
+        return normalizeModule({
+          ...module,
+          content: module.content_markdown || '',
+        });
+      });
 
       return resolvedModules;
     } catch (error) {
@@ -483,14 +459,20 @@ class CourseService {
         student_id: userId,
         module_id: moduleId,
         completed,
-        completed_at: new Date().toISOString(),
+        completed_at: completed ? new Date().toISOString() : null,
       };
 
       if (quizScore !== undefined) {
         updates.quiz_score = quizScore;
       }
 
-      const { error } = await supabase.from('module_progress').upsert([updates]);
+      if (Array.isArray(completedTopics)) {
+        updates.completed_topics = completedTopics;
+      }
+
+      const { error } = await supabase
+        .from('module_progress')
+        .upsert([updates], { onConflict: 'student_id,module_id' });
 
       if (error) {
         throw new Error(`Supabase progress update failed: ${error.message}`);
@@ -585,6 +567,7 @@ class CourseService {
   async submitAssessment(
     moduleId: string,
     answers: Record<string, number>,
+    score: number,
     proctoringSessionId?: string
   ) {
     try {
@@ -608,6 +591,7 @@ class CourseService {
         body: JSON.stringify({
           moduleId,
           answers,
+          score,
           proctoringSessionId,
         }),
       });

@@ -12,9 +12,8 @@ export async function GET(
   { params }: { params: Promise<{ courseId: string; moduleId: string }> }
 ) {
   try {
-    const { courseId, moduleId } = await params;
+    const { moduleId } = await params;
 
-    // Get auth token from header
     const authHeader = request.headers.get('authorization');
     const token = authHeader?.replace('Bearer ', '');
 
@@ -22,7 +21,6 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Get user from token
     const {
       data: { user },
       error: authError,
@@ -32,17 +30,21 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Fetch progress from Supabase
-    const { data: progress, error } = await supabase
+    const userClient = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      { global: { headers: { Authorization: `Bearer ${token}` } } }
+    );
+
+    // Fetch progress including quiz_score and completed_topics
+    const { data: progress, error } = await userClient
       .from('module_progress')
-      .select('*')
+      .select('id, student_id, module_id, completed, completed_at, quiz_score, completed_topics')
       .eq('student_id', user.id)
-      .eq('course_id', courseId)
       .eq('module_id', moduleId)
       .single();
 
     if (error && error.code !== 'PGRST116') {
-      // PGRST116 = no rows returned (which is fine)
       console.error('Module progress GET error:', error);
       return NextResponse.json({ error: 'Failed to fetch progress' }, { status: 500 });
     }
@@ -50,16 +52,16 @@ export async function GET(
     if (!progress) {
       return NextResponse.json({
         completed: false,
-        quizScore: null,
         completedAt: null,
+        quizScore: null,
         completedTopics: [],
       });
     }
 
     return NextResponse.json({
       completed: progress.completed,
-      quizScore: progress.quiz_score,
       completedAt: progress.completed_at,
+      quizScore: progress.quiz_score,
       completedTopics: progress.completed_topics || [],
     });
   } catch (error) {
@@ -74,11 +76,10 @@ export async function PUT(
   { params }: { params: Promise<{ courseId: string; moduleId: string }> }
 ) {
   try {
-    const { courseId, moduleId } = await params;
+    const { moduleId } = await params;
     const body = await request.json();
     const { completed, quizScore, completedTopics } = body;
 
-    // Get auth token from header
     const authHeader = request.headers.get('authorization');
     const token = authHeader?.replace('Bearer ', '');
 
@@ -86,7 +87,6 @@ export async function PUT(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Get user from token
     const {
       data: { user },
       error: authError,
@@ -96,30 +96,44 @@ export async function PUT(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    if (typeof completed !== 'boolean') {
-      return NextResponse.json({ error: 'completed must be a boolean' }, { status: 400 });
+    const userClient = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      { global: { headers: { Authorization: `Bearer ${token}` } } }
+    );
+
+    // Build update object
+    const updates: any = {
+      student_id: user.id,
+      module_id: moduleId,
+      updated_at: new Date().toISOString(),
+    };
+
+    if (typeof completed === 'boolean') {
+      updates.completed = completed;
+      updates.completed_at = completed ? new Date().toISOString() : null;
     }
 
-    // Upsert progress in Supabase
-    const { error } = await supabase.from('module_progress').upsert(
-      {
-        student_id: user.id,
-        course_id: courseId,
-        module_id: moduleId,
-        completed,
-        quiz_score: quizScore || null,
-        completed_topics: completedTopics || [],
-        completed_at: completed ? new Date().toISOString() : null,
-        updated_at: new Date().toISOString(),
-      },
-      {
-        onConflict: 'student_id,course_id,module_id',
-      }
+    if (typeof quizScore === 'number') {
+      updates.quiz_score = quizScore;
+    }
+
+    if (Array.isArray(completedTopics)) {
+      updates.completed_topics = completedTopics
+        .filter((topic: unknown) => typeof topic === 'string')
+        .map((topic: string) => topic.trim())
+        .filter((topic: string) => topic.length > 0);
+    }
+
+    // Upsert progress
+    const { error } = await userClient.from('module_progress').upsert(
+      updates,
+      { onConflict: 'student_id,module_id' }
     );
 
     if (error) {
       console.error('Module progress PUT error:', error);
-      return NextResponse.json({ error: 'Failed to update progress' }, { status: 500 });
+      return NextResponse.json({ error: 'Failed to update progress', details: error.message }, { status: 500 });
     }
 
     return NextResponse.json({ success: true, message: 'Progress updated successfully' });

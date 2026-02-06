@@ -169,7 +169,7 @@ export const CourseDetail: React.FC<CourseDetailProps> = ({ courseId, onBack }) 
                 </div>
                 <div className="text-muted-foreground flex items-center gap-2">
                   <Clock className="text-primary h-4 w-4" />
-                  <span>~{totalModules * 2} Hours</span>
+                  <span>{course.estimated_hours ? `${course.estimated_hours} Hours` : `~${totalModules * 2} Hours`}</span>
                 </div>
                 <div className="text-muted-foreground flex items-center gap-2">
                   <Flask className="text-primary h-4 w-4" />
@@ -213,13 +213,23 @@ export const CourseDetail: React.FC<CourseDetailProps> = ({ courseId, onBack }) 
         <div className="divide-border/50 divide-y">
           {(course.modules || []).map((module: Module, index: number, array: Module[]) => {
             const previousModule = index > 0 ? array[index - 1] : null;
+            const previousIndex = index - 1;
+
+            // Unlock logic:
+            // - Admin always unlocked
+            // - First module (index 0) always unlocked
+            // - For subsequent modules:
+            //   - If previous was index 0 (initial assessment): only need completion (any score OK)
+            //   - Otherwise: need completion + score >= 70%
+            const isPreviousInitialAssessment = previousIndex === 0 || previousModule?.type === 'initial_assessment';
+
             const isModuleUnlocked =
               user?.role === 'admin' ||
               index === 0 ||
               (previousModule?.completed &&
-                (previousModule.testScore === undefined ||
-                  previousModule.testScore >= 70 ||
-                  previousModule.type === 'initial_assessment'));
+                (isPreviousInitialAssessment ||
+                  previousModule.testScore === undefined ||
+                  previousModule.testScore >= 70));
 
             return (
               <div

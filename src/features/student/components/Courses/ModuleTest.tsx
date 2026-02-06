@@ -266,6 +266,26 @@ export const ModuleTest: React.FC<ModuleTestProps> = ({
     );
   }
 
+  if (!questions || questions.length === 0 || !currentQuestion) {
+    return (
+      <div className="flex h-[400px] flex-col items-center justify-center gap-4 rounded-xl border border-dashed p-8 text-center">
+        <div className="bg-primary/10 flex h-16 w-16 items-center justify-center rounded-full">
+          <Shield className="text-primary h-8 w-8" />
+        </div>
+        <div className="space-y-1">
+          <h3 className="text-xl font-bold">No Questions Found</h3>
+          <p className="text-muted-foreground whitespace-pre-line text-sm">
+            This module doesn't have any assessment questions configured yet.
+          </p>
+        </div>
+        <Button onClick={onBack} variant="outline" className="mt-2">
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Back to Course
+        </Button>
+      </div>
+    );
+  }
+
   return (
     <div className="animate-in fade-in mx-auto flex w-full max-w-4xl flex-col gap-6 p-4 duration-500 md:p-8">
       {/* Header */}

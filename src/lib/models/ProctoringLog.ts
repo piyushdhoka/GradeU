@@ -13,6 +13,7 @@ const proctoringLogSchema = new mongoose.Schema({
       'multiple_faces',
       'tab_switch',
       'window_blur',
+      'exit_fullscreen',
       'copy_attempt',
       'paste_attempt',
       'screenshot_attempt',

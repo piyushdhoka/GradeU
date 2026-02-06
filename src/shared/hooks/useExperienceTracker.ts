@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { getApiUrl } from '@lib/apiConfig';
+import { supabase } from '@lib/supabase';
 
 interface ExperienceDetail {
   moduleId: string;
@@ -24,6 +25,7 @@ export const useExperienceTracker = ({
 }: ExperienceConfig) => {
   const startTimeRef = useRef<number>(Date.now());
   const maxScrollRef = useRef<number>(0);
+  const interactionsRef = useRef<number>(0);
   const scrollRequestRef = useRef<number | null>(null);
 
   useEffect(() => {
@@ -31,6 +33,7 @@ export const useExperienceTracker = ({
 
     startTimeRef.current = Date.now();
     maxScrollRef.current = 0;
+    interactionsRef.current = 0;
 
     const handleScroll = () => {
       if (scrollRequestRef.current) return;
@@ -47,9 +50,14 @@ export const useExperienceTracker = ({
     };
 
     window.addEventListener('scroll', handleScroll);
+    const handleInteraction = () => {
+      interactionsRef.current += 1;
+    };
+    window.addEventListener('click', handleInteraction);
+    window.addEventListener('keydown', handleInteraction);
 
     // Sync data periodically (heartbeat every 30s) or on unmount
-    const syncData = () => {
+    const syncData = async () => {
       const timeSpent = (Date.now() - startTimeRef.current) / 1000;
       const payload = JSON.stringify({
         studentId,
@@ -59,32 +67,39 @@ export const useExperienceTracker = ({
           moduleId,
           timeSpent,
           scrollDepth: Math.round(maxScrollRef.current),
+          interactions: interactionsRef.current,
         },
       });
 
-      // Use sendBeacon for reliable, low-overhead logging
-      if (navigator.sendBeacon) {
-        const blob = new Blob([payload], { type: 'application/json' });
-        navigator.sendBeacon(getApiUrl('/api/student/track/experience/sync'), blob);
-      } else {
-        fetch(getApiUrl('/api/student/track/experience/sync'), {
+      try {
+        const token = (await supabase.auth.getSession()).data.session?.access_token;
+        const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+
+        if (token) {
+          headers.Authorization = `Bearer ${token}`;
+        }
+
+        await fetch(getApiUrl('/api/student/track/experience/sync'), {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers,
           body: payload,
           keepalive: true,
-        }).catch(() => {
-          /* Silently fail */
         });
+      } catch {
+        // Experience tracking should never block UX
       }
 
       // Reset timer for next interval
       startTimeRef.current = Date.now();
+      interactionsRef.current = 0;
     };
 
     const intervalId = setInterval(syncData, 30000); // 30 seconds heartbeat
 
     return () => {
       window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('click', handleInteraction);
+      window.removeEventListener('keydown', handleInteraction);
       if (scrollRequestRef.current) {
         cancelAnimationFrame(scrollRequestRef.current);
       }
