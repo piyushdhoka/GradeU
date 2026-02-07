@@ -42,19 +42,84 @@ export const Profile: React.FC = () => {
     date: Date;
   } | null>(null);
 
+  const parseStudyHours = (studyTime: string): number => {
+    const text = (studyTime || '').toLowerCase().trim();
+
+    if (!text) return 0;
+
+    if (text.includes('hour')) {
+      const value = Number.parseFloat(text);
+      return Number.isFinite(value) ? Math.max(0, Math.round(value)) : 0;
+    }
+
+    if (text.includes('min')) {
+      const value = Number.parseFloat(text);
+      if (!Number.isFinite(value)) return 0;
+      return Math.max(0, Math.round(value / 60));
+    }
+
+    const fallback = Number.parseFloat(text);
+    return Number.isFinite(fallback) ? Math.max(0, Math.round(fallback)) : 0;
+  };
+
   useEffect(() => {
     if (!user?.id) return;
+
     const loadAllData = async () => {
       setLoading(true);
+
       try {
-        const certs = await studentService.getCertificates(user.id);
+        const [overviewData, courses, certs] = await Promise.all([
+          studentService.getFullDashboardData(user.id),
+          courseService.getAllCourses(),
+          studentService.getCertificates(user.id),
+        ]);
+
+        const progressRows = await Promise.all(
+          courses.map(async (course) => {
+            const progress = await courseService.getCourseProgress(course.id);
+            const total = course.modules?.length || course.module_count || 0;
+            const completed = (progress || []).filter((p: any) => p.completed).length;
+            const percent = total > 0 ? Math.round((completed / total) * 100) : 0;
+
+            return {
+              title: course.title,
+              progress: percent,
+              totalModules: total,
+              completedModules: completed,
+            };
+          })
+        );
+
+        const totalModules = progressRows.reduce((sum, row) => sum + row.totalModules, 0);
+        const completedModules = progressRows.reduce((sum, row) => sum + row.completedModules, 0);
+
+        setCourseProgress(
+          progressRows.map((row) => ({ title: row.title, progress: row.progress }))
+        );
+        setStats({
+          totalModules,
+          completedModules,
+          coursesEnrolled: courses.length,
+          certificatesEarned: overviewData.stats.certificatesEarned || certs.length,
+          hoursActive: parseStudyHours(overviewData.stats.studyTime || '0 mins'),
+        });
         setCertificates(certs);
       } catch (err) {
         console.error('Profile load error:', err);
+        setStats({
+          totalModules: 0,
+          completedModules: 0,
+          coursesEnrolled: 0,
+          certificatesEarned: 0,
+          hoursActive: 0,
+        });
+        setCourseProgress([]);
       } finally {
         setLoading(false);
       }
     };
+
     loadAllData();
   }, [user?.id]);
 

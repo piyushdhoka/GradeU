@@ -370,11 +370,12 @@ export const ModuleViewer: React.FC<ModuleViewerProps> = ({
 
   const handleTestCompletion = async (score: number, answers: number[]) => {
     setShowTest(false);
+    const passed = score >= 70 || module.type === 'initial_assessment';
 
     try {
       if (user?.id) {
         // Optimistic update locally
-        updateModuleLocal(moduleId, { completed: true, testScore: score });
+        updateModuleLocal(moduleId, { completed: passed, testScore: score });
 
         // Transform answers array to map { questionId: answerIndex }
         const answersMap: Record<string, number> = {};
@@ -395,7 +396,11 @@ export const ModuleViewer: React.FC<ModuleViewerProps> = ({
         } else {
           // Legacy fallback / Simple progress update
           const topics = module.topics?.map((t) => t.title) || [];
-          await completeModule(user.id, courseId, moduleId, score, topics);
+          if (passed) {
+            await completeModule(user.id, courseId, moduleId, score, topics);
+          } else {
+            await courseService.updateProgress(user.id, moduleId, false, score, courseId, topics);
+          }
           if (onModuleStatusChange) onModuleStatusChange();
         }
 
@@ -408,10 +413,15 @@ export const ModuleViewer: React.FC<ModuleViewerProps> = ({
       }
     } catch (e) {
       console.error('Failed to persist progress or rebalance:', e);
-      // Fallback
+      // Fallback: never mark failed quiz attempts as completed
       if (user?.id) {
         const topics = module.topics?.map((t) => t.title) || [];
-        await completeModule(user.id, courseId, moduleId, score, topics);
+        if (passed) {
+          await completeModule(user.id, courseId, moduleId, score, topics);
+        } else {
+          await courseService.updateProgress(user.id, moduleId, false, score, courseId, topics);
+          updateModuleLocal(moduleId, { completed: false, testScore: score });
+        }
         if (onModuleStatusChange) onModuleStatusChange();
       }
     }
@@ -840,15 +850,12 @@ export const ModuleViewer: React.FC<ModuleViewerProps> = ({
                               ...(module.completedTopics || []),
                               topicAtIndex.title,
                             ];
-                            // Check if this was the last topic
-                            const isLastTopic =
-                              newCompletedTopics.length === normalizedTopics.length;
 
                             await courseService.updateProgress(
                               user.id,
                               moduleId,
-                              isLastTopic,
-                              module.testScore || 0,
+                              false,
+                              module.testScore,
                               courseId,
                               newCompletedTopics
                             );
@@ -873,13 +880,11 @@ export const ModuleViewer: React.FC<ModuleViewerProps> = ({
                               ...(module.completedTopics || []),
                               topicAtIndex.title,
                             ];
-                            const isLastTopic =
-                              newCompletedTopics.length === normalizedTopics.length;
                             await courseService.updateProgress(
                               user.id,
                               moduleId,
-                              isLastTopic,
-                              module.testScore || 0,
+                              false,
+                              module.testScore,
                               courseId,
                               newCompletedTopics
                             );

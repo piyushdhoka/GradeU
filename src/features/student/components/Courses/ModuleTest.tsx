@@ -68,20 +68,35 @@ export const ModuleTest: React.FC<ModuleTestProps> = ({
     setShowResults(true);
   };
 
+  const isAnswerCorrect = (
+    question: { options: string[]; correctAnswer: number | string },
+    userAnswerIndex: number | undefined
+  ) => {
+    if (userAnswerIndex === undefined || userAnswerIndex === null) return false;
+
+    const options = Array.isArray(question.options) ? question.options : [];
+    const userAnswerText = options[userAnswerIndex];
+    const raw = question.correctAnswer;
+
+    if (typeof raw === 'number') {
+      // Accept either 0-based or 1-based indexing from source data
+      return userAnswerIndex === raw || userAnswerIndex === raw - 1;
+    }
+
+    const normalized = String(raw).trim();
+    if (/^\d+$/.test(normalized)) {
+      const numeric = Number(normalized);
+      return userAnswerIndex === numeric || userAnswerIndex === numeric - 1;
+    }
+
+    return (userAnswerText || '').trim().toLowerCase() === normalized.toLowerCase();
+  };
+
   const calculateScore = (userAnswers: number[]) => {
     let correct = 0;
     questions.forEach((question, index) => {
       const userAnswerIndex = userAnswers[index];
-      if (userAnswerIndex === undefined || userAnswerIndex === null) return;
-
-      const userAnswerText = question.options[userAnswerIndex];
-      const correctAnswer = question.correctAnswer;
-
-      // Robust comparison for index or text match
-      const isCorrect =
-        String(userAnswerIndex) === String(correctAnswer) || userAnswerText === correctAnswer;
-
-      if (isCorrect) {
+      if (isAnswerCorrect(question, userAnswerIndex)) {
         correct++;
       }
     });
@@ -98,6 +113,10 @@ export const ModuleTest: React.FC<ModuleTestProps> = ({
     const score = calculateScore(answers);
     const passed = score >= 70;
     const canProceed = passed || isInitialAssessment;
+    const correctCount = questions.reduce((count, question, index) => {
+      return isAnswerCorrect(question, answers[index]) ? count + 1 : count;
+    }, 0);
+    const incorrectCount = Math.max(questions.length - correctCount, 0);
 
     return (
       <div className="animate-in fade-in mx-auto flex w-full max-w-4xl flex-col gap-6 p-4 duration-500 md:p-8">
@@ -153,22 +172,11 @@ export const ModuleTest: React.FC<ModuleTestProps> = ({
 
             <div className="mb-8 grid w-full max-w-md grid-cols-1 gap-4 md:grid-cols-2">
               <div className="bg-background/50 border-border flex flex-col items-center rounded-lg border p-4">
-                <div className="text-2xl font-bold text-green-500">
-                  {
-                    answers.filter(
-                      (answer, index) => Number(answer) === Number(questions[index]?.correctAnswer)
-                    ).length
-                  }
-                </div>
+                <div className="text-2xl font-bold text-green-500">{correctCount}</div>
                 <div className="text-muted-foreground text-sm">Correct</div>
               </div>
               <div className="bg-background/50 border-border flex flex-col items-center rounded-lg border p-4">
-                <div className="text-destructive text-2xl font-bold">
-                  {questions.length -
-                    answers.filter(
-                      (answer, index) => Number(answer) === Number(questions[index]?.correctAnswer)
-                    ).length}
-                </div>
+                <div className="text-destructive text-2xl font-bold">{incorrectCount}</div>
                 <div className="text-muted-foreground text-sm">Incorrect</div>
               </div>
             </div>
@@ -207,7 +215,7 @@ export const ModuleTest: React.FC<ModuleTestProps> = ({
           <CardContent className="space-y-4">
             {questions.map((question, index) => {
               const userAnswer = answers[index];
-              const isCorrect = Number(userAnswer) === Number(question.correctAnswer);
+              const isCorrect = isAnswerCorrect(question, userAnswer);
 
               return (
                 <div
@@ -274,7 +282,7 @@ export const ModuleTest: React.FC<ModuleTestProps> = ({
         </div>
         <div className="space-y-1">
           <h3 className="text-xl font-bold">No Questions Found</h3>
-          <p className="text-muted-foreground whitespace-pre-line text-sm">
+          <p className="text-muted-foreground text-sm whitespace-pre-line">
             This module doesn't have any assessment questions configured yet.
           </p>
         </div>
