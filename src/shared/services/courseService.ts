@@ -2,6 +2,8 @@ import { supabase } from '@lib/supabase';
 import { getApiUrl } from '@lib/apiConfig';
 import type { Course, Module } from '@types';
 
+const STATIC_OBJECT_CACHE_CONTROL_SECONDS = '31536000';
+
 /**
  * Fetch with timeout and retry for CDN content
  * @param url - URL to fetch
@@ -100,7 +102,11 @@ class CourseService {
 
         const { error: uploadError } = await supabase.storage
           .from('course-content')
-          .upload(fileName, blob);
+          .upload(fileName, blob, {
+            cacheControl: STATIC_OBJECT_CACHE_CONTROL_SECONDS,
+            contentType: 'application/json',
+            upsert: false,
+          });
 
         if (uploadError) {
           console.error('Failed to upload course content:', uploadError);
@@ -167,7 +173,11 @@ class CourseService {
 
         const { error: uploadError } = await supabase.storage
           .from('course-content')
-          .upload(fileName, blob);
+          .upload(fileName, blob, {
+            cacheControl: STATIC_OBJECT_CACHE_CONTROL_SECONDS,
+            contentType: 'application/json',
+            upsert: false,
+          });
 
         if (!uploadError) {
           const {
@@ -549,7 +559,10 @@ class CourseService {
       const fileName = `${Date.now()}.${fileExt}`;
       const filePath = `${folder}/${fileName}`;
 
-      const { error } = await supabase.storage.from('uploads').upload(filePath, file);
+      const { error } = await supabase.storage.from('uploads').upload(filePath, file, {
+        cacheControl: STATIC_OBJECT_CACHE_CONTROL_SECONDS,
+        upsert: false,
+      });
 
       if (error) throw new Error(`Failed to upload file: ${error.message}`);
 
