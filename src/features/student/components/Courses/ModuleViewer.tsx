@@ -93,7 +93,7 @@ export const ModuleViewer: React.FC<ModuleViewerProps> = ({
 
   // Backend Proctoring Logging - Generate stable attemptId per module session
   const attemptId = useMemo(() => `${moduleId}-${Date.now()}`, [moduleId]);
-  const { logEvent } = useProctoring({
+  const { logEvent, requestFullscreen } = useProctoring({
     studentId: user?.id || 'anonymous',
     courseId,
     attemptId,
@@ -132,11 +132,14 @@ export const ModuleViewer: React.FC<ModuleViewerProps> = ({
         module?.type === 'final_assessment' ||
         module?.type === 'initial_assessment';
       const maxWarnings = 3;
+      const lockoutThreshold = maxWarnings + 1; // End exam on 4th violation (remaining reaches 0)
+      const nextViolationCount = violationCount + 1;
+      const remainingWarnings = lockoutThreshold - nextViolationCount;
 
-      if (violationCount < maxWarnings) {
-        setViolationCount((prev) => prev + 1);
+      if (nextViolationCount < lockoutThreshold) {
+        setViolationCount(nextViolationCount);
         alert(
-          `PROCTORING WARNING: Suspicious activity detected! You have ${maxWarnings - violationCount} warnings remaining.`
+          `PROCTORING WARNING: Suspicious activity detected! You have ${remainingWarnings} warnings remaining.`
         );
       } else {
         console.warn('Proctoring Violation - Locking out!');
@@ -198,6 +201,16 @@ export const ModuleViewer: React.FC<ModuleViewerProps> = ({
       setActiveTab('content');
     }
   }, [module?.id, module?.type, module?.content, module?.topics]);
+
+  useEffect(() => {
+    if (!isProctoringActive || !showTest) return;
+    requestFullscreen();
+    logEvent('exam_start', { moduleId, attemptId });
+
+    return () => {
+      logEvent('exam_end', { moduleId, attemptId });
+    };
+  }, [isProctoringActive, showTest, requestFullscreen, logEvent, moduleId, attemptId]);
 
   useEffect(() => {
     if (activeTab === 'content') {

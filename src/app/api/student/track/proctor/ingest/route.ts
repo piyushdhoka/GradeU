@@ -2,32 +2,49 @@ import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import { ProctoringLog } from '@/lib/models/ProctoringLog';
 
-// Proctoring log ingestion - store in MongoDB
+const normalizeEventType = (value: unknown): string => {
+  if (typeof value !== 'string') return 'unknown_event';
+  const normalized = value
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, '_')
+    .replace(/-/g, '_')
+    .replace(/[^a-z0-9_]/g, '');
+  return normalized || 'unknown_event';
+};
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { studentId, courseId, attemptId, eventType, details } = body;
+    const { studentId, courseId, attemptId, eventType, details, timestamp } = body ?? {};
 
-    if (!studentId) {
+    const sid = typeof studentId === 'string' ? studentId.trim().slice(0, 200) : '';
+    if (!sid) {
       return NextResponse.json({ error: 'Missing studentId' }, { status: 400 });
     }
 
-    await connectDB();
+    const cid =
+      typeof courseId === 'string' && courseId.trim()
+        ? courseId.trim().slice(0, 200)
+        : 'unknown-course';
+    const aid =
+      typeof attemptId === 'string' && attemptId.trim()
+        ? attemptId.trim().slice(0, 200)
+        : 'unknown-attempt';
 
-    // Sanitize inputs
-    const sanitizedDetails =
+    const safeDetails =
       details && typeof details === 'object' ? JSON.parse(JSON.stringify(details)) : {};
 
-    const log = new ProctoringLog({
-      studentId: String(studentId).trim().substring(0, 200),
-      courseId: String(courseId).trim().substring(0, 200),
-      attemptId: String(attemptId).trim().substring(0, 200),
-      eventType,
-      details: sanitizedDetails,
-      timestamp: new Date(),
-    });
+    await connectDB();
 
-    await log.save();
+    await ProctoringLog.create({
+      studentId: sid,
+      courseId: cid,
+      attemptId: aid,
+      eventType: normalizeEventType(eventType),
+      details: safeDetails,
+      timestamp: timestamp ? new Date(timestamp) : new Date(),
+    });
 
     return NextResponse.json({ success: true }, { status: 202 });
   } catch (error) {
