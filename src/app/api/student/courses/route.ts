@@ -7,7 +7,7 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
-const COURSE_LIST_CACHE_CONTROL = 'public, max-age=120, s-maxage=900, stale-while-revalidate=43200';
+const COURSE_LIST_CACHE_CONTROL = 'public, max-age=0, s-maxage=60, must-revalidate';
 
 function buildEtag(payload: unknown): string {
   const hash = createHash('sha1').update(JSON.stringify(payload)).digest('hex');

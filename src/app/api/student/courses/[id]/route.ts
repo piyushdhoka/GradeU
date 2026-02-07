@@ -20,8 +20,7 @@ type TopicInput = {
   path?: unknown;
 };
 
-const COURSE_RESPONSE_CACHE_CONTROL =
-  'public, max-age=300, s-maxage=3600, stale-while-revalidate=86400';
+const COURSE_RESPONSE_CACHE_CONTROL = 'public, max-age=0, s-maxage=120, must-revalidate';
 
 function buildEtag(payload: unknown): string {
   const hash = createHash('sha1').update(JSON.stringify(payload)).digest('hex');
