@@ -209,20 +209,18 @@ class CourseService {
     }
   }
 
-  async getCourseById(id: string): Promise<Course | null> {
+  async getCourseById(id: string, lazy = false): Promise<Course | null> {
     try {
       // Fetch from backend API
       const token = (await supabase.auth.getSession()).data.session?.access_token;
 
-      const response = await fetch(`/api/student/courses/${id}`, {
+      const response = await fetch(`/api/student/courses/${id}${lazy ? '?lazy=true' : ''}`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
 
       if (!response.ok) {
-        // Fallback or just return null
         if (response.status === 404) return null;
         console.error('Backend API error:', response.statusText);
-        // Fallback to Supabase if API fails? No, data mismatch risk.
         return null;
       }
 
@@ -230,6 +228,26 @@ class CourseService {
       return normalizeCourse(courseData);
     } catch (error) {
       console.error('Get course by id error:', error);
+      return null;
+    }
+  }
+
+  async getModuleContent(moduleId: string): Promise<Partial<Module> | null> {
+    try {
+      const token = (await supabase.auth.getSession()).data.session?.access_token;
+      const response = await fetch(`/api/student/modules/${moduleId}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+
+      if (!response.ok) return null;
+      const data = await response.json();
+      return {
+        id: data.id,
+        content: data.content,
+        topics: data.topics || [],
+      };
+    } catch (error) {
+      console.error('Get module content error:', error);
       return null;
     }
   }

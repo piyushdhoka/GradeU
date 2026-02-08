@@ -245,17 +245,49 @@ async function resolveTopics(rawTopics: unknown): Promise<{ title: string; conte
   return resolved.filter((t): t is { title: string; content: string } => !!t);
 }
 
+const COURSE_CACHE = new Map<string, { data: any; timestamp: number }>();
+const CACHE_TTL = 10 * 60 * 1000; // 10 minutes cache
+
+function getCachedCourse(idOrSlug: string) {
+  const entry = COURSE_CACHE.get(idOrSlug);
+  if (entry && Date.now() - entry.timestamp < CACHE_TTL) {
+    return entry.data;
+  }
+  return null;
+}
+
+function setCachedCourse(idOrSlug: string, data: any) {
+  COURSE_CACHE.set(idOrSlug, { data, timestamp: Date.now() });
+}
+
 // GET a specific course by ID or slug
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
-    console.log(`[courses/[id]] Fetching course: ${id}`);
+    const { searchParams } = new URL(request.url);
+    const isLazy = searchParams.get('lazy') === 'true';
+
+    console.log(`[courses/[id]] Fetching course: ${id} (lazy=${isLazy})`);
+
+    // 1) Check Cache first (only if not lazy or we want to serve structure from cache)
+    const cached = getCachedCourse(id);
+    if (cached) {
+      console.log(`[courses/[id]] Serving from cache: ${id}`);
+      // If lazy, we return the cached structure but without contents
+      if (isLazy) {
+        return NextResponse.json({
+          ...cached,
+          modules: cached.modules.map((m: any) => ({ ...m, content: '', topics: [] })),
+        });
+      }
+      return NextResponse.json(cached);
+    }
 
     // Detect if id is a UUID or slug
     const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
     const column = isUUID ? 'id' : 'slug';
 
-    // 1) Fetch course by ID or slug
+    // 2) Fetch course by ID or slug
     const { data: course, error: courseError } = await supabase
       .from('courses')
       .select(
@@ -275,7 +307,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       );
     }
 
-    // 2) Fetch modules using the course's actual UUID (not the URL param which might be a slug)
+    // 3) Fetch modules using the course's actual UUID
     const { data: modules, error: modulesError } = await supabase
       .from('modules')
       .select('id, title, content_markdown, module_order, topics, type')
@@ -290,24 +322,9 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       );
     }
 
-    // 3) Resolve module markdown + topics
-    const resolvedModules = await Promise.all(
-      (modules || []).map(async (module) => {
-        const content = await resolveModuleContent(module.content_markdown || '');
-        const topics = await resolveTopics(module.topics);
-
-        return {
-          ...module,
-          content_markdown: content,
-          topics,
-        };
-      })
-    );
-
     // 4) Fetch quizzes for all modules
-    const moduleIds = resolvedModules.map((m) => m.id);
+    const moduleIds = (modules || []).map((m) => m.id);
     let quizzes: any[] = [];
-
     if (moduleIds.length > 0) {
       const { data: quizData, error: quizError } = await supabase
         .from('quizzes')
@@ -321,29 +338,35 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       }
     }
 
-    // 5) Normalize response
-    const normalizedModules = resolvedModules.map((m) => {
-      const normalizedTopics = Array.isArray(m.topics)
-        ? m.topics.filter((t) => asNonEmptyString(t.title) || asNonEmptyString(t.content))
-        : [];
+    // 5) Resolve module contents (ONLY if not lazy)
+    const normalizedModules = await Promise.all(
+      (modules || []).map(async (m) => {
+        let content = '';
+        let topics: any[] = [];
 
-      return {
-        id: m.id,
-        title: m.title,
-        content: m.content_markdown || '',
-        topics: normalizedTopics,
-        type: m.type || 'lecture',
-        order: m.module_order,
-        quiz: quizzes
-          .filter((q) => q.module_id === m.id)
-          .map((quiz) => ({
-            id: quiz.id,
-            question: quiz.question,
-            options: quiz.options,
-            correctAnswer: quiz.correct_option,
-          })),
-      };
-    });
+        if (!isLazy) {
+          content = await resolveModuleContent(m.content_markdown || '');
+          topics = await resolveTopics(m.topics);
+        }
+
+        return {
+          id: m.id,
+          title: m.title,
+          content: content,
+          topics: topics,
+          type: m.type || 'lecture',
+          order: m.module_order,
+          quiz: quizzes
+            .filter((q) => q.module_id === m.id)
+            .map((quiz) => ({
+              id: quiz.id,
+              question: quiz.question,
+              options: quiz.options,
+              correctAnswer: quiz.correct_option,
+            })),
+        };
+      })
+    );
 
     const response = {
       id: course.id,
@@ -357,6 +380,12 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       modules: normalizedModules,
       createdAt: course.created_at,
     };
+
+    // 6) Cache the FULL result if it wasn't a lazy request
+    if (!isLazy) {
+      setCachedCourse(course.id, response);
+      if (course.slug) setCachedCourse(course.slug, response);
+    }
 
     const etag = buildEtag(response);
     const headers = buildCacheHeaders(etag);

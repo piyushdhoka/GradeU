@@ -49,12 +49,14 @@ export const CourseDetail: React.FC<CourseDetailProps> = ({ courseId, onBack }) 
   const { user } = useAuth();
 
   useEffect(() => {
-    fetchCourseProgress(courseId, user?.id);
+    // Initial fetch: lazy=true for instant load
+    fetchCourseProgress(courseId, user?.id, true);
     return () => reset();
   }, [courseId, user?.id]);
 
   const refreshCourse = () => {
-    fetchCourseProgress(courseId, user?.id);
+    // Refresh: lazy=false to ensure everything is synced (or keep lazy if preferred, but usually refresh should be thorough)
+    fetchCourseProgress(courseId, user?.id, false);
   };
 
   // ... (renders)

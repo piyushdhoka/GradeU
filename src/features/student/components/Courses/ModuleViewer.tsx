@@ -12,6 +12,7 @@ import {
   Shield,
   Clock,
   ChevronRight,
+  Loader2,
 } from 'lucide-react';
 import { AiTutorChat } from './AiTutorChat';
 import { CertificateModal } from '../Certificates/CertificateModal';
@@ -73,7 +74,7 @@ export const ModuleViewer: React.FC<ModuleViewerProps> = ({
   const [activeTab, setActiveTab] = useState<'content' | 'test'>('content');
   const [showTest, setShowTest] = useState(false);
   const { user } = useAuth();
-  const { completeModule, updateModuleLocal } = useCourseStore();
+  const { modules, fetchModuleContent, completeModule, updateModuleLocal } = useCourseStore();
   const [showCertificate, setShowCertificate] = useState(false);
 
   // const [course, setCourse] = useState<Course | null>(null); // REMOVED local state
@@ -108,6 +109,13 @@ export const ModuleViewer: React.FC<ModuleViewerProps> = ({
     };
   }, [mediaStream]);
 
+  // Lazy Loading: Fetch module content if missing
+  useEffect(() => {
+    if (moduleId) {
+      fetchModuleContent(moduleId);
+    }
+  }, [moduleId, fetchModuleContent]);
+
   // Backend Proctoring Logging - unique attempt id per test session.
   const [attemptId, setAttemptId] = useState(() => createAttemptId(moduleId));
   const { logEvent, requestFullscreen } = useProctoring({
@@ -122,6 +130,10 @@ export const ModuleViewer: React.FC<ModuleViewerProps> = ({
   const module: Module | undefined = (course?.course_modules ?? course?.modules ?? []).find(
     (m: Module) => m.id === moduleId
   );
+
+  const allModules = course?.modules || course?.course_modules || [];
+  const currentIndex = allModules.findIndex((m: Module) => m.id === moduleId);
+
   const isAssessmentModule =
     module?.type === 'initial_assessment' ||
     module?.type === 'final_assessment' ||
@@ -309,8 +321,21 @@ export const ModuleViewer: React.FC<ModuleViewerProps> = ({
     );
   }
 
-  const allModules = course.course_modules ?? course.modules ?? [];
-  const currentIndex = allModules.findIndex((m: Module) => m.id === moduleId);
+  // Loading State for Lazy Content
+  if (
+    !module.content &&
+    module.type !== 'initial_assessment' &&
+    module.type !== 'final_assessment' &&
+    moduleId !== 'vu-final-exam'
+  ) {
+    return (
+      <div className="flex h-[60vh] flex-col items-center justify-center gap-4">
+        <Loader2 className="text-primary h-8 w-8 animate-spin" />
+        <p className="text-muted-foreground animate-pulse">Spinning up...</p>
+      </div>
+    );
+  }
+
   const normalizedTopics = (module.topics || []).map((topic: any, index: number) => ({
     ...topic,
     title:

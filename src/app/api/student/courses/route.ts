@@ -22,10 +22,28 @@ function buildCacheHeaders(etag: string): HeadersInit {
   };
 }
 
+// -----------------------------------------------------------------------------
+// SERVER-SIDE CACHING (Long-term Scalability)
+// -----------------------------------------------------------------------------
+let COURSE_LIST_CACHE: { data: any; timestamp: number } | null = null;
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes cache
+
 // Get all published courses with their modules
 export async function GET(request: NextRequest) {
   try {
-    console.log('[courses/route] Fetching courses...');
+    // 1) Check Cache
+    if (COURSE_LIST_CACHE && Date.now() - COURSE_LIST_CACHE.timestamp < CACHE_TTL) {
+      console.log('[courses/route] Serving course list from cache');
+      const etag = buildEtag(COURSE_LIST_CACHE.data);
+      const headers = buildCacheHeaders(etag);
+      const ifNoneMatch = request.headers.get('if-none-match');
+      if (ifNoneMatch === etag) {
+        return new NextResponse(null, { status: 304, headers });
+      }
+      return NextResponse.json(COURSE_LIST_CACHE.data, { headers });
+    }
+
+    console.log('[courses/route] Fetching courses from DB...');
 
     const { data: courses, error: coursesError } = await supabase
       .from('courses')
@@ -47,12 +65,6 @@ export async function GET(request: NextRequest) {
       const emptyResponse: unknown[] = [];
       const etag = buildEtag(emptyResponse);
       const headers = buildCacheHeaders(etag);
-      const ifNoneMatch = request.headers.get('if-none-match');
-
-      if (ifNoneMatch === etag) {
-        return new NextResponse(null, { status: 304, headers });
-      }
-
       return NextResponse.json(emptyResponse, { headers });
     }
 
@@ -96,6 +108,9 @@ export async function GET(request: NextRequest) {
         createdAt: course.created_at,
       };
     });
+
+    // 2) Update Cache
+    COURSE_LIST_CACHE = { data: normalizedCourses, timestamp: Date.now() };
 
     const etag = buildEtag(normalizedCourses);
     const headers = buildCacheHeaders(etag);

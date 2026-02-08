@@ -17,7 +17,8 @@ interface CourseState {
 
   // Actions
   setCourse: (course: Course | null) => void;
-  fetchCourseProgress: (courseId: string, userId?: string) => Promise<void>;
+  fetchCourseProgress: (courseId: string, userId?: string, lazy?: boolean) => Promise<void>;
+  fetchModuleContent: (moduleId: string) => Promise<void>;
   updateModuleLocal: (moduleId: string, updates: Partial<Module>) => void;
   completeModule: (
     userId: string,
@@ -37,10 +38,10 @@ export const useCourseStore = create<CourseState>((set, get) => ({
 
   setCourse: (course) => set({ course, modules: course?.modules || [] }),
 
-  fetchCourseProgress: async (courseId, userId) => {
+  fetchCourseProgress: async (courseId, userId, lazy = false) => {
     set({ loading: true, error: null });
     try {
-      const data = await courseService.getCourseById(courseId);
+      const data = await courseService.getCourseById(courseId, lazy);
       if (!data) {
         set({ error: 'Course not found', loading: false });
         return;
@@ -79,6 +80,26 @@ export const useCourseStore = create<CourseState>((set, get) => ({
       });
     } catch (err: any) {
       set({ error: err.message, loading: false });
+    }
+  },
+
+  fetchModuleContent: async (moduleId: string) => {
+    const { modules, updateModuleLocal } = get();
+    const existing = modules.find((m) => m.id === moduleId);
+
+    // Only fetch if content is missing
+    if (existing && !existing.content) {
+      try {
+        const contentData = await courseService.getModuleContent(moduleId);
+        if (contentData) {
+          updateModuleLocal(moduleId, {
+            content: contentData.content,
+            topics: contentData.topics,
+          });
+        }
+      } catch (err) {
+        console.error('Failed to fetch module content:', err);
+      }
     }
   },
 
