@@ -23,7 +23,7 @@ export const useExperienceTracker = ({
   moduleId,
   enabled,
 }: ExperienceConfig) => {
-  const startTimeRef = useRef<number>(Date.now());
+  const startTimeRef = useRef<number>(0);
   const maxScrollRef = useRef<number>(0);
   const interactionsRef = useRef<number>(0);
   const scrollRequestRef = useRef<number | null>(null);

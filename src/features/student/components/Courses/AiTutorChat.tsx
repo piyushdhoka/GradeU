@@ -66,7 +66,7 @@ export const AiTutorChat: React.FC<AiTutorChatProps> = ({ context }) => {
   };
 
   const formatMessage = (content: string) => {
-    let formatted = content
+    const formatted = content
       // Bold
       .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
       // Italic

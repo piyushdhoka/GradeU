@@ -95,8 +95,8 @@ export const ContactUsModal: React.FC<ModalProps> = ({ isOpen, onClose }) => {
 
           <div className="space-y-8">
             <p className="text-zinc-400">
-              Have questions or feedback? We'd love to hear from you. Reach out to us through any of
-              the following channels.
+              Have questions or feedback? We&apos;d love to hear from you. Reach out to us through
+              any of the following channels.
             </p>
 
             <div className="space-y-4">

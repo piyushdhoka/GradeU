@@ -2,6 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import { ProctoringLog } from '@/lib/models/ProctoringLog';
 
+const NO_STORE_HEADERS: HeadersInit = {
+  'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+  Pragma: 'no-cache',
+  Expires: '0',
+};
+
 const normalizeEventType = (value: unknown): string => {
   if (typeof value !== 'string') return 'unknown_event';
   const normalized = value
@@ -20,7 +26,10 @@ export async function POST(request: NextRequest) {
 
     const sid = typeof studentId === 'string' ? studentId.trim().slice(0, 200) : '';
     if (!sid) {
-      return NextResponse.json({ error: 'Missing studentId' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Missing studentId' },
+        { status: 400, headers: NO_STORE_HEADERS }
+      );
     }
 
     const cid =
@@ -46,9 +55,12 @@ export async function POST(request: NextRequest) {
       timestamp: timestamp ? new Date(timestamp) : new Date(),
     });
 
-    return NextResponse.json({ success: true }, { status: 202 });
+    return NextResponse.json({ success: true }, { status: 202, headers: NO_STORE_HEADERS });
   } catch (error) {
     console.error('Proctoring ingestion error:', error);
-    return NextResponse.json({ error: 'Failed to ingest log' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Failed to ingest log' },
+      { status: 500, headers: NO_STORE_HEADERS }
+    );
   }
 }

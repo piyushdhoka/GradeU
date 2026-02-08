@@ -77,7 +77,6 @@ export const ModuleViewer: React.FC<ModuleViewerProps> = ({
   // Proctoring State
   const [isProctoringActive, setIsProctoringActive] = useState(false);
   const [violationCount, setViolationCount] = useState(0);
-  const [proctoringSessionId, setProctoringSessionId] = useState<string | undefined>(undefined);
 
   // Topics State
   const [currentTopicIndex, setCurrentTopicIndex] = useState(0);
@@ -92,23 +91,16 @@ export const ModuleViewer: React.FC<ModuleViewerProps> = ({
   });
 
   // Backend Proctoring Logging - Generate stable attemptId per module session
-  const attemptId = useMemo(() => `${moduleId}-${Date.now()}`, [moduleId]);
+  const attemptId = useMemo(() => `${moduleId}-attempt`, [moduleId]);
   const { logEvent, requestFullscreen } = useProctoring({
     studentId: user?.id || 'anonymous',
     courseId,
     attemptId,
     enabled: isProctoringActive,
   });
+  const proctoringSessionId = isProctoringActive ? attemptId : undefined;
 
-  // Set proctoring session ID when proctoring becomes active
-  useEffect(() => {
-    if (isProctoringActive && !proctoringSessionId) {
-      setProctoringSessionId(attemptId);
-    } else if (!isProctoringActive) {
-      setProctoringSessionId(undefined);
-    }
-  }, [isProctoringActive, attemptId, proctoringSessionId]);
-
+  // eslint-disable-next-line @next/next/no-assign-module-variable
   const module: Module | undefined = (course?.course_modules ?? course?.modules ?? []).find(
     (m: Module) => m.id === moduleId
   );
@@ -188,18 +180,22 @@ export const ModuleViewer: React.FC<ModuleViewerProps> = ({
     const isModuleAssessment =
       module?.type === 'initial_assessment' || module?.type === 'final_assessment';
 
-    if (isModuleAssessment) {
-      setIsProctoringActive(true);
-      // If it's an assessment with no content/topics, we skip landing and go straight to test
-      if (!module?.content && (!module?.topics || module?.topics.length === 0)) {
-        setActiveTab('test');
-        setShowTest(true);
+    const timer = setTimeout(() => {
+      if (isModuleAssessment) {
+        setIsProctoringActive(true);
+        // If it's an assessment with no content/topics, we skip landing and go straight to test
+        if (!module?.content && (!module?.topics || module?.topics.length === 0)) {
+          setActiveTab('test');
+          setShowTest(true);
+        }
+      } else {
+        setIsProctoringActive(false);
+        setShowTest(false);
+        setActiveTab('content');
       }
-    } else {
-      setIsProctoringActive(false);
-      setShowTest(false);
-      setActiveTab('content');
-    }
+    }, 0);
+
+    return () => clearTimeout(timer);
   }, [module?.id, module?.type, module?.content, module?.topics]);
 
   useEffect(() => {
@@ -973,7 +969,7 @@ export const ModuleViewer: React.FC<ModuleViewerProps> = ({
                   <p className="text-muted-foreground text-sm">
                     {module.type === 'initial_assessment'
                       ? 'Your pre-course assessment is finished. You can now proceed to the main course.'
-                      : "You've successfully completed this training module."}
+                      : 'You&apos;ve successfully completed this training module.'}
                   </p>
                 </div>
               </div>
@@ -1006,7 +1002,7 @@ export const ModuleViewer: React.FC<ModuleViewerProps> = ({
                 <div>
                   <h3 className="text-primary text-lg font-bold">Course Complete!</h3>
                   <p className="text-muted-foreground">
-                    Congratulations! You've completed all training modules.
+                    Congratulations! You&apos;ve completed all training modules.
                   </p>
                 </div>
               </div>

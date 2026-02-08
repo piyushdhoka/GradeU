@@ -138,7 +138,7 @@ export const CourseList: React.FC<CourseListProps> = ({ onCourseSelect }) => {
 
             <div>
               <h3 className="text-primary mb-3 text-sm font-semibold tracking-wide uppercase">
-                What You'll Learn
+                What You&apos;ll Learn
               </h3>
               <div className="flex flex-wrap gap-2">
                 {selectedCourse.skills.map((skill, idx) => (

@@ -1,37 +1,61 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { createHash } from 'crypto';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
+const COURSE_LIST_CACHE_CONTROL = 'public, max-age=0, s-maxage=60, must-revalidate';
+
+function buildEtag(payload: unknown): string {
+  const hash = createHash('sha1').update(JSON.stringify(payload)).digest('hex');
+  return `"${hash}"`;
+}
+
+function buildCacheHeaders(etag: string): HeadersInit {
+  return {
+    'Cache-Control': COURSE_LIST_CACHE_CONTROL,
+    ETag: etag,
+  };
+}
+
 // Get all published courses with their modules
 export async function GET(request: NextRequest) {
   try {
-    console.log('📚 [courses/route] Fetching courses...');
+    console.log('[courses/route] Fetching courses...');
 
-    // Step 1: Fetch courses
     const { data: courses, error: coursesError } = await supabase
       .from('courses')
-      .select('id, title, description, is_published, certificate_enabled, created_at, category, estimated_hours')
+      .select(
+        'id, title, description, is_published, certificate_enabled, created_at, category, estimated_hours'
+      )
       .eq('is_published', true)
       .order('created_at', { ascending: false });
 
     if (coursesError) {
-      console.error('❌ [courses/route] Courses query error:', coursesError);
-      return NextResponse.json({ error: 'Failed to fetch courses', details: coursesError.message }, { status: 500 });
+      console.error('[courses/route] Courses query error:', coursesError);
+      return NextResponse.json(
+        { error: 'Failed to fetch courses', details: coursesError.message },
+        { status: 500 }
+      );
     }
-
-    console.log(`✅ [courses/route] Found ${courses?.length || 0} courses`);
 
     if (!courses || courses.length === 0) {
-      return NextResponse.json([]);
+      const emptyResponse: unknown[] = [];
+      const etag = buildEtag(emptyResponse);
+      const headers = buildCacheHeaders(etag);
+      const ifNoneMatch = request.headers.get('if-none-match');
+
+      if (ifNoneMatch === etag) {
+        return new NextResponse(null, { status: 304, headers });
+      }
+
+      return NextResponse.json(emptyResponse, { headers });
     }
 
-    // Step 2: Fetch modules for all courses
-    const courseIds = courses.map(c => c.id);
-    console.log('📦 [courses/route] Fetching modules for course IDs:', courseIds);
+    const courseIds = courses.map((course) => course.id);
 
     const { data: modules, error: modulesError } = await supabase
       .from('modules')
@@ -40,13 +64,9 @@ export async function GET(request: NextRequest) {
       .order('module_order', { ascending: true });
 
     if (modulesError) {
-      console.error('❌ [courses/route] Modules query error:', modulesError);
-      // Return courses without modules rather than failing completely
+      console.error('[courses/route] Modules query error:', modulesError);
     }
 
-    console.log(`✅ [courses/route] Found ${modules?.length || 0} total modules`);
-
-    // Group modules by course_id
     const modulesByCourse = new Map<string, any[]>();
     for (const mod of modules || []) {
       if (!modulesByCourse.has(mod.course_id)) {
@@ -58,10 +78,8 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Step 3: Build response
     const normalizedCourses = courses.map((course: any) => {
       const courseModules = modulesByCourse.get(course.id) || [];
-      console.log(`📖 [courses/route] Course "${course.title}" has ${courseModules.length} modules`);
 
       return {
         id: course.id,
@@ -76,10 +94,17 @@ export async function GET(request: NextRequest) {
       };
     });
 
-    console.log('✅ [courses/route] Returning', normalizedCourses.length, 'courses');
-    return NextResponse.json(normalizedCourses);
+    const etag = buildEtag(normalizedCourses);
+    const headers = buildCacheHeaders(etag);
+    const ifNoneMatch = request.headers.get('if-none-match');
+
+    if (ifNoneMatch === etag) {
+      return new NextResponse(null, { status: 304, headers });
+    }
+
+    return NextResponse.json(normalizedCourses, { headers });
   } catch (error) {
-    console.error('💥 [courses/route] Unexpected error:', error);
+    console.error('[courses/route] Unexpected error:', error);
     return NextResponse.json({ error: 'Failed to fetch courses' }, { status: 500 });
   }
 }

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { createHash } from 'crypto';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -18,6 +19,20 @@ type TopicInput = {
   content?: unknown;
   path?: unknown;
 };
+
+const COURSE_RESPONSE_CACHE_CONTROL = 'public, max-age=0, s-maxage=120, must-revalidate';
+
+function buildEtag(payload: unknown): string {
+  const hash = createHash('sha1').update(JSON.stringify(payload)).digest('hex');
+  return `"${hash}"`;
+}
+
+function buildCacheHeaders(etag: string): HeadersInit {
+  return {
+    'Cache-Control': COURSE_RESPONSE_CACHE_CONTROL,
+    ETag: etag,
+  };
+}
 
 function isStoragePath(content: string): boolean {
   return content.includes('/') && !content.includes('\n') && !content.includes('#');
@@ -232,7 +247,15 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       createdAt: course.created_at,
     };
 
-    return NextResponse.json(response);
+    const etag = buildEtag(response);
+    const headers = buildCacheHeaders(etag);
+    const ifNoneMatch = request.headers.get('if-none-match');
+
+    if (ifNoneMatch === etag) {
+      return new NextResponse(null, { status: 304, headers });
+    }
+
+    return NextResponse.json(response, { headers });
   } catch (error: any) {
     console.error('[courses/[id]] Unexpected error:', error);
     return NextResponse.json(

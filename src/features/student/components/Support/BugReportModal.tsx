@@ -71,7 +71,7 @@ export const BugReportModal: React.FC<BugReportModalProps> = ({ isOpen, onClose 
             Report a Problem
           </DialogTitle>
           <DialogDescription className="text-muted-foreground">
-            Stuck or encountered a bug? Tell us what happened and we'll look into it.
+            Stuck or encountered a bug? Tell us what happened and we&apos;ll look into it.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 py-4">

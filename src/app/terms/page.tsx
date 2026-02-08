@@ -59,8 +59,8 @@ export default function TermsAndConditions() {
           <section>
             <h2 className="mb-4 text-xl font-bold text-white">5. Disclaimer</h2>
             <p>
-              GradeU provides its services "as is" and makes no warranties, expressed or implied,
-              regarding the accuracy or availability of its educational content.
+              GradeU provides its services &quot;as is&quot; and makes no warranties, expressed or
+              implied, regarding the accuracy or availability of its educational content.
             </p>
           </section>
         </div>

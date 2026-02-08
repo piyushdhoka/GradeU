@@ -15,7 +15,6 @@ export async function GET(request: NextRequest) {
       headers: {
         Authorization: `Basic ${Buffer.from(privateKey + ':').toString('base64')}`,
       },
-      // @ts-ignore - Next.js fetch supports this
       next: { revalidate: 300 }, // Cache for 5 minutes
     });
 
