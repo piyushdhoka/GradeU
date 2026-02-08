@@ -251,11 +251,20 @@ export const CommunityPage: React.FC<{ onBackAction: () => void }> = ({ onBackAc
 
   return (
     <div className="bg-background text-foreground animate-in fade-in min-h-screen duration-500">
-      <div className="container mx-auto max-w-5xl p-4 md:p-8">
+      <div className="w-full px-4 py-8 md:px-12">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={onBackAction}
+          className="hover:bg-primary/10 text-muted-foreground hover:text-primary mb-6 gap-2"
+        >
+          <ChevronLeft className="h-4 w-4" />
+          Back to Dashboard
+        </Button>
         {/* Header */}
         <div className="mb-8 flex flex-col justify-between gap-4 md:flex-row md:items-center">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Community Discussion</h1>
+            <h1 className="text-4xl font-extrabold tracking-tight">Community Discussion</h1>
             <p className="text-muted-foreground mt-1">Join the conversation with your peers.</p>
           </div>
           <div className="flex items-center gap-2">
