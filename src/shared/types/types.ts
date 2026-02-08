@@ -52,7 +52,7 @@ export interface Module {
   /* Compatibility fields used elsewhere */
   module_order?: number;
   questions?: Question[];
-  quiz?: any[]; // MongoDB quiz format
+  quiz?: any[];
   type?: 'lecture' | 'quiz' | 'initial_assessment' | 'final_assessment';
 }
 

@@ -134,7 +134,7 @@ class StudentService {
 
   async getDashboardStats(userId: string): Promise<StudentStats> {
     try {
-      // Try backend API first (uses MongoDB)
+      // Try backend overview API first
       const overviewData = await this.getOverviewData();
 
       if (overviewData?.stats) {
@@ -185,7 +185,7 @@ class StudentService {
 
   async getRecentActivity(userId: string): Promise<RecentActivity[]> {
     try {
-      // Try backend API first (uses MongoDB)
+      // Try backend overview API first
       const overviewData = await this.getOverviewData();
 
       if (overviewData?.stats?.activities?.length > 0) {
@@ -224,7 +224,7 @@ class StudentService {
 
   async getActiveOperation(userId: string): Promise<ActiveOperation | null> {
     try {
-      // Try backend API first (uses MongoDB)
+      // Try backend overview API first
       const overviewData = await this.getOverviewData();
 
       if (overviewData?.stats?.activeCourse) {

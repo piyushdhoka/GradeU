@@ -5,57 +5,11 @@ import type { Course, Module } from '@types';
 const STATIC_OBJECT_CACHE_CONTROL_SECONDS = '31536000';
 
 /**
- * Fetch with timeout and retry for CDN content
- * @param url - URL to fetch
- * @param options - Fetch options
- * @param timeout - Timeout in milliseconds (default: 10000)
- * @param retries - Number of retries (default: 2)
- */
-async function fetchWithRetry(
-  url: string,
-  options: RequestInit = {},
-  timeout = 10000,
-  retries = 2
-): Promise<Response> {
-  let lastError: Error | null = null;
-
-  for (let attempt = 0; attempt <= retries; attempt++) {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), timeout);
-
-    try {
-      const response = await fetch(url, {
-        ...options,
-        signal: controller.signal,
-      });
-      clearTimeout(timeoutId);
-      return response;
-    } catch (error) {
-      clearTimeout(timeoutId);
-      lastError = error instanceof Error ? error : new Error(String(error));
-
-      // Don't retry on non-network errors
-      if (lastError.name !== 'AbortError' && !lastError.message.includes('fetch')) {
-        throw lastError;
-      }
-
-      // Wait before retrying (exponential backoff)
-      if (attempt < retries) {
-        await new Promise((resolve) => setTimeout(resolve, Math.pow(2, attempt) * 500));
-      }
-    }
-  }
-
-  throw lastError || new Error('Fetch failed after retries');
-}
-
-/**
- * Normalizes a module object to ensure it has an 'id' field and consistent structure.
- * Handles both Supabase (id) and MongoDB (_id) formats.
+ * Normalizes a module object to ensure it has an id field and consistent structure.
  */
 function normalizeModule(module: any): Module {
   if (!module) return module;
-  const id = (module.id || module._id || '').toString();
+  const id = (module.id || '').toString();
   return {
     ...module,
     id,
@@ -74,7 +28,7 @@ function normalizeCourse(course: any): Course {
 
   return {
     ...course,
-    id: (course.id || course._id || '').toString(),
+    id: (course.id || '').toString(),
     modules,
     module_count: modules.length,
   };
@@ -227,7 +181,7 @@ class CourseService {
 
   async getAllCourses(): Promise<Course[]> {
     try {
-      // Primary: Fetch from backend API (MongoDB) for consistency with getCourseById
+      // Primary: fetch from backend API for consistency with getCourseById
       const response = await fetch(getApiUrl('/api/student/courses'));
 
       if (response.ok) {
@@ -257,7 +211,7 @@ class CourseService {
 
   async getCourseById(id: string): Promise<Course | null> {
     try {
-      // 1. Fetch from Backend API (MongoDB)
+      // Fetch from backend API
       const token = (await supabase.auth.getSession()).data.session?.access_token;
 
       const response = await fetch(`/api/student/courses/${id}`, {
@@ -425,8 +379,7 @@ class CourseService {
     completedTopics?: string[]
   ) {
     try {
-      // Try to update via backend API first (handles both MongoDB and Supabase)
-      // This ensures unified storage strategy
+      // Try to update via backend API first
       const token = (await supabase.auth.getSession()).data.session?.access_token;
 
       if (courseId && token) {
@@ -445,23 +398,12 @@ class CourseService {
           });
 
           if (response.ok) {
-            // Backend update succeeded (handles both MongoDB and Supabase)
             return;
           }
         } catch (apiError) {
           console.warn('Backend progress update failed, falling back to Supabase:', apiError);
           // Fall through to Supabase update
         }
-      }
-      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
-        moduleId
-      );
-
-      if (!isUUID) {
-        // For non-UUID IDs (like MongoDB ObjectIDs), Supabase sync is skipped
-        // because the module_id column expects a UUID.
-        // Normal behavior as primary progress storage for these is MongoDB.
-        return;
       }
 
       // Save progress to Supabase

@@ -10,8 +10,8 @@ GradeU is a next-generation education platform designed to deliver high-quality,
 - **Authentication:** [Supabase Auth](https://supabase.com/auth) (SSR + PCKE Flow)
 
 - **Database:**
-  - [Supabase](https://supabase.com/) (PostgreSQL) for Auth & User Profiles
-  - [MongoDB](https://www.mongodb.com/) for Course Content & Proctoring Logs
+  - [Supabase](https://supabase.com/) (PostgreSQL + Storage) for auth, user profiles, course content, and progress
+  - [MongoDB](https://www.mongodb.com/) for proctoring and experience analytics logs
 - **State Management:** [Zustand](https://github.com/pmndrs/zustand)
 - **Backend:** Express.js (via Next.js Route Handlers / Serverless)
 - **Deployment:** Vercel (Monorepo specific setup)
@@ -21,7 +21,7 @@ GradeU is a next-generation education platform designed to deliver high-quality,
 - **Node.js:** v18.17+ or v20+
 - **Bun:** (Preferred package manager) or npm/yarn
 - **Supabase Project:** For authentication and database.
-- **MongoDB Cluster:** For content storage.
+- **MongoDB Cluster:** Optional, only for proctoring/analytics persistence.
 
 ## 📦 Installation
 
@@ -50,7 +50,7 @@ GradeU is a next-generation education platform designed to deliver high-quality,
     **Required Environment Variables:**
     - `NEXT_PUBLIC_SUPABASE_URL`: Your Supabase Project URL
     - `NEXT_PUBLIC_SUPABASE_ANON_KEY`: Your Supabase Anon Key
-    - `MONGODB_URI`: Connection string for MongoDB
+    - `MONGODB_URI`: Optional connection string for proctoring/analytics MongoDB
     - `NEXT_PUBLIC_BACKEND_URL`: URL for the backend API (e.g., `http://localhost:3000` locally)
     - `UPSTASH_REDIS_REST_URL` & `TOKEN`: For caching/limiting (if used)
 

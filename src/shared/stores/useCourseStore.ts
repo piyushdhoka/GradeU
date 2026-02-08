@@ -49,7 +49,7 @@ export const useCourseStore = create<CourseState>((set, get) => ({
       let normalizedModules = data.course_modules ?? data.modules ?? [];
 
       if (userId) {
-        // Fetch comprehensive progress (MongoDB + Supabase) from backend for this course
+        // Fetch progress from backend for this course
         const progress = (await courseService.getCourseProgress(courseId)) as ProgressRow[] | null;
         const moduleProgress = (progress || []).reduce(
           (acc: Record<string, ProgressRow>, p: ProgressRow) => {
