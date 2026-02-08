@@ -283,7 +283,7 @@ export const ModuleTest: React.FC<ModuleTestProps> = ({
         <div className="space-y-1">
           <h3 className="text-xl font-bold">No Questions Found</h3>
           <p className="text-muted-foreground text-sm whitespace-pre-line">
-            This module doesn't have any assessment questions configured yet.
+            This module doesn&apos;t have any assessment questions configured yet.
           </p>
         </div>
         <Button onClick={onBack} variant="outline" className="mt-2">

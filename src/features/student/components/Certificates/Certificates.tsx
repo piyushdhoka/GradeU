@@ -161,8 +161,8 @@ export const Certificates: React.FC = () => {
               <div className="space-y-2">
                 <h3 className="text-xl font-bold text-white">No Certificates Found</h3>
                 <p className="text-muted-foreground mx-auto max-w-xs text-sm">
-                  You haven't earned any certifications yet. Complete your first course to unlock
-                  your official credentials.
+                  You haven&apos;t earned any certifications yet. Complete your first course to
+                  unlock your official credentials.
                 </p>
               </div>
               <Button variant="outline" className="mt-4">

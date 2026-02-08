@@ -15,19 +15,19 @@ interface LoginFormProps {
 export const LoginForm: React.FC<LoginFormProps> = () => {
   const role = 'student' as const;
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState(() => {
+    if (typeof window === 'undefined') return '';
+    const params = new URLSearchParams(window.location.search);
+    return params.get('error_description') || params.get('error') || '';
+  });
   const { loginWithGoogle, user, loading } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const errorDescription = params.get('error_description');
-    const errorMsg = params.get('error');
-    if (errorDescription || errorMsg) {
-      setError(errorDescription || errorMsg || 'Authentication failed');
+    if (error) {
       window.history.replaceState({}, document.title, window.location.pathname);
     }
-  }, []);
+  }, [error]);
 
   const handleGoogleLogin = async () => {
     try {

@@ -15,22 +15,21 @@ export const ViolationNotification: React.FC<ViolationNotificationProps> = ({
   lastViolationReason,
   onDismiss,
 }) => {
-  const [isVisible, setIsVisible] = useState(false);
+  const [autoHiddenAtViolation, setAutoHiddenAtViolation] = useState(0);
   const [dismissed, setDismissed] = useState(false);
 
   useEffect(() => {
-    if (violations > 0 && !dismissed) {
-      setIsVisible(true);
-      // Auto-hide after 8 seconds
-      const timer = setTimeout(() => {
-        setIsVisible(false);
-      }, 8000);
-      return () => clearTimeout(timer);
-    }
-  }, [violations, dismissed]);
+    if (dismissed || violations === 0 || violations <= autoHiddenAtViolation) return;
+
+    // Auto-hide after 8 seconds for the current violation count.
+    const timer = setTimeout(() => {
+      setAutoHiddenAtViolation(violations);
+    }, 8000);
+
+    return () => clearTimeout(timer);
+  }, [violations, dismissed, autoHiddenAtViolation]);
 
   const handleDismiss = () => {
-    setIsVisible(false);
     setDismissed(true);
     if (onDismiss) onDismiss();
   };
@@ -67,7 +66,8 @@ export const ViolationNotification: React.FC<ViolationNotificationProps> = ({
     return 'info';
   };
 
-  if (!isVisible || violations === 0) return null;
+  const isVisible = !dismissed && violations > autoHiddenAtViolation;
+  if (!isVisible) return null;
 
   const severity = getSeverityLevel();
 

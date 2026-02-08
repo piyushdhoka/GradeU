@@ -267,7 +267,7 @@ export const LabViewer: React.FC<LabViewerProps> = ({ labId, onBack }) => {
             <span>Lab Environment</span>
           </h3>
           <p className="mb-6 text-[#00B37A]">
-            Ready to apply what you've learned? Click the button below to access the live lab
+            Ready to apply what you&apos;ve learned? Click the button below to access the live lab
             environment where you can practice hands-on exploitation techniques.
           </p>
           <div className="flex flex-col items-start gap-4 sm:flex-row">

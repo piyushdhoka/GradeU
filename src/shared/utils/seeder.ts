@@ -71,7 +71,7 @@ export const runSeed = async (userId?: string) => {
 
     // 2. Upsert Modules (10 per course)
     console.log('Seeding Modules...');
-    let allModules: any[] = [];
+    const allModules: any[] = [];
     COURSES.forEach((c) => {
       for (let i = 1; i <= 10; i++) {
         // For Web Security, give real titles if possible

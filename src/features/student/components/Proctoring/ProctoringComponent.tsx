@@ -170,9 +170,12 @@ export const ProctoringComponent: React.FC<ProctoringComponentProps> = ({
   useEffect(() => {
     if (loadAttemptedRef.current) return;
     loadAttemptedRef.current = true;
-    void initializeDetector();
+    const initTimer = setTimeout(() => {
+      void initializeDetector();
+    }, 0);
 
     return () => {
+      clearTimeout(initTimer);
       if (webgazerStartedRef.current && window.webgazer?.end) {
         try {
           window.webgazer.end();
@@ -208,12 +211,20 @@ export const ProctoringComponent: React.FC<ProctoringComponentProps> = ({
   };
 
   useEffect(() => {
+    let startTimer: ReturnType<typeof setTimeout> | null = null;
     if (isActive && detectorReady) {
-      void startVideo();
+      startTimer = setTimeout(() => {
+        void startVideo();
+      }, 0);
     } else {
       stopVideo();
     }
-    return () => stopVideo();
+    return () => {
+      if (startTimer) {
+        clearTimeout(startTimer);
+      }
+      stopVideo();
+    };
   }, [isActive, detectorReady]);
 
   useEffect(() => {

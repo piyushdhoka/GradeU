@@ -25,15 +25,9 @@ interface StudentAppContentProps {
 
 export const StudentAppContent: React.FC<StudentAppContentProps> = ({ initialTab }) => {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [activeTab, setActiveTab] = useState(initialTab || 'dashboard');
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
   const [selectedLabId, setSelectedLabId] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (initialTab) {
-      setActiveTab(initialTab);
-    }
-  }, [initialTab]);
 
   useEffect(() => {
     const handleNavigateToTab = (e: CustomEvent<{ tab: string; labId?: string }>) => {
