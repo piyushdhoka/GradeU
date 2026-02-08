@@ -1,5 +1,3 @@
-
-
 # GradeU - Advanced Learning Management System
 
 GradeU is a next-generation education platform designed to deliver high-quality, interactive learning experiences. It features a robust student dashboard, automated course generation, proctoring capabilities, and a community-driven learning environment.
