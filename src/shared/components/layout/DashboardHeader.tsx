@@ -18,7 +18,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@shared/components/ui/dropdown-menu';
-import { User, LogOut, CreditCard } from 'lucide-react';
+import { User, LogOut } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 interface DashboardHeaderProps {
@@ -105,10 +105,6 @@ export function DashboardHeader({ activeTab, onTabChange }: DashboardHeaderProps
             <DropdownMenuItem onClick={() => router.push('/profile')}>
               <User className="mr-2 h-4 w-4" />
               <span>Profile</span>
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => onTabChange('pricing')}>
-              <CreditCard className="mr-2 h-4 w-4" />
-              <span>Subscription</span>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem
