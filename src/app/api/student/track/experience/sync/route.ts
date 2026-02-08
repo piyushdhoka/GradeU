@@ -50,6 +50,21 @@ export async function POST(request: NextRequest) {
     const studentId = user.id;
     const studentEmail = user.email || '';
 
+    // Handle courseId as slug or UUID
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(courseId);
+    let resolvedCourseId = courseId;
+
+    if (!isUUID) {
+      const { data: courseData } = await supabase
+        .from('courses')
+        .select('id')
+        .eq('slug', courseId)
+        .single();
+      if (courseData?.id) {
+        resolvedCourseId = courseData.id;
+      }
+    }
+
     // Handle module stats -> Supabase + MongoDB
     if (moduleStats && moduleStats.moduleId) {
       const moduleId = String(moduleStats.moduleId).trim();
@@ -63,7 +78,7 @@ export async function POST(request: NextRequest) {
           .from('module_experience')
           .select('id, time_spent, scroll_depth, interactions')
           .eq('student_id', studentId)
-          .eq('course_id', courseId)
+          .eq('course_id', resolvedCourseId)
           .eq('module_id', moduleId)
           .limit(1);
 
@@ -90,7 +105,7 @@ export async function POST(request: NextRequest) {
           } else {
             const { error: insertError } = await userClient.from('module_experience').insert({
               student_id: studentId,
-              course_id: courseId,
+              course_id: resolvedCourseId,
               module_id: moduleId,
               time_spent: timeSpent,
               scroll_depth: scrollDepth,
@@ -116,7 +131,7 @@ export async function POST(request: NextRequest) {
         const updated = await StudentExperience.findOneAndUpdate(
           {
             studentId,
-            courseId,
+            courseId: resolvedCourseId,
             'moduleStats.moduleId': moduleId,
           },
           {
@@ -136,7 +151,7 @@ export async function POST(request: NextRequest) {
 
         if (!updated) {
           await StudentExperience.findOneAndUpdate(
-            { studentId, courseId },
+            { studentId, courseId: resolvedCourseId },
             {
               $push: {
                 moduleStats: {
@@ -170,7 +185,7 @@ export async function POST(request: NextRequest) {
         };
 
         await StudentExperience.findOneAndUpdate(
-          { studentId, courseId },
+          { studentId, courseId: resolvedCourseId },
           {
             $push: { aiInteractions: sanitizedInteraction },
             $set: { updatedAt: now, studentEmail },

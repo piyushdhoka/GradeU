@@ -21,6 +21,7 @@ import { Loader } from '@components/ui/loader';
 
 export interface CourseData {
   id: string;
+  slug: string;
   title: string;
   category: 'vishwakarma-university';
   url: string;
@@ -179,7 +180,7 @@ export const CourseList: React.FC<CourseListProps> = ({ onCourseSelect }) => {
                 if (selectedCourse.url && selectedCourse.url !== '#') {
                   window.open(selectedCourse.url, '_blank');
                 } else {
-                  onCourseSelect(selectedCourse.id);
+                  onCourseSelect(selectedCourse.slug);
                 }
               }}
             >
@@ -203,6 +204,7 @@ export const CourseList: React.FC<CourseListProps> = ({ onCourseSelect }) => {
     if (selectedCategory === 'cyber-ops') {
       courses = dynamicCourses.map((c) => ({
         id: c.id,
+        slug: c.slug || c.id, // Use slug for navigation, fallback to id
         title: c.title,
         category: 'vishwakarma-university' as const,
         url: '#',

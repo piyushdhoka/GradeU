@@ -43,12 +43,27 @@ export async function GET(
       }
     );
 
+    // Handle courseId as slug or UUID
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(courseId);
+    let resolvedCourseId = courseId;
+
+    if (!isUUID) {
+      const { data: courseData } = await supabase
+        .from('courses')
+        .select('id')
+        .eq('slug', courseId)
+        .single();
+      if (courseData?.id) {
+        resolvedCourseId = courseData.id;
+      }
+    }
+
     // Fetch experience from Supabase
     const { data: experience, error } = await userClient
       .from('module_experience')
       .select('time_spent, scroll_depth, interactions')
       .eq('student_id', user.id)
-      .eq('course_id', courseId)
+      .eq('course_id', resolvedCourseId)
       .eq('module_id', moduleId)
       .single();
 

@@ -36,11 +36,27 @@ export async function GET(
       { global: { headers: { Authorization: `Bearer ${token}` } } }
     );
 
-    // Get module IDs for this course
+    // Detect if courseId is a UUID or slug
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(courseId);
+    const column = isUUID ? 'id' : 'slug';
+
+    // First lookup course to get actual UUID
+    const { data: course, error: courseError } = await userClient
+      .from('courses')
+      .select('id')
+      .eq(column, courseId)
+      .single();
+
+    if (courseError || !course) {
+      console.error('Course lookup error:', courseError);
+      return NextResponse.json({ error: 'Course not found' }, { status: 404 });
+    }
+
+    // Get module IDs for this course using actual UUID
     const { data: modules, error: modulesError } = await userClient
       .from('modules')
       .select('id')
-      .eq('course_id', courseId);
+      .eq('course_id', course.id);
 
     if (modulesError) {
       console.error('Modules fetch error:', modulesError);

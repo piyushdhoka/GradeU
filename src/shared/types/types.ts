@@ -16,6 +16,7 @@ export interface User {
 
 export interface Course {
   id: string;
+  slug?: string;
   title: string;
   description: string;
   modules: Module[];

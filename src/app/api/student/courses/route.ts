@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { createHash } from 'crypto';
+import { slugify } from '@shared/utils/slug';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -29,7 +30,7 @@ export async function GET(request: NextRequest) {
     const { data: courses, error: coursesError } = await supabase
       .from('courses')
       .select(
-        'id, title, description, is_published, certificate_enabled, created_at, category, estimated_hours'
+        'id, slug, title, description, is_published, certificate_enabled, created_at, category, estimated_hours'
       )
       .eq('is_published', true)
       .order('created_at', { ascending: false });
@@ -83,6 +84,8 @@ export async function GET(request: NextRequest) {
 
       return {
         id: course.id,
+        // Use stored slug, or generate from title if missing
+        slug: course.slug || slugify(course.title),
         title: course.title,
         description: course.description,
         certificate_enabled: course.certificate_enabled,

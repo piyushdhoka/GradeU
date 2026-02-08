@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { createHash } from 'crypto';
+import { slugify } from '@shared/utils/slug';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -244,19 +245,23 @@ async function resolveTopics(rawTopics: unknown): Promise<{ title: string; conte
   return resolved.filter((t): t is { title: string; content: string } => !!t);
 }
 
-// GET a specific course by ID
+// GET a specific course by ID or slug
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
     console.log(`[courses/[id]] Fetching course: ${id}`);
 
-    // 1) Fetch course
+    // Detect if id is a UUID or slug
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+    const column = isUUID ? 'id' : 'slug';
+
+    // 1) Fetch course by ID or slug
     const { data: course, error: courseError } = await supabase
       .from('courses')
       .select(
-        'id, title, description, is_published, certificate_enabled, created_at, category, estimated_hours'
+        'id, slug, title, description, is_published, certificate_enabled, created_at, category, estimated_hours'
       )
-      .eq('id', id)
+      .eq(column, id)
       .single();
 
     if (courseError) {
@@ -270,11 +275,11 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       );
     }
 
-    // 2) Fetch modules
+    // 2) Fetch modules using the course's actual UUID (not the URL param which might be a slug)
     const { data: modules, error: modulesError } = await supabase
       .from('modules')
       .select('id, title, content_markdown, module_order, topics, type')
-      .eq('course_id', id)
+      .eq('course_id', course.id)
       .order('module_order', { ascending: true });
 
     if (modulesError) {
@@ -342,6 +347,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
     const response = {
       id: course.id,
+      slug: course.slug || slugify(course.title),
       title: course.title,
       description: course.description,
       certificate_enabled: course.certificate_enabled,

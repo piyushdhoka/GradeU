@@ -65,7 +65,12 @@ export const ModuleTest: React.FC<ModuleTestProps> = ({
   };
 
   const handleSubmitTest = () => {
-    setShowResults(true);
+    if (isInitialAssessment) {
+      const score = calculateScore(answers);
+      onComplete(score, answers);
+    } else {
+      setShowResults(true);
+    }
   };
 
   const isAnswerCorrect = (
@@ -397,7 +402,11 @@ export const ModuleTest: React.FC<ModuleTestProps> = ({
             disabled={selectedAnswer === null}
             className="min-w-[120px]"
           >
-            {currentQuestionIndex === questions.length - 1 ? 'Submit Test' : 'Next'}
+            {currentQuestionIndex === questions.length - 1
+              ? isInitialAssessment
+                ? 'Complete & Begin Journey'
+                : 'Submit Test'
+              : 'Next'}
           </Button>
         </CardFooter>
       </Card>
