@@ -162,7 +162,7 @@ export const ModuleTest: React.FC<ModuleTestProps> = ({
             >
               {score}%
             </div>
-            <p className="text-muted-foreground mb-8 text-lg">
+            <p className="text-muted-foreground mb-8 shrink-0 text-lg">
               {passed
                 ? 'Congratulations! You passed the test.'
                 : isInitialAssessment
@@ -355,7 +355,7 @@ export const ModuleTest: React.FC<ModuleTestProps> = ({
               >
                 <div
                   className={cn(
-                    'flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full border-2 transition-colors',
+                    'flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-colors',
                     selectedAnswer === index
                       ? 'border-primary bg-primary'
                       : 'border-muted-foreground/30'

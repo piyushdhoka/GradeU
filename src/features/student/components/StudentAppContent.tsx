@@ -4,7 +4,7 @@ import { useAuth } from '@context/AuthContext';
 import { LandingPage } from './Landing/LandingPage';
 import { Dashboard } from './Dashboard/Dashboard';
 import { DashboardHeader } from '@shared/components/layout/DashboardHeader';
-import { ProctoringDemo } from './Proctoring/ProctoringDemo';
+
 import { CourseList } from './Courses/CourseList';
 import { CourseDetail } from './Courses/CourseDetail';
 import { LabsList } from './Labs/LabsList';
@@ -77,8 +77,6 @@ export const StudentAppContent: React.FC<StudentAppContentProps> = ({ initialTab
       case 'dashboard':
         return <Dashboard onTabChange={setActiveTab} />;
 
-      case 'proctor-demo':
-        return <ProctoringDemo />;
       case 'courses':
         return <CourseList onCourseSelect={handleCourseSelect} />;
       case 'videos':

@@ -19,7 +19,9 @@ import { CertificateModal } from '../Certificates/CertificateModal';
 import { courseService } from '@services/courseService';
 import type { Module, Course } from '@types';
 import { ModuleTest } from './ModuleTest';
-import { ProctoringComponent } from '../Proctoring/ProctoringComponent';
+import { Proctoring } from '../Proctoring/ProctoringEngine';
+import { CameraSetup } from '../Proctoring/CameraSetup';
+import { ProctoringVideoFeed } from '../Proctoring/ProctoringVideoFeed';
 import { learningPathService } from '../../../../shared/services/learningPathService';
 import { useAuth } from '@context/AuthContext';
 import { useExperienceTracker } from '../../../../shared/hooks/useExperienceTracker';
@@ -80,6 +82,9 @@ export const ModuleViewer: React.FC<ModuleViewerProps> = ({
   // Proctoring State
   const [isProctoringActive, setIsProctoringActive] = useState(false);
   const [violationCount, setViolationCount] = useState(0);
+  const videoRef = React.useRef<HTMLVideoElement>(null);
+  const [mediaStream, setMediaStream] = React.useState<MediaStream | null>(null);
+  const [showCameraSetup, setShowCameraSetup] = useState(false);
 
   // Topics State
   const [currentTopicIndex, setCurrentTopicIndex] = useState(0);
@@ -92,6 +97,16 @@ export const ModuleViewer: React.FC<ModuleViewerProps> = ({
     moduleId,
     enabled: !!user?.id,
   });
+
+  // Cleanup camera when component unmounts (navigating away)
+  useEffect(() => {
+    return () => {
+      if (mediaStream) {
+        console.log('[ModuleViewer] Unmounting - stopping camera');
+        mediaStream.getTracks().forEach((track) => track.stop());
+      }
+    };
+  }, [mediaStream]);
 
   // Backend Proctoring Logging - unique attempt id per test session.
   const [attemptId, setAttemptId] = useState(() => createAttemptId(moduleId));
@@ -113,18 +128,45 @@ export const ModuleViewer: React.FC<ModuleViewerProps> = ({
     moduleId === 'vu-final-exam';
 
   const startTestSession = () => {
+    console.log('startTestSession called, isAssessmentModule:', isAssessmentModule);
     if (isAssessmentModule) {
       setAttemptId(createAttemptId(moduleId));
       setViolationCount(0);
-      setIsProctoringActive(true);
+      // Show camera setup screen first
+      console.log('Showing camera setup');
+      setShowCameraSetup(true);
     } else {
       setIsProctoringActive(false);
+      setActiveTab('test');
+      setShowTest(true);
     }
+  };
+
+  const handleCameraReady = (stream: MediaStream) => {
+    console.log('handleCameraReady called with stream:', stream);
+    setMediaStream(stream);
+    if (videoRef.current) {
+      videoRef.current.srcObject = stream;
+      console.log('Video srcObject set');
+    }
+    setIsProctoringActive(true);
+    setShowCameraSetup(false);
     setActiveTab('test');
     setShowTest(true);
+    console.log('Proctoring active, test started');
+  };
+
+  const handleCameraSetupCancel = () => {
+    setShowCameraSetup(false);
+    setIsProctoringActive(false);
   };
 
   const stopTestSession = () => {
+    // Stop camera stream
+    if (mediaStream) {
+      mediaStream.getTracks().forEach((track) => track.stop());
+      setMediaStream(null);
+    }
     setShowTest(false);
     setIsProctoringActive(false);
   };
@@ -210,12 +252,11 @@ export const ModuleViewer: React.FC<ModuleViewerProps> = ({
         if (!showTest) {
           setAttemptId(createAttemptId(moduleId));
           setIsProctoringActive(false);
-          // If it's an assessment with no content/topics, we skip landing and go straight to test
+          // If it's an assessment with no content/topics, show camera setup before test
           if (!module?.content && (!module?.topics || module?.topics.length === 0)) {
+            console.log('Auto-starting camera setup for assessment without content');
             setViolationCount(0);
-            setIsProctoringActive(true);
-            setActiveTab('test');
-            setShowTest(true);
+            setShowCameraSetup(true);
           }
         }
       } else {
@@ -466,6 +507,11 @@ export const ModuleViewer: React.FC<ModuleViewerProps> = ({
     }
   };
 
+  // Show camera setup before test
+  if (showCameraSetup) {
+    return <CameraSetup onCameraReady={handleCameraReady} onCancel={handleCameraSetupCancel} />;
+  }
+
   if (showTest) {
     return (
       <>
@@ -477,10 +523,37 @@ export const ModuleViewer: React.FC<ModuleViewerProps> = ({
           questions={module.quiz || []}
           isInitialAssessment={module.type === 'initial_assessment'}
         />
-        <ProctoringComponent
-          isActive={isProctoringActive}
-          onStatusChange={handleProctoringViolation}
+        <Proctoring
+          mediaStream={mediaStream}
+          enabled={isProctoringActive}
+          onViolation={(count, reason) => {
+            setViolationCount(count);
+            console.log(`🚨 Violation: ${reason} (${count}/${3})`);
+          }}
+          onEndExam={() => {
+            console.log('❌ Exam terminated - stopping camera');
+            // Stop camera immediately
+            if (mediaStream) {
+              mediaStream.getTracks().forEach((track) => track.stop());
+              setMediaStream(null);
+            }
+            setIsProctoringActive(false);
+            setShowTest(false);
+            // Single notification at the end
+            setTimeout(() => {
+              alert('❌ Exam terminated due to proctoring violations (3/3)');
+            }, 100);
+          }}
+          onStatusChange={(status) => {
+            console.log('Proctoring status:', status);
+          }}
+          onViolationWarning={(reason, count, threshold) => {
+            console.log(`⚠️ Warning: ${reason} (${count}/${threshold})`);
+            // Show single toast-style notification (non-blocking would be better)
+          }}
+          threshold={3}
         />
+        <ProctoringVideoFeed mediaStream={mediaStream} isActive={isProctoringActive} />
       </>
     );
   }
@@ -1064,7 +1137,7 @@ export const ModuleViewer: React.FC<ModuleViewerProps> = ({
         />
       )}
 
-      {/* ProctoringComponent is rendered inside the showTest block above */}
+      {/* Proctoring component is rendered inside the showTest block above */}
       {/* AI Tutor Chat Widget */}
       <AiTutorChat context={currentContext} />
     </div>
