@@ -59,8 +59,22 @@ export const CourseDetail: React.FC<CourseDetailProps> = ({ courseId, onBack }) 
 
   // ... (renders)
 
-  // Loading State
-  if (loading) {
+  // Keep module viewer mounted during background refreshes to avoid tearing down active sessions.
+  if (selectedModuleId && course) {
+    return (
+      <ModuleViewer
+        courseId={courseId}
+        moduleId={selectedModuleId}
+        course={course}
+        onBack={() => setSelectedModuleId(null)}
+        onNavigateToModule={(id: string) => setSelectedModuleId(id)}
+        onModuleStatusChange={refreshCourse}
+      />
+    );
+  }
+
+  // Loading State (initial load only)
+  if (loading && !course) {
     return (
       <div className="animate-in fade-in flex flex-col gap-6 p-4 duration-500 md:p-8">
         <Skeleton className="h-8 w-40" />
@@ -116,20 +130,6 @@ export const CourseDetail: React.FC<CourseDetailProps> = ({ courseId, onBack }) 
     );
   }
 
-  // Module Viewer
-  if (selectedModuleId) {
-    return (
-      <ModuleViewer
-        courseId={courseId}
-        moduleId={selectedModuleId}
-        course={course}
-        onBack={() => setSelectedModuleId(null)}
-        onNavigateToModule={(id: string) => setSelectedModuleId(id)}
-        onModuleStatusChange={refreshCourse}
-      />
-    );
-  }
-
   const completedModules = (course.modules || []).filter((m: Module) => m.completed).length;
   const totalModules = (course.modules || []).length;
   const progressPercentage =
@@ -169,7 +169,11 @@ export const CourseDetail: React.FC<CourseDetailProps> = ({ courseId, onBack }) 
                 </div>
                 <div className="text-muted-foreground flex items-center gap-2">
                   <Clock className="text-primary h-4 w-4" />
-                  <span>{course.estimated_hours ? `${course.estimated_hours} Hours` : `~${totalModules * 2} Hours`}</span>
+                  <span>
+                    {course.estimated_hours
+                      ? `${course.estimated_hours} Hours`
+                      : `~${totalModules * 2} Hours`}
+                  </span>
                 </div>
                 <div className="text-muted-foreground flex items-center gap-2">
                   <Flask className="text-primary h-4 w-4" />
@@ -221,7 +225,8 @@ export const CourseDetail: React.FC<CourseDetailProps> = ({ courseId, onBack }) 
             // - For subsequent modules:
             //   - If previous was index 0 (initial assessment): only need completion (any score OK)
             //   - Otherwise: need completion + score >= 70%
-            const isPreviousInitialAssessment = previousIndex === 0 || previousModule?.type === 'initial_assessment';
+            const isPreviousInitialAssessment =
+              previousIndex === 0 || previousModule?.type === 'initial_assessment';
 
             const isModuleUnlocked =
               user?.role === 'admin' ||

@@ -10,15 +10,13 @@ declare global {
   interface Window {
     FaceDetector?: any;
     FaceDetection?: any;
-    webgazer?: any;
   }
 }
 
-type Engine = 'mediapipe' | 'webgazer' | 'native' | 'lite';
+type Engine = 'mediapipe' | 'native' | 'lite';
 
 const MEDIAPIPE_FACE_URL =
   'https://cdn.jsdelivr.net/npm/@mediapipe/face_detection/face_detection.js';
-const WEBGAZER_URL = 'https://webgazer.cs.brown.edu/webgazer.js';
 
 export const ProctoringComponent: React.FC<ProctoringComponentProps> = ({
   isActive,
@@ -29,11 +27,14 @@ export const ProctoringComponent: React.FC<ProctoringComponentProps> = ({
   const nativeDetectorRef = useRef<any>(null);
   const mediaPipeDetectorRef = useRef<any>(null);
   const mediaPipeCountRef = useRef(0);
-  const webgazerStartedRef = useRef(false);
   const loadAttemptedRef = useRef(false);
   const lastNotifiedRef = useRef<'ok' | 'violation' | 'loading'>('loading');
   const zeroCountRef = useRef(0);
   const multiCountRef = useRef(0);
+  const missingTrackCountRef = useRef(0);
+  const recoveryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const cameraStartInFlightRef = useRef<Promise<void> | null>(null);
+  const restartAttemptRef = useRef(0);
 
   const [detectorReady, setDetectorReady] = useState(false);
   const [modelError, setModelError] = useState<string | null>(null);
@@ -50,21 +51,35 @@ export const ProctoringComponent: React.FC<ProctoringComponentProps> = ({
     }
   };
 
-  const loadScript = (src: string, key: string) =>
+  const loadScript = (src: string, key: string, timeoutMs = 8000) =>
     new Promise<void>((resolve, reject) => {
-      const existing = document.querySelector(
-        `script[data-proctor="${key}"]`
-      ) as HTMLScriptElement | null;
-      if (existing) {
-        resolve();
-        return;
+      const existing = document.querySelector(`script[data-proctor="${key}"]`);
+      if (existing?.parentNode) {
+        existing.parentNode.removeChild(existing);
       }
+
       const s = document.createElement('script');
       s.src = src;
       s.async = true;
       s.setAttribute('data-proctor', key);
-      s.onload = () => resolve();
-      s.onerror = () => reject(new Error(`Failed to load ${src}`));
+
+      let settled = false;
+      const finish = (fn: () => void) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timeoutId);
+        s.onload = null;
+        s.onerror = null;
+        fn();
+      };
+
+      const timeoutId = setTimeout(
+        () => finish(() => reject(new Error(`Timed out loading ${src}`))),
+        timeoutMs
+      );
+
+      s.onload = () => finish(resolve);
+      s.onerror = () => finish(() => reject(new Error(`Failed to load ${src}`)));
       document.body.appendChild(s);
     });
 
@@ -100,25 +115,6 @@ export const ProctoringComponent: React.FC<ProctoringComponentProps> = ({
     }
   };
 
-  const initializeWebgazer = async (): Promise<boolean> => {
-    try {
-      if (!window.webgazer) {
-        await loadScript(WEBGAZER_URL, 'webgazer');
-      }
-      if (!window.webgazer) return false;
-      await window.webgazer.begin();
-      if (window.webgazer.showVideoPreview) window.webgazer.showVideoPreview(false);
-      if (window.webgazer.showFaceOverlay) window.webgazer.showFaceOverlay(false);
-      if (window.webgazer.showFaceFeedbackBox) window.webgazer.showFaceFeedbackBox(false);
-      webgazerStartedRef.current = true;
-      setEngine('webgazer');
-      return true;
-    } catch (e) {
-      console.warn('WebGazer init failed', e);
-      return false;
-    }
-  };
-
   const initializeDetector = async () => {
     setIsDetectorLoading(true);
     setModelError(null);
@@ -132,30 +128,21 @@ export const ProctoringComponent: React.FC<ProctoringComponentProps> = ({
         return;
       }
 
-      if (await initializeWebgazer()) {
-        setDetectorReady(true);
-        setIsDetectorLoading(false);
-        setModelError('Running WebGazer fallback mode');
-        setStatusSafe('ok');
-        return;
-      }
-
       if (window.FaceDetector) {
         nativeDetectorRef.current = new window.FaceDetector({
           fastMode: true,
           maxDetectedFaces: 4,
         });
         setEngine('native');
+        setModelError(null);
       } else {
         nativeDetectorRef.current = null;
         setEngine('lite');
+        setModelError('Running lightweight proctoring mode');
       }
 
       setDetectorReady(true);
       setIsDetectorLoading(false);
-      if (engine === 'lite') {
-        setModelError('Running lightweight proctoring mode');
-      }
       setStatusSafe('ok');
     } catch (error) {
       console.error('Failed to initialize proctoring detector', error);
@@ -177,79 +164,207 @@ export const ProctoringComponent: React.FC<ProctoringComponentProps> = ({
 
     return () => {
       clearTimeout(initTimer);
-      if (webgazerStartedRef.current && window.webgazer?.end) {
-        try {
-          window.webgazer.end();
-        } catch {
-          // ignore
-        }
+      if (recoveryTimerRef.current) {
+        clearTimeout(recoveryTimerRef.current);
+        recoveryTimerRef.current = null;
       }
-      webgazerStartedRef.current = false;
     };
   }, []);
 
-  const startVideo = async () => {
+  const clearRecoveryTimer = () => {
+    if (recoveryTimerRef.current) {
+      clearTimeout(recoveryTimerRef.current);
+      recoveryTimerRef.current = null;
+    }
+  };
+
+  const hasLiveTrack = () => {
+    const track = streamRef.current?.getVideoTracks?.()[0];
+    return !!track && track.readyState === 'live' && !track.muted;
+  };
+
+  const stopVideo = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => {
+        track.onended = null;
+        track.onmute = null;
+        track.onunmute = null;
+        track.stop();
+      });
+      streamRef.current = null;
+    }
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+  };
+
+  const startVideo = async (isRecovery = false) => {
+    if (hasLiveTrack()) {
+      setCameraError(null);
+      return;
+    }
+
+    if (cameraStartInFlightRef.current) {
+      await cameraStartInFlightRef.current;
+      return;
+    }
+
     if (!navigator.mediaDevices?.getUserMedia) {
       setCameraError('Camera API unavailable. Please use HTTPS and a supported browser.');
       setStatus('loading');
       return;
     }
 
-    try {
-      setCameraError(null);
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { width: 320, height: 240 },
-      });
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
+    const startPromise = (async () => {
+      try {
+        setCameraError(null);
+        setStatus('loading');
+        clearRecoveryTimer();
+
+        if (navigator.permissions?.query) {
+          try {
+            const permissionStatus = await navigator.permissions.query({ name: 'camera' as any });
+            if (permissionStatus.state === 'denied') {
+              setCameraError('Camera permission denied. Allow camera access and retry.');
+              return;
+            }
+          } catch {
+            // Some browsers do not support querying camera permission.
+          }
+        }
+
         try {
-          await videoRef.current.play();
+          const devices = await navigator.mediaDevices.enumerateDevices();
+          const hasVideoInput = devices.some((device) => device.kind === 'videoinput');
+          if (!hasVideoInput) {
+            setCameraError('No camera device found.');
+            return;
+          }
         } catch {
-          // Ignore play race errors; autoplay+muted+playsInline is set on the element.
+          // Continue; enumerateDevices can fail before permission grant in some browsers.
+        }
+
+        stopVideo();
+        const stream = await navigator.mediaDevices.getUserMedia({
+          audio: false,
+          video: {
+            facingMode: 'user',
+            width: { ideal: 640 },
+            height: { ideal: 480 },
+          },
+        });
+        const track = stream.getVideoTracks()[0];
+        if (track) {
+          track.onended = () => {
+            if (!isActive) return;
+            scheduleCameraRecovery('track ended');
+          };
+          track.onmute = () => {
+            if (!isActive) return;
+            scheduleCameraRecovery('track muted');
+          };
+          track.onunmute = () => {
+            setCameraError(null);
+            missingTrackCountRef.current = 0;
+          };
+        }
+
+        streamRef.current = stream;
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          try {
+            await videoRef.current.play();
+          } catch {
+            // Ignore play race errors; autoplay+muted+playsInline is set on the element.
+          }
+        }
+
+        restartAttemptRef.current = 0;
+        missingTrackCountRef.current = 0;
+        setCameraError(null);
+        if (detectorReady) {
+          setStatusSafe('ok');
+        }
+      } catch (err) {
+        console.error('Camera access failed:', err);
+        const errorName = err instanceof DOMException ? err.name : '';
+        if (errorName === 'NotAllowedError' || errorName === 'PermissionDeniedError') {
+          setCameraError('Camera permission denied. Allow camera access and retry.');
+        } else if (errorName === 'NotFoundError') {
+          setCameraError('No camera device found.');
+        } else if (errorName === 'NotReadableError' || errorName === 'TrackStartError') {
+          setCameraError('Camera is busy in another app/tab.');
+        } else if (errorName === 'SecurityError') {
+          setCameraError('Camera requires a secure (HTTPS) context.');
+        } else {
+          setCameraError('Unable to access camera.');
+        }
+
+        setStatus('loading');
+        if (
+          !isRecovery &&
+          errorName !== 'NotAllowedError' &&
+          errorName !== 'PermissionDeniedError'
+        ) {
+          scheduleCameraRecovery('initialization failure');
         }
       }
-      streamRef.current = stream;
-    } catch (err) {
-      console.error('Camera access denied:', err);
-      const errorName = err instanceof DOMException ? err.name : '';
-      if (errorName === 'NotAllowedError' || errorName === 'PermissionDeniedError') {
-        setCameraError('Camera permission denied. Allow camera access and retry.');
-      } else if (errorName === 'NotFoundError') {
-        setCameraError('No camera device found.');
-      } else if (errorName === 'NotReadableError' || errorName === 'TrackStartError') {
-        setCameraError('Camera is busy in another app/tab.');
-      } else if (errorName === 'SecurityError') {
-        setCameraError('Camera requires a secure (HTTPS) context.');
-      } else {
-        setCameraError('Unable to access camera.');
-      }
-      setStatus('loading');
+    })();
+
+    cameraStartInFlightRef.current = startPromise;
+    try {
+      await startPromise;
+    } finally {
+      cameraStartInFlightRef.current = null;
     }
   };
 
-  const stopVideo = () => {
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach((track) => track.stop());
-      streamRef.current = null;
-    }
+  const scheduleCameraRecovery = (reason: string) => {
+    if (!isActive || recoveryTimerRef.current) return;
+
+    restartAttemptRef.current += 1;
+    const delay = Math.min(3000, 300 * Math.pow(2, Math.min(restartAttemptRef.current, 3)));
+    setCameraError(`Camera stream interrupted (${reason}). Reconnecting...`);
+    setStatus('loading');
+
+    recoveryTimerRef.current = setTimeout(() => {
+      recoveryTimerRef.current = null;
+      void startVideo(true);
+    }, delay);
   };
 
   useEffect(() => {
-    let startTimer: ReturnType<typeof setTimeout> | null = null;
-    if (isActive && detectorReady) {
-      startTimer = setTimeout(() => {
-        void startVideo();
-      }, 0);
+    if (isActive) {
+      void startVideo();
     } else {
+      clearRecoveryTimer();
       stopVideo();
+      missingTrackCountRef.current = 0;
+      restartAttemptRef.current = 0;
+      setStatus('loading');
+      setCameraError(null);
     }
+
     return () => {
-      if (startTimer) {
-        clearTimeout(startTimer);
-      }
+      clearRecoveryTimer();
       stopVideo();
     };
-  }, [isActive, detectorReady]);
+  }, [isActive]);
+
+  useEffect(() => {
+    if (!isActive || !navigator.mediaDevices?.addEventListener) return;
+
+    const handleDeviceChange = () => {
+      if (!hasLiveTrack()) {
+        scheduleCameraRecovery('device change');
+      }
+    };
+
+    navigator.mediaDevices.addEventListener('devicechange', handleDeviceChange);
+    return () => {
+      navigator.mediaDevices.removeEventListener('devicechange', handleDeviceChange);
+    };
+  }, [isActive]);
 
   useEffect(() => {
     if (!isActive) return;
@@ -303,9 +418,14 @@ export const ProctoringComponent: React.FC<ProctoringComponentProps> = ({
 
       const track = streamRef.current?.getVideoTracks?.()[0];
       if (!track || track.readyState !== 'live' || track.muted) {
+        missingTrackCountRef.current += 1;
+        if (missingTrackCountRef.current >= 2) {
+          scheduleCameraRecovery('inactive track');
+        }
         setStatus('loading');
         return;
       }
+      missingTrackCountRef.current = 0;
 
       if (document.hidden || !document.hasFocus()) {
         setStatusSafe('violation');
@@ -319,21 +439,6 @@ export const ProctoringComponent: React.FC<ProctoringComponentProps> = ({
           return;
         } catch (err) {
           console.warn('MediaPipe detect failed, falling back to lite', err);
-          setEngine('lite');
-        }
-      }
-
-      if (engine === 'webgazer' && window.webgazer?.getCurrentPrediction) {
-        try {
-          const prediction = await window.webgazer.getCurrentPrediction();
-          if (!prediction && warmupComplete) {
-            setStatusSafe('violation');
-            return;
-          }
-          if (warmupComplete) setStatusSafe('ok');
-          return;
-        } catch (err) {
-          console.warn('WebGazer prediction failed, falling back to lite', err);
           setEngine('lite');
         }
       }

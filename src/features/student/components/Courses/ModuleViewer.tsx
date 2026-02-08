@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import mermaid from 'mermaid';
 import { labs } from '@data/labs';
 import {
@@ -57,6 +57,9 @@ interface ModuleViewerProps {
   onModuleStatusChange?: () => void;
 }
 
+const createAttemptId = (moduleId: string) =>
+  `${moduleId}-attempt-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
 export const ModuleViewer: React.FC<ModuleViewerProps> = ({
   courseId,
   moduleId,
@@ -90,8 +93,8 @@ export const ModuleViewer: React.FC<ModuleViewerProps> = ({
     enabled: !!user?.id,
   });
 
-  // Backend Proctoring Logging - Generate stable attemptId per module session
-  const attemptId = useMemo(() => `${moduleId}-attempt`, [moduleId]);
+  // Backend Proctoring Logging - unique attempt id per test session.
+  const [attemptId, setAttemptId] = useState(() => createAttemptId(moduleId));
   const { logEvent, requestFullscreen } = useProctoring({
     studentId: user?.id || 'anonymous',
     courseId,
@@ -104,6 +107,27 @@ export const ModuleViewer: React.FC<ModuleViewerProps> = ({
   const module: Module | undefined = (course?.course_modules ?? course?.modules ?? []).find(
     (m: Module) => m.id === moduleId
   );
+  const isAssessmentModule =
+    module?.type === 'initial_assessment' ||
+    module?.type === 'final_assessment' ||
+    moduleId === 'vu-final-exam';
+
+  const startTestSession = () => {
+    if (isAssessmentModule) {
+      setAttemptId(createAttemptId(moduleId));
+      setViolationCount(0);
+      setIsProctoringActive(true);
+    } else {
+      setIsProctoringActive(false);
+    }
+    setActiveTab('test');
+    setShowTest(true);
+  };
+
+  const stopTestSession = () => {
+    setShowTest(false);
+    setIsProctoringActive(false);
+  };
 
   // Calculate current context for AI Tutor
   const currentContext = {
@@ -182,11 +206,17 @@ export const ModuleViewer: React.FC<ModuleViewerProps> = ({
 
     const timer = setTimeout(() => {
       if (isModuleAssessment) {
-        setIsProctoringActive(true);
-        // If it's an assessment with no content/topics, we skip landing and go straight to test
-        if (!module?.content && (!module?.topics || module?.topics.length === 0)) {
-          setActiveTab('test');
-          setShowTest(true);
+        // Keep proctoring active if the user is already in an active test.
+        if (!showTest) {
+          setAttemptId(createAttemptId(moduleId));
+          setIsProctoringActive(false);
+          // If it's an assessment with no content/topics, we skip landing and go straight to test
+          if (!module?.content && (!module?.topics || module?.topics.length === 0)) {
+            setViolationCount(0);
+            setIsProctoringActive(true);
+            setActiveTab('test');
+            setShowTest(true);
+          }
         }
       } else {
         setIsProctoringActive(false);
@@ -196,7 +226,7 @@ export const ModuleViewer: React.FC<ModuleViewerProps> = ({
     }, 0);
 
     return () => clearTimeout(timer);
-  }, [module?.id, module?.type, module?.content, module?.topics]);
+  }, [module?.id, module?.type, module?.content, module?.topics, moduleId, showTest]);
 
   useEffect(() => {
     if (!isProctoringActive || !showTest) return;
@@ -378,7 +408,7 @@ export const ModuleViewer: React.FC<ModuleViewerProps> = ({
   };
 
   const handleTestCompletion = async (score: number, answers: number[]) => {
-    setShowTest(false);
+    stopTestSession();
     const passed = score >= 70 || module.type === 'initial_assessment';
 
     try {
@@ -443,7 +473,7 @@ export const ModuleViewer: React.FC<ModuleViewerProps> = ({
           moduleId={moduleId}
           moduleTitle={module.title}
           onComplete={handleTestCompletion}
-          onBack={() => setShowTest(false)}
+          onBack={stopTestSession}
           questions={module.quiz || []}
           isInitialAssessment={module.type === 'initial_assessment'}
         />
@@ -534,10 +564,7 @@ export const ModuleViewer: React.FC<ModuleViewerProps> = ({
     return content;
   };
 
-  const isAssessment =
-    module.type === 'initial_assessment' ||
-    module.type === 'final_assessment' ||
-    moduleId === 'vu-final-exam';
+  const isAssessment = isAssessmentModule;
 
   // Assessment Landing View (Special) - High Stakes / Diagnostic Home
   if (isAssessment && !module.completed && !showTest) {
@@ -623,7 +650,7 @@ export const ModuleViewer: React.FC<ModuleViewerProps> = ({
               <Button
                 size="lg"
                 className="group bg-primary text-primary-foreground shadow-primary/20 hover:shadow-primary/30 relative h-20 overflow-hidden rounded-2xl px-16 text-xl font-black shadow-2xl transition-all hover:scale-[1.02] active:scale-95"
-                onClick={() => setShowTest(true)}
+                onClick={startTestSession}
               >
                 <div className="absolute inset-0 -translate-x-full skew-x-12 bg-white/20 transition-transform duration-500 group-hover:translate-x-full" />
                 <span className="relative z-10 flex items-center gap-3">
@@ -899,7 +926,7 @@ export const ModuleViewer: React.FC<ModuleViewerProps> = ({
                             );
                             if (onModuleStatusChange) onModuleStatusChange();
                           }
-                          setShowTest(true);
+                          startTestSession();
                         }}
                       >
                         Proceed to Test
@@ -929,7 +956,7 @@ export const ModuleViewer: React.FC<ModuleViewerProps> = ({
                   </span>
                 </div>
               )}
-              <Button onClick={() => setShowTest(true)}>
+              <Button onClick={startTestSession}>
                 {module.testScore ? 'Retake Test' : 'Start Test'}
               </Button>
             </div>
@@ -948,7 +975,7 @@ export const ModuleViewer: React.FC<ModuleViewerProps> = ({
                   Take the assessment to complete this module.
                 </p>
               </div>
-              <Button onClick={() => setShowTest(true)}>Take Module Test</Button>
+              <Button onClick={startTestSession}>Take Module Test</Button>
             </div>
           </CardContent>
         </Card>
@@ -974,7 +1001,7 @@ export const ModuleViewer: React.FC<ModuleViewerProps> = ({
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <Button variant="outline" onClick={() => setShowTest(true)}>
+                <Button variant="outline" onClick={startTestSession}>
                   <CheckCircle className="mr-2 h-4 w-4" />
                   Retake Test
                 </Button>
