@@ -85,7 +85,7 @@ async function resolveTopics(rawTopics: unknown): Promise<{ title: string; conte
 // GET module content by ID
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string; moduleId: string }> }
+  { params }: { params: Promise<{ moduleId: string }> }
 ) {
   try {
     const { moduleId } = await params;

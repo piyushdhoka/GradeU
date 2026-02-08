@@ -144,17 +144,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, onTabChange }) => {
           )}
         </button>
 
-        {!isCollapsed && (
-          <button
-            type="button"
-            onClick={() => onTabChange('pricing')}
-            className="mb-3 flex w-full items-center justify-center gap-2 rounded border border-[#00FF88]/20 bg-[#00FF88]/10 px-3 py-2 text-xs font-bold tracking-wide text-[#00FF88] uppercase transition-all hover:bg-[#00FF88]/20"
-          >
-            <Shield className="h-3 w-3" />
-            Upgrade to Pro
-          </button>
-        )}
-
         <button
           type="button"
           onClick={async () => {
