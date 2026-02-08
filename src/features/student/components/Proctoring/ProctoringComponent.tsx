@@ -37,6 +37,7 @@ export const ProctoringComponent: React.FC<ProctoringComponentProps> = ({
 
   const [detectorReady, setDetectorReady] = useState(false);
   const [modelError, setModelError] = useState<string | null>(null);
+  const [cameraError, setCameraError] = useState<string | null>(null);
   const [isDetectorLoading, setIsDetectorLoading] = useState(true);
   const [status, setStatus] = useState<'ok' | 'violation' | 'loading'>('loading');
   const [engine, setEngine] = useState<Engine>('lite');
@@ -188,18 +189,41 @@ export const ProctoringComponent: React.FC<ProctoringComponentProps> = ({
   }, []);
 
   const startVideo = async () => {
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setCameraError('Camera API unavailable. Please use HTTPS and a supported browser.');
+      setStatus('loading');
+      return;
+    }
+
     try {
+      setCameraError(null);
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { width: 320, height: 240 },
       });
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
+        try {
+          await videoRef.current.play();
+        } catch {
+          // Ignore play race errors; autoplay+muted+playsInline is set on the element.
+        }
       }
       streamRef.current = stream;
     } catch (err) {
       console.error('Camera access denied:', err);
-      setModelError('Camera access blocked');
-      setStatusSafe('violation');
+      const errorName = err instanceof DOMException ? err.name : '';
+      if (errorName === 'NotAllowedError' || errorName === 'PermissionDeniedError') {
+        setCameraError('Camera permission denied. Allow camera access and retry.');
+      } else if (errorName === 'NotFoundError') {
+        setCameraError('No camera device found.');
+      } else if (errorName === 'NotReadableError' || errorName === 'TrackStartError') {
+        setCameraError('Camera is busy in another app/tab.');
+      } else if (errorName === 'SecurityError') {
+        setCameraError('Camera requires a secure (HTTPS) context.');
+      } else {
+        setCameraError('Unable to access camera.');
+      }
+      setStatus('loading');
     }
   };
 
@@ -279,7 +303,7 @@ export const ProctoringComponent: React.FC<ProctoringComponentProps> = ({
 
       const track = streamRef.current?.getVideoTracks?.()[0];
       if (!track || track.readyState !== 'live' || track.muted) {
-        setStatusSafe('violation');
+        setStatus('loading');
         return;
       }
 
@@ -397,16 +421,25 @@ export const ProctoringComponent: React.FC<ProctoringComponentProps> = ({
             playsInline
             className="h-full w-full scale-x-[-1] transform object-cover"
           />
-          {(!detectorReady || modelError) && (
+          {(!detectorReady || modelError || cameraError) && (
             <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 px-2 text-center text-xs text-white/70">
               <div>
-                {modelError ||
+                {cameraError ||
+                  modelError ||
                   (isDetectorLoading
                     ? 'Initializing proctoring...'
                     : 'Proctoring detector unavailable')}
               </div>
               <div className="text-[10px] text-white/40">Engine: {engine}</div>
-              {modelError && (
+              {cameraError ? (
+                <button
+                  type="button"
+                  className="rounded border border-white/20 px-2 py-1 text-[10px] hover:bg-white/10"
+                  onClick={() => void startVideo()}
+                >
+                  Enable Camera
+                </button>
+              ) : modelError ? (
                 <button
                   type="button"
                   className="rounded border border-white/20 px-2 py-1 text-[10px] hover:bg-white/10"
@@ -414,7 +447,7 @@ export const ProctoringComponent: React.FC<ProctoringComponentProps> = ({
                 >
                   Retry
                 </button>
-              )}
+              ) : null}
             </div>
           )}
         </div>
