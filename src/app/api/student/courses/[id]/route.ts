@@ -50,6 +50,88 @@ function topicTitleFromPath(path: string): string {
   return title || 'Topic';
 }
 
+function normalizeMarkdownName(value: string): string {
+  return decodeURIComponent(value)
+    .replace(/\.md$/i, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '');
+}
+
+function markdownTokens(value: string): Set<string> {
+  return new Set(
+    decodeURIComponent(value)
+      .replace(/\.md$/i, '')
+      .toLowerCase()
+      .split(/[^a-z0-9]+/g)
+      .filter((token) => token.length > 2)
+  );
+}
+
+function splitStoragePath(cleanPath: string): { folderPath: string; fileName: string } {
+  const slashIndex = cleanPath.lastIndexOf('/');
+  if (slashIndex < 0) return { folderPath: '', fileName: cleanPath };
+
+  return {
+    folderPath: cleanPath.slice(0, slashIndex),
+    fileName: cleanPath.slice(slashIndex + 1),
+  };
+}
+
+async function resolveFallbackMarkdownPath(cleanPath: string): Promise<string | null> {
+  if (!cleanPath.toLowerCase().endsWith('.md')) return null;
+
+  const { folderPath, fileName } = splitStoragePath(cleanPath);
+  const { data: files, error: listError } = await supabaseAdmin.storage
+    .from('courses')
+    .list(folderPath);
+
+  if (listError || !files?.length) {
+    return null;
+  }
+
+  const mdFiles = files.filter((file) => file.name.toLowerCase().endsWith('.md'));
+  if (!mdFiles.length) return null;
+
+  const requestedNameLower = fileName.toLowerCase();
+  const exactCaseInsensitive = mdFiles.find(
+    (file) => file.name.toLowerCase() === requestedNameLower
+  );
+  if (exactCaseInsensitive) {
+    return folderPath ? `${folderPath}/${exactCaseInsensitive.name}` : exactCaseInsensitive.name;
+  }
+
+  const normalizedRequested = normalizeMarkdownName(fileName);
+  const normalizedMatch = mdFiles.find(
+    (file) => normalizeMarkdownName(file.name) === normalizedRequested
+  );
+  if (normalizedMatch) {
+    return folderPath ? `${folderPath}/${normalizedMatch.name}` : normalizedMatch.name;
+  }
+
+  const fuzzyMatch = mdFiles.find((file) => {
+    const normalized = normalizeMarkdownName(file.name);
+    return normalized.includes(normalizedRequested) || normalizedRequested.includes(normalized);
+  });
+  if (fuzzyMatch) {
+    return folderPath ? `${folderPath}/${fuzzyMatch.name}` : fuzzyMatch.name;
+  }
+
+  const requestedTokens = markdownTokens(fileName);
+  let bestByToken: { name: string; score: number } | null = null;
+  for (const file of mdFiles) {
+    const fileTokens = markdownTokens(file.name);
+    let overlap = 0;
+    for (const token of fileTokens) {
+      if (requestedTokens.has(token)) overlap += 1;
+    }
+    if (overlap > 0 && (!bestByToken || overlap > bestByToken.score)) {
+      bestByToken = { name: file.name, score: overlap };
+    }
+  }
+
+  return bestByToken ? (folderPath ? `${folderPath}/${bestByToken.name}` : bestByToken.name) : null;
+}
+
 async function readMarkdownFromBucket(path: string): Promise<string> {
   const cleanPath = path.trim().replace(/^\/+/, '');
   if (!cleanPath) return '';
@@ -57,7 +139,30 @@ async function readMarkdownFromBucket(path: string): Promise<string> {
   const { data, error } = await supabaseAdmin.storage.from('courses').download(cleanPath);
 
   if (error || !data) {
-    console.error(`[courses/[id]] Failed to download markdown: ${cleanPath}`, error);
+    const fallbackPath = await resolveFallbackMarkdownPath(cleanPath);
+    if (fallbackPath && fallbackPath !== cleanPath) {
+      const { data: fallbackData, error: fallbackError } = await supabaseAdmin.storage
+        .from('courses')
+        .download(fallbackPath);
+
+      if (!fallbackError && fallbackData) {
+        try {
+          console.warn(
+            `[courses/[id]] Using fallback markdown path "${fallbackPath}" for requested "${cleanPath}"`
+          );
+          return await fallbackData.text();
+        } catch (fallbackTextError) {
+          console.warn(
+            `[courses/[id]] Failed to decode fallback markdown "${fallbackPath}":`,
+            fallbackTextError
+          );
+        }
+      }
+    }
+
+    console.warn(
+      `[courses/[id]] Failed to download markdown "${cleanPath}": ${error?.message || 'Unknown storage error'}`
+    );
     return '';
   }
 
