@@ -1,14 +1,10 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import Link from 'next/link';
-import { AboutUsModal, ContactUsModal } from './BrandModals';
-import { Github, Twitter, Linkedin, ExternalLink } from 'lucide-react';
+import { Github, Twitter, Linkedin } from 'lucide-react';
 
 export const LandingFooter: React.FC = () => {
-  const [isAboutOpen, setIsAboutOpen] = useState(false);
-  const [isContactOpen, setIsContactOpen] = useState(false);
-
   return (
     <div className="relative z-20 border-t border-zinc-900 bg-black pt-16 pb-8">
       <div className="mx-auto max-w-7xl px-6">
@@ -54,20 +50,14 @@ export const LandingFooter: React.FC = () => {
             </h4>
             <ul className="space-y-4 text-sm text-zinc-500">
               <li>
-                <button
-                  onClick={() => setIsAboutOpen(true)}
-                  className="hover:text-brand-400 transition-colors"
-                >
+                <Link href="/about" className="hover:text-brand-400 transition-colors">
                   About Us
-                </button>
+                </Link>
               </li>
               <li>
-                <button
-                  onClick={() => setIsContactOpen(true)}
-                  className="hover:text-brand-400 transition-colors"
-                >
-                  Contact Support
-                </button>
+                <Link href="/contact" className="hover:text-brand-400 transition-colors">
+                  Contact Us
+                </Link>
               </li>
               <li>
                 <Link href="/courses" className="hover:text-brand-400 transition-colors">
@@ -94,6 +84,11 @@ export const LandingFooter: React.FC = () => {
               <li>
                 <Link href="/privacy" className="hover:text-brand-400 transition-colors">
                   Privacy Policy
+                </Link>
+              </li>
+              <li>
+                <Link href="/disclaimer" className="hover:text-brand-400 transition-colors">
+                  Disclaimer
                 </Link>
               </li>
               <li>
@@ -152,9 +147,6 @@ export const LandingFooter: React.FC = () => {
           </div>
         </div>
       </div>
-
-      <AboutUsModal isOpen={isAboutOpen} onClose={() => setIsAboutOpen(false)} />
-      <ContactUsModal isOpen={isContactOpen} onClose={() => setIsContactOpen(false)} />
     </div>
   );
 };

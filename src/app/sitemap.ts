@@ -31,6 +31,42 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.8,
     },
     {
+      url: `${baseUrl}/videos`,
+      lastModified,
+      changeFrequency: 'weekly',
+      priority: 0.7,
+    },
+    {
+      url: `${baseUrl}/about`,
+      lastModified,
+      changeFrequency: 'monthly',
+      priority: 0.7,
+    },
+    {
+      url: `${baseUrl}/contact`,
+      lastModified,
+      changeFrequency: 'monthly',
+      priority: 0.7,
+    },
+    {
+      url: `${baseUrl}/privacy`,
+      lastModified,
+      changeFrequency: 'monthly',
+      priority: 0.5,
+    },
+    {
+      url: `${baseUrl}/terms`,
+      lastModified,
+      changeFrequency: 'monthly',
+      priority: 0.5,
+    },
+    {
+      url: `${baseUrl}/disclaimer`,
+      lastModified,
+      changeFrequency: 'monthly',
+      priority: 0.5,
+    },
+    {
       url: `${baseUrl}/login`,
       lastModified,
       changeFrequency: 'monthly',
@@ -41,12 +77,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
       lastModified,
       changeFrequency: 'monthly',
       priority: 0.5,
-    },
-    {
-      url: `${baseUrl}/videos`,
-      lastModified,
-      changeFrequency: 'weekly',
-      priority: 0.7,
     },
   ];
 }
