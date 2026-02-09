@@ -17,8 +17,8 @@ type Props = {
 
 // Configuration
 const FRAME_INTERVAL_MS = 100; // 10 FPS
-const NO_FACE_FRAMES_BEFORE_VIOLATION = 10; // ~1 second
-const MULTI_FACE_FRAMES_BEFORE_VIOLATION = 5; // ~0.5 second
+const NO_FACE_FRAMES_BEFORE_VIOLATION = 4; // ~0.3 second (reduced from 10)
+const MULTI_FACE_FRAMES_BEFORE_VIOLATION = 4; // ~0.3 second (reduced from 5)
 
 export const Proctoring: React.FC<Props> = ({
   mediaStream,
@@ -48,6 +48,7 @@ export const Proctoring: React.FC<Props> = ({
 
   const mountedRef = useRef(true);
   const lastWindowEventTsRef = useRef<number>(0);
+  const lastViolationTsRef = useRef<number>(0); // NEW: Grace period tracking
 
   const pushLog = useCallback((msg: string) => {
     console.log(`[Proctoring] ${msg}`);
@@ -58,6 +59,13 @@ export const Proctoring: React.FC<Props> = ({
     (reason: string) => {
       // Don't increment if already terminated
       if (terminatedRef.current) return;
+
+      // Grace period check (3 seconds)
+      const now = Date.now();
+      if (now - lastViolationTsRef.current < 3000) {
+        return;
+      }
+      lastViolationTsRef.current = now;
 
       violationCountRef.current += 1;
       const count = violationCountRef.current;
@@ -228,6 +236,13 @@ export const Proctoring: React.FC<Props> = ({
 
         // Only check violations if not terminated
         if (!terminatedRef.current) {
+          // Skip check during grace period
+          if (Date.now() - lastViolationTsRef.current < 3000) {
+            noFaceCountRef.current = 0;
+            multiFaceCountRef.current = 0;
+            return;
+          }
+
           if (faceCount === 0) {
             noFaceCountRef.current += 1;
             multiFaceCountRef.current = 0;

@@ -194,20 +194,16 @@ export const ModuleViewer: React.FC<ModuleViewerProps> = ({
         : module?.content || '',
   };
 
-  const handleProctoringViolation = async (status: 'ok' | 'violation') => {
+  const handleProctoringViolation = async (status: 'ok' | 'violation', engineCount?: number) => {
     if (status === 'violation' && isProctoringActive) {
-      logEvent('face-violation', { count: violationCount + 1 });
-      const isFinalExam =
-        moduleId === 'vu-final-exam' ||
-        module?.type === 'final_assessment' ||
-        module?.type === 'initial_assessment';
-      const maxWarnings = 3;
-      const lockoutThreshold = maxWarnings + 1; // End exam on 4th violation (remaining reaches 0)
-      const nextViolationCount = violationCount + 1;
-      const remainingWarnings = lockoutThreshold - nextViolationCount;
+      const currentCount = engineCount !== undefined ? engineCount : violationCount + 1;
+      logEvent('face-violation', { count: currentCount });
+      setViolationCount(currentCount);
 
-      if (nextViolationCount < lockoutThreshold) {
-        setViolationCount(nextViolationCount);
+      const maxWarnings = 3;
+      const remainingWarnings = maxWarnings - currentCount;
+
+      if (currentCount < maxWarnings) {
         alert(
           `PROCTORING WARNING: Suspicious activity detected! You have ${remainingWarnings} warnings remaining.`
         );
@@ -215,7 +211,6 @@ export const ModuleViewer: React.FC<ModuleViewerProps> = ({
         console.warn('Proctoring Violation - Locking out!');
         setIsProctoringActive(false);
         setShowTest(false);
-        setViolationCount(0);
 
         try {
           const lockedUntil = new Date();
@@ -245,9 +240,15 @@ export const ModuleViewer: React.FC<ModuleViewerProps> = ({
               `PROCTORING VIOLATION: Test has been locked for ${durationText} due to suspicious activity.`
             );
             onBack();
+          } else {
+            // Default alert for non-VU students or missing email
+            alert('❌ Examination terminated due to persistent proctoring violations (3/3).');
+            onBack();
           }
         } catch (e) {
           console.error('Lockout failed', e);
+          alert('❌ Examination terminated due to proctoring violations.');
+          onBack();
         }
       }
     }
@@ -543,8 +544,9 @@ export const ModuleViewer: React.FC<ModuleViewerProps> = ({
           mediaStream={mediaStream}
           enabled={isProctoringActive}
           onViolation={(count, reason) => {
-            setViolationCount(count);
             console.log(`🚨 Violation: ${reason} (${count}/${3})`);
+            // Pass the count directly from the engine to ensure accuracy
+            void handleProctoringViolation('violation', count);
           }}
           onEndExam={() => {
             console.log('❌ Exam terminated - stopping camera');
@@ -555,17 +557,9 @@ export const ModuleViewer: React.FC<ModuleViewerProps> = ({
             }
             setIsProctoringActive(false);
             setShowTest(false);
-            // Single notification at the end
-            setTimeout(() => {
-              alert('❌ Exam terminated due to proctoring violations (3/3)');
-            }, 100);
           }}
           onStatusChange={(status) => {
             console.log('Proctoring status:', status);
-          }}
-          onViolationWarning={(reason, count, threshold) => {
-            console.log(`⚠️ Warning: ${reason} (${count}/${threshold})`);
-            // Show single toast-style notification (non-blocking would be better)
           }}
           threshold={3}
         />
