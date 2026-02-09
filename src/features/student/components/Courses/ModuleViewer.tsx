@@ -34,7 +34,7 @@ import { Button } from '@components/ui/button';
 import { Skeleton } from '@components/ui/skeleton';
 import { cn } from '@lib/utils';
 import { useCourseStore } from '@shared/stores/useCourseStore';
-
+import { CertificateModal } from '../Certificates/CertificateModal';
 mermaid.initialize({
   startOnLoad: false,
   theme: 'base',
@@ -82,6 +82,7 @@ export const ModuleViewer: React.FC<ModuleViewerProps> = ({
 
   // Proctoring State
   const [isProctoringActive, setIsProctoringActive] = useState(false);
+  const [isEngineReady, setIsEngineReady] = useState(false);
   const [violationCount, setViolationCount] = useState(0);
   const videoRef = React.useRef<HTMLVideoElement>(null);
   const [mediaStream, setMediaStream] = React.useState<MediaStream | null>(null);
@@ -151,7 +152,11 @@ export const ModuleViewer: React.FC<ModuleViewerProps> = ({
   const startTestSession = () => {
     console.log('startTestSession called, isAssessmentModule:', isAssessmentModule);
     if (isAssessmentModule) {
-      setAttemptId(createAttemptId(moduleId));
+      const newAttemptId = createAttemptId(moduleId);
+      setAttemptId(newAttemptId);
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem(`proctor_attempt_${moduleId}`, newAttemptId);
+      }
       setViolationCount(0);
       // Show camera setup screen first
       console.log('Showing camera setup');
@@ -246,18 +251,19 @@ export const ModuleViewer: React.FC<ModuleViewerProps> = ({
               moduleId === 'vu-final-exam' || module?.type === 'final_assessment'
                 ? '3 hours'
                 : '1 hour';
-            alert(
-              `PROCTORING VIOLATION: Test has been locked for ${durationText} due to suspicious activity.`
-            );
+            toast.error('Test Locked', {
+              description: `Test has been locked for ${durationText} due to suspicious activity.`,
+            });
             onBack();
           } else {
-            // Default alert for non-VU students or missing email
-            alert('❌ Examination terminated due to persistent proctoring violations (3/3).');
+            toast.error('Examination Terminated', {
+              description: 'Persistent proctoring violations detected (3/3).',
+            });
             onBack();
           }
         } catch (e) {
           console.error('Lockout failed', e);
-          alert('❌ Examination terminated due to proctoring violations.');
+          toast.error('Examination terminated due to proctoring violations.');
           onBack();
         }
       }
@@ -408,7 +414,7 @@ export const ModuleViewer: React.FC<ModuleViewerProps> = ({
           message += 'Prerequisites not met.';
         }
 
-        alert(message);
+        toast.info(message);
         return;
       }
 
@@ -440,7 +446,7 @@ export const ModuleViewer: React.FC<ModuleViewerProps> = ({
           if (response.ok) {
             const experienceData = await response.json();
             if (!experienceData.canComplete) {
-              alert(`Cannot complete module: ${experienceData.reason}`);
+              toast.error('Cannot Complete Module', { description: experienceData.reason });
               return;
             }
           }
@@ -477,6 +483,10 @@ export const ModuleViewer: React.FC<ModuleViewerProps> = ({
 
   const handleTestCompletion = async (score: number, answers: number[]) => {
     stopTestSession();
+    // Clear proctoring attempt ID on successful completion
+    if (typeof window !== 'undefined') {
+      sessionStorage.removeItem(`proctor_attempt_${moduleId}`);
+    }
     const passed = score >= 70 || module.type === 'initial_assessment';
 
     try {
@@ -536,7 +546,13 @@ export const ModuleViewer: React.FC<ModuleViewerProps> = ({
 
   // Show camera setup before test
   if (showCameraSetup) {
-    return <CameraSetup onCameraReady={handleCameraReady} onCancel={handleCameraSetupCancel} />;
+    return (
+      <CameraSetup
+        onCameraReady={handleCameraReady}
+        onCancel={handleCameraSetupCancel}
+        isEngineReady={isEngineReady}
+      />
+    );
   }
 
   if (showTest) {
@@ -549,29 +565,6 @@ export const ModuleViewer: React.FC<ModuleViewerProps> = ({
           onBack={stopTestSession}
           questions={module.quiz || []}
           isInitialAssessment={module.type === 'initial_assessment'}
-        />
-        <Proctoring
-          mediaStream={mediaStream}
-          enabled={isProctoringActive}
-          onViolation={(count, reason) => {
-            console.log(`🚨 Violation: ${reason} (${count}/${3})`);
-            // Pass the count directly from the engine to ensure accuracy
-            void handleProctoringViolation('violation', count);
-          }}
-          onEndExam={() => {
-            console.log('❌ Exam terminated - stopping camera');
-            // Stop camera immediately
-            if (mediaStream) {
-              mediaStream.getTracks().forEach((track) => track.stop());
-              setMediaStream(null);
-            }
-            setIsProctoringActive(false);
-            setShowTest(false);
-          }}
-          onStatusChange={(status) => {
-            console.log('Proctoring status:', status);
-          }}
-          threshold={3}
         />
         <ProctoringVideoFeed mediaStream={mediaStream} isActive={isProctoringActive} />
       </>
@@ -1046,7 +1039,34 @@ export const ModuleViewer: React.FC<ModuleViewerProps> = ({
         />
       )}
 
-      {/* Proctoring component is rendered inside the showTest block above */}
+      {/* Proctoring Engine (Single Instance) */}
+      {(isProctoringActive || showCameraSetup || showTest) && (
+        <Proctoring
+          mediaStream={mediaStream}
+          enabled={isProctoringActive || showCameraSetup}
+          onViolation={(count, reason) => {
+            console.log(`🚨 Violation: ${reason} (${count}/${3})`);
+            void handleProctoringViolation('violation', count);
+          }}
+          onEndExam={() => {
+            console.log('❌ Exam terminated - stopping camera');
+            if (mediaStream) {
+              mediaStream.getTracks().forEach((track) => track.stop());
+              setMediaStream(null);
+            }
+            setIsProctoringActive(false);
+            setShowTest(false);
+          }}
+          onStatusChange={(status) => {
+            setIsEngineReady(status === 'ready');
+            if (status === 'error' && showCameraSetup) {
+              toast.error('AI Proctoring failed to initialize. Please check your connection.');
+            }
+          }}
+          threshold={3}
+        />
+      )}
+
       {/* AI Tutor Chat Widget */}
       <AiTutorChat context={currentContext} />
     </div>

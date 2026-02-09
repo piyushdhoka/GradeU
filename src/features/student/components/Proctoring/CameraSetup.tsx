@@ -6,9 +6,14 @@ import { Card, CardContent } from '@shared/components/ui/card';
 interface CameraSetupProps {
   onCameraReady: (stream: MediaStream) => void;
   onCancel: () => void;
+  isEngineReady?: boolean;
 }
 
-export const CameraSetup: React.FC<CameraSetupProps> = ({ onCameraReady, onCancel }) => {
+export const CameraSetup: React.FC<CameraSetupProps> = ({
+  onCameraReady,
+  onCancel,
+  isEngineReady = true,
+}) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -145,10 +150,16 @@ export const CameraSetup: React.FC<CameraSetupProps> = ({ onCameraReady, onCance
               </Button>
               <Button
                 onClick={handleProceed}
-                disabled={!cameraReady || !!error}
+                disabled={!cameraReady || !!error || !isEngineReady}
                 className="min-w-[150px]"
               >
-                {error ? 'Try Again' : cameraReady ? 'Start Exam' : 'Initializing...'}
+                {error
+                  ? 'Try Again'
+                  : !isEngineReady
+                    ? 'Loading AI...'
+                    : cameraReady
+                      ? 'Start Exam'
+                      : 'Initializing...'}
               </Button>
             </div>
           </div>

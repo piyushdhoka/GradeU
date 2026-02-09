@@ -73,6 +73,8 @@ export const useProctoring = ({ studentId, courseId, attemptId, enabled }: Proct
     const handleFullscreenChange = () => {
       if (!document.fullscreenElement) {
         logEvent('exit_fullscreen');
+        // Do not force back automatically as it can be annoying,
+        // but it is logged for the teacher to review.
       }
     };
 
