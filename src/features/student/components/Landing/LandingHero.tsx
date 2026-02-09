@@ -26,8 +26,8 @@ export const LandingHero: React.FC = () => {
       {/* Background elements */}
       <div className="pointer-events-none absolute inset-0">
         <div className="absolute top-0 left-0 h-full w-full bg-[#0a0a0b]" />
-        <div className="absolute top-1/4 left-1/2 h-[500px] w-[500px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-emerald-500/5 blur-[120px]" />
-        <div className="absolute right-0 bottom-0 h-[400px] w-[400px] rounded-full bg-brand-400/5 blur-[100px]" />
+        <div className="absolute top-1/4 left-1/2 h-[500px] w-[500px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-emerald-500/[0.08] blur-[120px]" />
+        <div className="bg-brand-400/[0.08] absolute right-0 bottom-0 h-[400px] w-[400px] rounded-full blur-[100px]" />
       </div>
 
       {/* Left Illustration */}
@@ -72,7 +72,7 @@ export const LandingHero: React.FC = () => {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
-          className="text-brand-400 mb-8 inline-flex items-center gap-2 rounded-full border border-brand-400/20 bg-brand-400/5 px-5 py-2 text-xs font-bold tracking-widest uppercase backdrop-blur-sm"
+          className="text-brand-400 border-brand-400/20 bg-brand-400/5 mb-8 inline-flex items-center gap-2 rounded-full border px-5 py-2 text-xs font-bold tracking-widest uppercase backdrop-blur-sm"
         >
           <Sparkles className="h-3.5 w-3.5" />
           <span>Better than Coursera</span>
@@ -114,7 +114,7 @@ export const LandingHero: React.FC = () => {
         >
           <button
             onClick={handleGetStarted}
-            className="group bg-brand-400 hover:bg-brand-500 relative flex items-center gap-3 rounded-full px-8 py-4 text-lg font-bold text-black shadow-lg shadow-brand-400/20 transition-all hover:scale-105 hover:shadow-brand-400/30 active:scale-95"
+            className="group bg-brand-400 hover:bg-brand-500 shadow-brand-400/20 hover:shadow-brand-400/30 relative flex items-center gap-3 rounded-full px-8 py-4 text-lg font-bold text-black shadow-lg transition-all hover:scale-105 active:scale-95"
           >
             <span>{user ? 'Access Dashboard' : 'Start Learning Free'}</span>
             <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
@@ -138,8 +138,8 @@ export const LandingHero: React.FC = () => {
           className="mt-16 grid w-full max-w-2xl grid-cols-3 gap-6 border-t border-zinc-800/50 pt-8"
         >
           <div className="flex flex-col items-center gap-2">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-400/10">
-              <BookOpen className="h-5 w-5 text-brand-400" />
+            <div className="bg-brand-400/10 flex h-10 w-10 items-center justify-center rounded-xl">
+              <BookOpen className="text-brand-400 h-5 w-5" />
             </div>
             <span className="text-2xl font-bold text-white">20+</span>
             <span className="text-xs font-medium text-zinc-500">Courses</span>

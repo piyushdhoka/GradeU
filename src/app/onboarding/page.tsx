@@ -4,7 +4,18 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@context/AuthContext';
 import { supabase } from '@lib/supabase';
 import { useRouter } from 'next/navigation';
-import { Shield, User, Phone, Mail, GraduationCap, Building2, Loader2, CheckCircle2, ArrowRight, ArrowLeft } from 'lucide-react';
+import {
+  Shield,
+  User,
+  Phone,
+  Mail,
+  GraduationCap,
+  Building2,
+  Loader2,
+  CheckCircle2,
+  ArrowRight,
+  ArrowLeft,
+} from 'lucide-react';
 import {
   Card,
   CardHeader,
@@ -245,13 +256,14 @@ export default function OnboardingPage() {
                       setError(null);
                     }
                   }}
-                  className={`flex items-center gap-2 rounded-full px-4 py-2 text-xs font-medium transition-all ${
+                  className={[
+                    'flex items-center gap-2 rounded-full px-4 py-2 text-xs font-medium transition-all',
                     isCurrent
                       ? 'border border-emerald-500/30 bg-emerald-500/10 text-emerald-400'
                       : isCompleted
-                        ? 'border border-emerald-500/20 bg-emerald-500/5 text-emerald-500/70 cursor-pointer hover:bg-emerald-500/10'
-                        : 'border border-zinc-800 bg-zinc-900/50 text-zinc-600'
-                  }`}
+                        ? 'cursor-pointer border border-emerald-500/20 bg-emerald-500/5 text-emerald-500/70 hover:bg-emerald-500/10'
+                        : 'border border-zinc-800 bg-zinc-900/50 text-zinc-600',
+                  ].join(' ')}
                 >
                   {isCompleted ? (
                     <CheckCircle2 className="h-3.5 w-3.5" />
