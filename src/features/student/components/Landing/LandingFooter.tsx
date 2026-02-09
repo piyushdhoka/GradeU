@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Github, Twitter, Linkedin } from 'lucide-react';
+import { Github, Twitter, Linkedin, ArrowUpRight } from 'lucide-react';
 
 export const LandingFooter: React.FC = () => {
   return (
@@ -19,53 +19,55 @@ export const LandingFooter: React.FC = () => {
             </div>
             <p className="mb-8 max-w-sm text-sm leading-relaxed text-zinc-500">
               Empowering the next generation of technical experts through immersive labs, AI-driven
-              diagnostic tools, and proctored academic excellence. Bridging the gap between theory
-              and industry.
+              diagnostic tools, and proctored academic excellence.
             </p>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
               <a
                 href="https://twitter.com/GradeU_Edu"
                 target="_blank"
-                className="hover:text-brand-400 text-zinc-600 transition-colors"
+                className="flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-800 bg-zinc-900/50 text-zinc-500 transition-all hover:border-zinc-700 hover:text-brand-400"
               >
-                <Twitter size={20} />
+                <Twitter size={16} />
               </a>
               <a
                 href="https://github.com/gradeu-org"
                 target="_blank"
-                className="hover:text-brand-400 text-zinc-600 transition-colors"
+                className="flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-800 bg-zinc-900/50 text-zinc-500 transition-all hover:border-zinc-700 hover:text-brand-400"
               >
-                <Github size={20} />
+                <Github size={16} />
               </a>
-              <a href="#" className="hover:text-brand-400 text-zinc-600 transition-colors">
-                <Linkedin size={20} />
+              <a
+                href="#"
+                className="flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-800 bg-zinc-900/50 text-zinc-500 transition-all hover:border-zinc-700 hover:text-brand-400"
+              >
+                <Linkedin size={16} />
               </a>
             </div>
           </div>
 
           {/* Product Column */}
           <div>
-            <h4 className="mb-6 text-sm font-bold tracking-widest text-white uppercase">
+            <h4 className="mb-6 text-xs font-bold tracking-widest text-zinc-400 uppercase">
               Platform
             </h4>
-            <ul className="space-y-4 text-sm text-zinc-500">
+            <ul className="space-y-3.5 text-sm text-zinc-500">
               <li>
-                <Link href="/about" className="hover:text-brand-400 transition-colors">
+                <Link href="/about" className="hover:text-brand-400 inline-flex items-center gap-1 transition-colors">
                   About Us
                 </Link>
               </li>
               <li>
-                <Link href="/contact" className="hover:text-brand-400 transition-colors">
+                <Link href="/contact" className="hover:text-brand-400 inline-flex items-center gap-1 transition-colors">
                   Contact Us
                 </Link>
               </li>
               <li>
-                <Link href="/courses" className="hover:text-brand-400 transition-colors">
+                <Link href="/courses" className="hover:text-brand-400 inline-flex items-center gap-1 transition-colors">
                   Explore Courses
                 </Link>
               </li>
               <li>
-                <Link href="/labs" className="hover:text-brand-400 transition-colors">
+                <Link href="/labs" className="hover:text-brand-400 inline-flex items-center gap-1 transition-colors">
                   Hands-on Labs
                 </Link>
               </li>
@@ -74,8 +76,8 @@ export const LandingFooter: React.FC = () => {
 
           {/* Resources Column */}
           <div>
-            <h4 className="mb-6 text-sm font-bold tracking-widest text-white uppercase">Legal</h4>
-            <ul className="space-y-4 text-sm text-zinc-500">
+            <h4 className="mb-6 text-xs font-bold tracking-widest text-zinc-400 uppercase">Legal</h4>
+            <ul className="space-y-3.5 text-sm text-zinc-500">
               <li>
                 <Link href="/terms" className="hover:text-brand-400 transition-colors">
                   Terms of Service
@@ -101,16 +103,17 @@ export const LandingFooter: React.FC = () => {
 
           {/* Newsletter / CTA */}
           <div className="flex flex-col gap-6">
-            <div className="rounded-3xl border border-zinc-800 bg-zinc-900/50 p-6">
+            <div className="rounded-2xl border border-zinc-800 bg-gradient-to-b from-zinc-900/80 to-zinc-900/30 p-6">
               <h4 className="mb-2 text-xs font-bold tracking-widest text-white uppercase">
                 Ready to start?
               </h4>
-              <p className="mb-4 text-xs text-zinc-500">
+              <p className="mb-4 text-xs leading-relaxed text-zinc-500">
                 Join 2000+ students mastering technical skills.
               </p>
               <Link href="/login">
-                <button className="bg-brand-400 hover:bg-brand-500 w-full rounded-xl py-3 text-xs font-black tracking-widest text-black uppercase transition-all">
+                <button className="bg-brand-400 hover:bg-brand-500 flex w-full items-center justify-center gap-2 rounded-xl py-3 text-xs font-black tracking-widest text-black uppercase transition-all">
                   Get Started
+                  <ArrowUpRight className="h-3.5 w-3.5" />
                 </button>
               </Link>
             </div>

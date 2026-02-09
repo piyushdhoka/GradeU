@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowRight, Sparkles } from 'lucide-react';
+import { ArrowRight, Sparkles, BookOpen, Terminal, Brain } from 'lucide-react';
 import { useAuth } from '@context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
@@ -22,10 +22,12 @@ export const LandingHero: React.FC = () => {
   };
 
   return (
-    <section className="relative flex min-h-[85vh] flex-col items-center justify-center overflow-hidden bg-black px-6 pt-12 pb-12 lg:h-[90vh]">
-      {/* Background elements - Clean */}
+    <section className="relative flex min-h-[85vh] flex-col items-center justify-center overflow-hidden bg-black px-6 pt-16 pb-16 lg:h-[90vh]">
+      {/* Background elements */}
       <div className="pointer-events-none absolute inset-0">
         <div className="absolute top-0 left-0 h-full w-full bg-[#0a0a0b]" />
+        <div className="absolute top-1/4 left-1/2 h-[500px] w-[500px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-emerald-500/5 blur-[120px]" />
+        <div className="absolute right-0 bottom-0 h-[400px] w-[400px] rounded-full bg-brand-400/5 blur-[100px]" />
       </div>
 
       {/* Left Illustration */}
@@ -36,7 +38,6 @@ export const LandingHero: React.FC = () => {
         className="pointer-events-none absolute top-[25%] left-[2%] z-0 hidden md:block lg:top-[30%] lg:left-[5%]"
       >
         <div className="relative">
-          {/* Removed bg-brand-400/20 blur */}
           <Image
             src="/science-l.svg"
             alt="Science"
@@ -55,7 +56,6 @@ export const LandingHero: React.FC = () => {
         className="pointer-events-none absolute right-[2%] bottom-[15%] z-0 hidden md:block lg:right-[5%] lg:bottom-[20%]"
       >
         <div className="relative">
-          {/* Removed bg-white/5 blur */}
           <Image
             src="/cap-l.svg"
             alt="Education"
@@ -72,7 +72,7 @@ export const LandingHero: React.FC = () => {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
-          className="text-brand-400 mb-8 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs font-bold tracking-widest uppercase"
+          className="text-brand-400 mb-8 inline-flex items-center gap-2 rounded-full border border-brand-400/20 bg-brand-400/5 px-5 py-2 text-xs font-bold tracking-widest uppercase backdrop-blur-sm"
         >
           <Sparkles className="h-3.5 w-3.5" />
           <span>Better than Coursera</span>
@@ -110,15 +110,54 @@ export const LandingHero: React.FC = () => {
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.3 }}
-          className="mt-8 flex flex-col items-center gap-4"
+          className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:gap-4"
         >
           <button
             onClick={handleGetStarted}
-            className="group bg-brand-400 hover:bg-brand-500 relative flex items-center gap-3 rounded-full px-8 py-4 text-lg font-bold text-black shadow-lg transition-all hover:scale-105 active:scale-95"
+            className="group bg-brand-400 hover:bg-brand-500 relative flex items-center gap-3 rounded-full px-8 py-4 text-lg font-bold text-black shadow-lg shadow-brand-400/20 transition-all hover:scale-105 hover:shadow-brand-400/30 active:scale-95"
           >
             <span>{user ? 'Access Dashboard' : 'Start Learning Free'}</span>
             <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
           </button>
+          <button
+            onClick={() => {
+              const el = document.getElementById('features');
+              if (el) el.scrollIntoView({ behavior: 'smooth' });
+            }}
+            className="flex items-center gap-2 rounded-full border border-zinc-700 px-6 py-4 text-sm font-medium text-zinc-300 transition-all hover:border-zinc-500 hover:text-white"
+          >
+            See how it works
+          </button>
+        </motion.div>
+
+        {/* Stats row */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.5 }}
+          className="mt-16 grid w-full max-w-2xl grid-cols-3 gap-6 border-t border-zinc-800/50 pt-8"
+        >
+          <div className="flex flex-col items-center gap-2">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-400/10">
+              <BookOpen className="h-5 w-5 text-brand-400" />
+            </div>
+            <span className="text-2xl font-bold text-white">20+</span>
+            <span className="text-xs font-medium text-zinc-500">Courses</span>
+          </div>
+          <div className="flex flex-col items-center gap-2">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/10">
+              <Terminal className="h-5 w-5 text-emerald-400" />
+            </div>
+            <span className="text-2xl font-bold text-white">50+</span>
+            <span className="text-xs font-medium text-zinc-500">Practice Labs</span>
+          </div>
+          <div className="flex flex-col items-center gap-2">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-500/10">
+              <Brain className="h-5 w-5 text-violet-400" />
+            </div>
+            <span className="text-2xl font-bold text-white">AI</span>
+            <span className="text-xs font-medium text-zinc-500">Powered Tutor</span>
+          </div>
         </motion.div>
 
         <motion.div

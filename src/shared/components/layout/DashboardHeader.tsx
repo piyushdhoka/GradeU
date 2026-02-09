@@ -37,14 +37,15 @@ export function DashboardHeader({ activeTab, onTabChange }: DashboardHeaderProps
       case 'courses':
         return 'Courses';
       case 'labs':
-        return 'Labs';
+        return 'Practice Labs';
       case 'community':
         return 'Community';
       case 'videos':
-        return 'Videos';
+        return 'Lessons';
       case 'profile':
         return 'Profile';
-
+      case 'certificates':
+        return 'Certificates';
       default:
         return tab.charAt(0).toUpperCase() + tab.slice(1);
     }

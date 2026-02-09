@@ -8,6 +8,8 @@ import {
   LogOut,
   ChevronRight,
   Bug,
+  MessageSquare,
+  Award,
 } from 'lucide-react';
 import { useRouter, usePathname } from 'next/navigation';
 
@@ -63,12 +65,17 @@ export function AppSidebar({ activeTab, onTabChange, ...props }: AppSidebarProps
       ],
     },
     {
-      title: 'Community',
+      title: 'Learn',
       items: [
         {
           title: 'Lessons',
           id: 'videos',
           icon: Video,
+        },
+        {
+          title: 'Community',
+          id: 'community',
+          icon: MessageSquare,
         },
       ],
     },

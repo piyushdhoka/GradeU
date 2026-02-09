@@ -35,8 +35,9 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-black">
-        <div className="text-center">
+        <div className="flex flex-col items-center gap-4 text-center">
           <Loader size="lg" />
+          <p className="text-xs font-medium tracking-widest text-zinc-500 uppercase animate-pulse">Loading your workspace...</p>
         </div>
       </div>
     );
@@ -116,8 +117,8 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
               <DashboardHeader activeTab={activeTab} onTabChange={handleTabChange} />
             </div>
 
-            {/* Page Content */}
-            <div className="flex-1 overflow-x-hidden p-4 md:p-8">{children}</div>
+            {/* Page Content - smooth transitions */}
+            <div className="animate-in fade-in flex-1 overflow-x-hidden p-4 duration-300 md:p-8">{children}</div>
           </SidebarInset>
         </SidebarProvider>
       </div>

@@ -74,7 +74,7 @@ export default function LandingTestimonials() {
           className="mx-auto flex max-w-[540px] flex-col items-center justify-center text-center"
         >
           <div className="flex justify-center">
-            <div className="rounded-full border border-zinc-700 bg-zinc-900/50 px-4 py-1 text-sm font-medium text-zinc-300 backdrop-blur-md">
+            <div className="rounded-full border border-zinc-700 bg-zinc-900/50 px-4 py-1.5 text-xs font-bold tracking-widest text-zinc-300 uppercase backdrop-blur-md">
               Testimonials
             </div>
           </div>
@@ -82,8 +82,8 @@ export default function LandingTestimonials() {
           <h2 className="mt-5 text-3xl font-bold tracking-tighter text-white md:text-5xl">
             What our community says
           </h2>
-          <p className="mt-5 text-center text-lg text-zinc-400">
-            See how GradeU is transforming the learning experience.
+          <p className="mt-4 text-center text-lg leading-relaxed text-zinc-400">
+            See how GradeU is transforming the learning experience for students and educators.
           </p>
         </motion.div>
 
