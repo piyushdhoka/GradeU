@@ -16,9 +16,10 @@ type Props = {
 };
 
 // Configuration
-const FRAME_INTERVAL_MS = 100; // 10 FPS
-const NO_FACE_FRAMES_BEFORE_VIOLATION = 4; // ~0.3 second (reduced from 10)
-const MULTI_FACE_FRAMES_BEFORE_VIOLATION = 4; // ~0.3 second (reduced from 5)
+const FRAME_INTERVAL_MS = 200; // 5 FPS (further reduced from 10 FPS to save CPU)
+const NO_FACE_FRAMES_BEFORE_VIOLATION = 10; // ~2 seconds at 5 FPS
+const MULTI_FACE_FRAMES_BEFORE_VIOLATION = 10; // ~2 seconds at 5 FPS
+const TAB_SWITCH_COOLDOWN_MS = 2000; // Cooldown for tab switch events
 
 export const Proctoring: React.FC<Props> = ({
   mediaStream,
@@ -129,14 +130,14 @@ export const Proctoring: React.FC<Props> = ({
     const onVisibilityChange = () => {
       if (document.hidden && !terminatedRef.current) {
         pushLog('Tab hidden -> violation');
-        incrementViolation('window_blur');
+        incrementViolation('tab_switch');
       }
     };
 
     const onBlur = () => {
       if (terminatedRef.current) return;
       const now = Date.now();
-      if (now - lastWindowEventTsRef.current > 1000) {
+      if (now - lastWindowEventTsRef.current > TAB_SWITCH_COOLDOWN_MS) {
         lastWindowEventTsRef.current = now;
         pushLog('Window blur -> violation');
         incrementViolation('window_blur');

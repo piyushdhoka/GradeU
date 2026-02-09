@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useRef } from 'react';
 import { getApiUrl } from '@lib/apiConfig';
 
 interface ProctoringConfig {
@@ -17,9 +17,19 @@ const normalizeEventType = (value: string) =>
     .replace(/[^a-z0-9_]/g, '') || 'unknown_event';
 
 export const useProctoring = ({ studentId, courseId, attemptId, enabled }: ProctoringConfig) => {
+  const lastEventTsRef = useRef<Record<string, number>>({});
+
   const logEvent = useCallback(
     (eventType: string, details: any = {}) => {
       if (!enabled) return;
+
+      // Debounce frequent events
+      const now = Date.now();
+      const lastTs = lastEventTsRef.current[eventType] || 0;
+      if (now - lastTs < 2000 && !['exam_start', 'exam_end'].includes(eventType)) {
+        return;
+      }
+      lastEventTsRef.current[eventType] = now;
 
       const payload = JSON.stringify({
         studentId,

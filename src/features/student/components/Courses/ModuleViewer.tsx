@@ -15,7 +15,7 @@ import {
   Loader2,
 } from 'lucide-react';
 import { AiTutorChat } from './AiTutorChat';
-import { CertificateModal } from '../Certificates/CertificateModal';
+import { toast } from 'sonner';
 
 import { courseService } from '@services/courseService';
 import type { Module, Course } from '@types';
@@ -116,8 +116,17 @@ export const ModuleViewer: React.FC<ModuleViewerProps> = ({
     }
   }, [moduleId, fetchModuleContent]);
 
-  // Backend Proctoring Logging - unique attempt id per test session.
-  const [attemptId, setAttemptId] = useState(() => createAttemptId(moduleId));
+  // Backend Proctoring Logging - stable attempt id per test session.
+  const [attemptId, setAttemptId] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = sessionStorage.getItem(`proctor_attempt_${moduleId}`);
+      if (saved) return saved;
+      const newId = createAttemptId(moduleId);
+      sessionStorage.setItem(`proctor_attempt_${moduleId}`, newId);
+      return newId;
+    }
+    return createAttemptId(moduleId);
+  });
   const { logEvent, requestFullscreen } = useProctoring({
     studentId: user?.id || 'anonymous',
     courseId,
@@ -204,9 +213,10 @@ export const ModuleViewer: React.FC<ModuleViewerProps> = ({
       const remainingWarnings = maxWarnings - currentCount;
 
       if (currentCount < maxWarnings) {
-        alert(
-          `PROCTORING WARNING: Suspicious activity detected! You have ${remainingWarnings} warnings remaining.`
-        );
+        toast.warning('Suspicious Activity Detected', {
+          description: `You have ${remainingWarnings} warnings remaining before the test is locked.`,
+          duration: 5000,
+        });
       } else {
         console.warn('Proctoring Violation - Locking out!');
         setIsProctoringActive(false);
