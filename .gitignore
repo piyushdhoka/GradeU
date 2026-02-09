@@ -71,3 +71,4 @@ public/docs/*.pdf
 .cursor/
 .gemini/
 .agents/
+package-lock.json
