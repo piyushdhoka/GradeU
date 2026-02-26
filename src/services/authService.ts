@@ -67,7 +67,7 @@ class AuthService {
           email: credentials.email,
           password: credentials.password
         }),
-        60000,
+        6000000,
         'Login'
       );
 
