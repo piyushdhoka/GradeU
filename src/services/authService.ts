@@ -99,7 +99,7 @@ class AuthService {
             .select('*')
             .eq('id', sessionUser.id)
             .maybeSingle() as unknown as Promise<any>,
-          15000,
+          150000,
           'Profile fetch'
         ) as any;
         profile = result.data;
