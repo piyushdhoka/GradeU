@@ -20,17 +20,37 @@ Based on the application structure and components, GradeU incorporates a broad r
 2. **AI Face Proctoring:** True client-side AI analysis for assessment integrity natively built into the browser without heavy invasive software installs.
 3. **Experience Analytics:** Logs and tracks granular user activities (using MongoDB) to constantly measure engagement points and optimize content delivery.
 
-## 🏗️ Technical Stack
+## 🏗️ Technical Implementation & Stack
 
-GradeU relies heavily on a deeply integrated Next.js architecture alongside powerful, serverless data stores:
+GradeU relies heavily on a deeply integrated, modern architecture to deliver a seamless and powerful educational experience.
 
-- **Frontend & React Framework:** Next.js 16 (App Router) combined with React 19 and written in strict TypeScript.
-- **Design System:** Tailwind CSS paired with Shadcn UI & Framer Motion (dynamic micro-animations and smooth layout transitions).
-- **Video Playback:** `plyr-react` to deliver smooth, high-quality video instruction.
-- **Authentication & Core DB (PostgreSQL):** Supabase provides user identity management, SSR-ready tokens, relational data mappings (course material, users), and cloud storage.
-- **Auditing & Telemetry DB (NoSQL):** MongoDB is used via `mongoose` specifically for managing high-throughput logs like continuous behavioral analytics and strict proctoring events.
-- **State Management:** Zustand for lightweight, scalable global UI state handling.
-- **Backend Routing:** Handled serverlessly via Next.js Route Handlers. Extensible with an Express base where manual configurations or middleware (e.g., rate-limiting, CORS) is required.
+### Architecture & Frameworks
+
+- **Frontend & React Framework:** Next.js 16 (App Router) combined with React 19, written in strict TypeScript. This enables robust SSR (Server-Side Rendering) and SEO optimization.
+- **Styling & UI:** Tailwind CSS combined with Shadcn UI for accessible, reusable components. Framer Motion and `tw-animate-css` are used for dynamic micro-animations and smooth layout transitions.
+- **State Management:** Zustand provides lightweight, scalable global UI state handling across complex dashboards and interactive modules.
+- **Backend Routing:** Handled serverlessly via Next.js Route Handlers. Extensible with an Express base (`express-rate-limit`, `cors`) where manual configurations or middleware are required.
+
+### Database & Data Management
+
+- **Authentication & Core Relational DB:** Supabase (PostgreSQL) provides user identity management, SSR-ready tokens (`@supabase/ssr`), relational data mappings for course material, and cloud storage.
+- **Auditing & Telemetry DB:** MongoDB (via `mongoose`) is used specifically for managing high-throughput logs like continuous behavioral analytics and strict proctoring events.
+- **Caching & Rate Limiting:** Upstash Redis (`@upstash/redis`) allows for rapid session lookups, caching API responses, and throttling rate limits.
+- **Local Fallback:** `better-sqlite3` is incorporated as a lightweight, fast, local database alternative or fallback when needed.
+
+### AI & Specialized Libraries
+
+- **AI Facial Proctoring:** True client-side AI analysis for assessment integrity natively built into the browser using `@tensorflow-models/blazeface` and `@tensorflow/tfjs-backend-webgl`.
+- **Media & Exporting:** `plyr-react` to deliver smooth, high-quality video instruction. `html2canvas`, `html-to-image`, and `jspdf` are utilized to render DOM elements into downloadable certificates on the fly.
+- **Visualizations:** Mermaid (`mermaid`) powers dynamic generation of flowcharts and diagrams within courses or roadmap representations.
+- **Emails:** `nodemailer` is used to trigger automated platform emails (welcome emails, certificate delivery, alerts).
+
+### Implementation Process (SDLC)
+
+1. **Component-Driven Development:** UI elements are isolated and built out as standalone Shadcn blocks before being stitched into complex pages.
+2. **Strict Typing & Linting:** Enforced globally using TypeScript, ESLint, and Prettier on pre-commit hooks (Husky & lint-staged).
+3. **API-First Integration:** Data requirements are mapped out in Supabase/MongoDB before Next.js Route handlers are written. Client-side fetch logic heavily relies on Zustand to minimize re-renders and React state clutter.
+4. **Serverless Deployment:** Built to be primarily hosted on edge-optimized platforms like Vercel, maximizing Next.js caching capabilities.
 
 ## 🚀 Novel Upcoming Features (Roadmap additions)
 
