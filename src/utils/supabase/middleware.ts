@@ -34,6 +34,11 @@ export async function updateSession(request: NextRequest) {
     const protectedRoutes = ['/dashboard', '/generate', '/generated-courses', '/students', '/profile']
     const isProtectedRoute = protectedRoutes.some(route => request.nextUrl.pathname.startsWith(route))
 
+    // Only redirect page loads. Server actions are POSTs to the current page (the
+    // login page's role check posts to "/"), and redirecting them breaks the action
+    // response and leaves the router stuck. Actions and API routes check auth themselves.
+    const isPageLoad = request.method === 'GET'
+
     // BLOCK SIGNUP - teachers are created by admin only
     if (request.nextUrl.pathname.startsWith('/signup')) {
         const url = request.nextUrl.clone()
@@ -41,14 +46,14 @@ export async function updateSession(request: NextRequest) {
         return NextResponse.redirect(url)
     }
 
-    if (!user && isProtectedRoute) {
+    if (!user && isProtectedRoute && isPageLoad) {
         // If not logged in and trying to access protected route, redirect to Login
         const url = request.nextUrl.clone()
         url.pathname = '/login'
         return NextResponse.redirect(url)
     }
 
-    if (user && request.nextUrl.pathname === '/') {
+    if (user && request.nextUrl.pathname === '/' && isPageLoad) {
         // If logged in and at Login page (/), redirect to Dashboard
         const url = request.nextUrl.clone()
         url.pathname = '/dashboard'

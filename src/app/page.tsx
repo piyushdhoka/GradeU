@@ -35,9 +35,9 @@ export default function LoginPage() {
             }
 
             console.log('Logged in:', data)
-            // Redirect to dashboard
-            router.push('/dashboard')
-            router.refresh()
+            // Redirect to dashboard. A single replace: calling router.refresh() right after
+            // router.push() re-renders the current page and cancels the navigation
+            router.replace('/dashboard')
 
         } catch (err: any) {
             setError(err.message)
