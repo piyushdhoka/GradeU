@@ -9,7 +9,7 @@
 GradeU is a learning platform where courses are written by AI from a teacher's outline,
 students learn through modules, live labs and an AI tutor, and every assessment is proctored in the browser.
 
-[**Student site**](https://gradeu.sparkstudio.co.in) · [**Teacher studio**](https://teacher.gradeu.sparkstudio.co.in) · [**Admin portal**](https://admin.gradeu.sparkstudio.co.in)
+[**Visit GradeU →**](https://gradeu.sparkstudio.co.in)
 
 ![Next.js](https://img.shields.io/badge/Next.js_16-000000?style=flat-square&logo=nextdotjs&logoColor=white)
 ![React](https://img.shields.io/badge/React_19-149ECA?style=flat-square&logo=react&logoColor=white)
@@ -35,7 +35,6 @@ students learn through modules, live labs and an AI tutor, and every assessment 
 - [AI in GradeU](#ai-in-gradeu)
 - [Security model](#security-model)
 - [Data model](#data-model)
-- [Configuration reference](#configuration-reference)
 - [Deployment](#deployment)
 - [Repository layout](#repository-layout)
 - [The team](#the-team)
@@ -47,11 +46,11 @@ students learn through modules, live labs and an AI tutor, and every assessment 
 
 GradeU is three applications sharing one backend. Each lives on its own branch of this repository and deploys as its own Vercel project.
 
-| App                | Who it's for    | Branch    | Live at                                                                      | Built with                 |
-| ------------------ | --------------- | --------- | ---------------------------------------------------------------------------- | -------------------------- |
-| **Student site**   | Learners        | `main`    | [gradeu.sparkstudio.co.in](https://gradeu.sparkstudio.co.in)                 | Next.js 16 · React 19      |
-| **Teacher studio** | Teachers        | `teacher` | [teacher.gradeu.sparkstudio.co.in](https://teacher.gradeu.sparkstudio.co.in) | Next.js 16 · BullMQ worker |
-| **Admin portal**   | Platform admins | `admin`   | [admin.gradeu.sparkstudio.co.in](https://admin.gradeu.sparkstudio.co.in)     | Vite · React 18            |
+| App                | Who it's for    | Branch    | Built with                 |
+| ------------------ | --------------- | --------- | -------------------------- |
+| **Student site**   | Learners        | `main`    | Next.js 16 · React 19      |
+| **Teacher studio** | Teachers        | `teacher` | Next.js 16 · BullMQ worker |
+| **Admin portal**   | Platform admins | `admin`   | Vite · React 18            |
 
 All three talk to the same **Supabase** project (Postgres, Auth, Storage), so a course a teacher publishes appears for students immediately, and an admin sees both.
 
@@ -114,8 +113,6 @@ flowchart LR
 | **Groq**                     | The student AI tutor and fast drafting in the teacher studio                                              |
 | **ImageKit**                 | Video library hosting and delivery                                                                        |
 | **Vulnerable Labs (Render)** | Live, intentionally vulnerable environments for hands-on labs                                             |
-| **Gmail SMTP**               | Bug reports from students to the team inbox                                                               |
-| **Umami**                    | Privacy-friendly site analytics                                                                           |
 
 ---
 
@@ -132,7 +129,7 @@ The learner-facing app on `main`.
 
 **Practice**
 
-- **17 hands-on labs:** 6 Web Security labs (Broken Access Control, Cryptographic Failures, SQL Injection, Insecure Design, Security Misconfiguration, Vulnerable Components) and 11 NLP labs (text basics through embeddings, NER, topic modeling, text generation and a resume parser).
+- **17 hands-on labs:** 6 Web Security labs built around the OWASP Top 10, and 11 NLP labs from text basics to embeddings, NER and text generation.
 - Labs run on a separate live environment. Completion comes back to GradeU through a `?labCompleted=` redirect, or a server-to-server webhook signed with a shared secret.
 
 **Assessment and proof**
@@ -276,16 +273,7 @@ The teacher studio can spread load across up to four Gemini keys and rotates to 
 | `module_embeddings` | Content chunks with 768-d vectors for semantic search (pgvector)             |
 | `admin_audit_logs`  | Administrative actions                                                       |
 
-**Database functions**
-
-| Function                                    | Purpose                                                           |
-| ------------------------------------------- | ----------------------------------------------------------------- |
-| `is_admin()`                                | True when the caller is an active admin; used across RLS policies |
-| `get_my_role()`                             | The caller's role, for role-based policies                        |
-| `handle_new_user()`                         | Creates a `student` profile for every new account                 |
-| `guard_profile_privileges()`                | Blocks role and active-status changes by non-admins               |
-| `get_module_completion(course_id, user_id)` | A student's completion percentage for a course                    |
-| `get_public_certificates(p_user_id)`        | Name and certificates only, for public verification               |
+**Database functions:** `is_admin()` and `get_my_role()` back the RLS policies, `handle_new_user()` and `guard_profile_privileges()` manage profiles and roles, `get_module_completion()` powers dashboard progress, and `get_public_certificates()` serves public verification.
 
 **Storage buckets:** `courses` (generated lesson Markdown), `certificates`, `signature`, `avatars`.
 
@@ -295,36 +283,12 @@ Schema changes are versioned in [`supabase/migrations`](supabase/migrations).
 
 ---
 
-## Configuration reference
-
-What each app reads from its environment. Values live in each Vercel project; none are committed.
-
-| Variable                                                 | Student | Teacher | Admin | Notes                                                               |
-| -------------------------------------------------------- | :-----: | :-----: | :---: | ------------------------------------------------------------------- |
-| `NEXT_PUBLIC_SUPABASE_URL`                               |    ✓    |    ✓    |   ✓   | Public                                                              |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY`                          |    ✓    |    ✓    |   ✓   | Public; RLS does the protecting                                     |
-| `SUPABASE_SERVICE_ROLE_KEY`                              |    ✓    |    ✓    |       | Server only, never in the admin portal                              |
-| `MONGODB_URI`                                            |    ✓    |    ✓    |       |                                                                     |
-| `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN`    |    ✓    |         |       | Community                                                           |
-| `REDIS_URL`                                              |         |    ✓    |       | `rediss://` connection for the BullMQ queue                         |
-| `GROQ_API_KEY`                                           |    ✓    |    ✓    |       |                                                                     |
-| `GEMINI_API_KEY` (+ `_1`…`_3`)                           |         |    ✓    |       | Extra keys help only if they're from separate Google Cloud projects |
-| `IMAGEKIT_PRIVATE_KEY`                                   |    ✓    |         |       | Videos are listed from the `/gradeu` folder                         |
-| `GMAIL_USER` / `GMAIL_PASS`                              |    ✓    |         |       | App password; bug-report inbox                                      |
-| `LAB_WEBHOOK_SECRET`                                     |    ✓    |         |       | Shared with the labs server                                         |
-| `NEXT_PUBLIC_UMAMI_SRC` / `NEXT_PUBLIC_UMAMI_WEBSITE_ID` |    ✓    |         |       | Optional analytics                                                  |
-
-All three apps use the **same names** for the same values, so one environment file covers the whole platform.
-
----
-
 ## Deployment
 
 - **Three Vercel projects, one repository.** Each project tracks one branch as production (`main`, `teacher`, `admin`), and an _Ignored Build Step_ makes it build only when its own branch changes.
 - **Generation worker.** `src/worker.ts` on `teacher` is a long-running BullMQ consumer, so it runs on an always-on host rather than Vercel.
 - **Database.** Migrations in `supabase/migrations` on `main` are the source of truth for the shared Postgres schema.
 - **Edge Function.** `supabase/functions/admin-users` on the `admin` branch is deployed to Supabase.
-- **Domains.** All apps live under `sparkstudio.co.in`.
 
 ---
 
