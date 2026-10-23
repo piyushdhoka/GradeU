@@ -108,6 +108,12 @@ class AuthService {
         profileError = err;
       }
 
+      // Admin access comes only from the database, never from the client-side fallback below
+      if (credentials.role === 'admin' && profile?.role !== 'admin') {
+        await supabase.auth.signOut();
+        throw new Error('Access Denied: This account does not have admin access.');
+      }
+
       // Verify role matches credentials
       if (profile && profile.role !== credentials.role) {
         await supabase.auth.signOut();
@@ -401,7 +407,9 @@ class AuthService {
       }
 
       // Priority: Pending Role (Login/Signup) > Metadata Role > Cached Role > 'student'
-      const role = pendingRole || metadata.role || cachedRole || 'student';
+      // user_metadata and localStorage are user-controlled, so they can never grant admin
+      const candidateRole = pendingRole || metadata.role || cachedRole || 'student';
+      const role = candidateRole === 'admin' ? 'student' : candidateRole;
 
       console.warn(`Profile not found during sync. Constructing placeholder with role: ${role}`);
 

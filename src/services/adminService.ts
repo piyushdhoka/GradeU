@@ -1,20 +1,25 @@
 import { supabase } from '@lib/supabase';
-import { createClient } from '@supabase/supabase-js';
+import { FunctionsHttpError } from '@supabase/supabase-js';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-const serviceRoleKey = import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
+// Reads and updates run as the signed-in admin and are authorized by RLS (is_admin()).
+// Actions that need the service-role key run in the `admin-users` Edge Function,
+// so that key never reaches the browser.
+const supabaseAdmin = supabase;
 
-// Create admin client if service role key is available
-const supabaseAdmin = serviceRoleKey
-  ? createClient(supabaseUrl, serviceRoleKey, {
-    auth: {
-      persistSession: false,
-      autoRefreshToken: false,
-      detectSessionInUrl: false
+async function invokeAdminAction<T>(body: Record<string, unknown>): Promise<T> {
+  const { data, error } = await supabase.functions.invoke('admin-users', { body });
+
+  if (error) {
+    let message = error.message;
+    if (error instanceof FunctionsHttpError) {
+      const payload = await error.context.json().catch(() => null);
+      if (payload?.error) message = payload.error;
     }
-  })
-  : supabase;
+    throw new Error(message);
+  }
+
+  return data as T;
+}
 
 class AdminService {
   // User Management
@@ -97,54 +102,12 @@ class AdminService {
 
   async createTeacher(teacherData: { email: string; password: string; name: string; specialization: string; bio: string }) {
     try {
-      // Use a temporary client to avoid signing out the current admin user
-      const tempClient = createClient(supabaseUrl, supabaseKey, {
-        auth: {
-          persistSession: false, // Don't persist this session
-          autoRefreshToken: false,
-          detectSessionInUrl: false
-        }
+      // Creates the auth user, profile and teacher_details server-side
+      const { user } = await invokeAdminAction<{ user: { id: string; email: string } }>({
+        action: 'create-teacher',
+        ...teacherData
       });
-
-      // 1. Create the user in Supabase Auth
-      const { data: authData, error: authError } = await tempClient.auth.signUp({
-        email: teacherData.email,
-        password: teacherData.password,
-        options: {
-          data: {
-            full_name: teacherData.name,
-            role: 'teacher'
-          }
-        }
-      });
-
-      if (authError) throw new Error(`Failed to create teacher account: ${authError.message}`);
-      if (!authData.user) throw new Error('Failed to create teacher account: No user returned');
-
-      // 2. Insert into profiles (if trigger doesn't handle it, better to be safe)
-      // Note: The trigger usually handles this, but since we have RLS disabled or weirdness, let's verify.
-      // Actually, standard practice is trigger. But we can update if needed.
-      // However, we need to create the teacher_details entry manually.
-
-      // Wait a moment for trigger (if any) or manually insert if we can (but RLS `auth.uid() = id` blocks us from inserting FOR another user usually, unless we are service_role or admin policy allows it).
-      // Since we just fixed RLS to allow Admins to insert/manage, we can try inserting teacher_details.
-
-      const { error: detailsError } = await supabase
-        .from('teacher_details')
-        .insert({
-          id: authData.user.id,
-          specialization: teacherData.specialization,
-          bio: teacherData.bio
-        });
-
-      if (detailsError) {
-        // Fallback: If profile doesn't exist yet (race condition with trigger), wait and retry?
-        // Or if error is about Foreign Key...
-        console.error('Failed to create teacher details immediately:', detailsError);
-        // We might just return success and let them update details later
-      }
-
-      return authData.user;
+      return user;
     } catch (error) {
       console.error('Create teacher error:', error);
       throw error;
@@ -177,18 +140,8 @@ class AdminService {
 
   async deleteUser(userId: string) {
     try {
-      // Also delete from auth users if using admin client
-      if (serviceRoleKey) {
-        const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(userId);
-        if (authError) console.error('Failed to delete user from Auth:', authError);
-      }
-
-      const { error } = await supabaseAdmin
-        .from('profiles')
-        .delete()
-        .eq('id', userId);
-
-      if (error) throw new Error(`Failed to delete user: ${error.message}`);
+      // Removes the profile and the auth account server-side
+      await invokeAdminAction({ action: 'delete-user', userId });
       return true;
     } catch (error) {
       console.error('Delete user error:', error);
