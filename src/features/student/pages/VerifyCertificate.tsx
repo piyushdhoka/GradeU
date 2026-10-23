@@ -5,10 +5,21 @@ import { supabase } from '@lib/supabase';
 import { Award, ShieldCheck, CheckCircle, AlertTriangle } from 'lucide-react';
 import { Loader } from '@components/ui/loader';
 
+interface PublicCertificate {
+  course_name: string | null;
+  certificate_url: string | null;
+  issued_at: string | null;
+}
+
+interface PublicCertificateHolder {
+  name: string | null;
+  certificates: PublicCertificate[];
+}
+
 export const VerifyCertificate = () => {
   const params = useParams();
   const userId = params.userId as string;
-  const [student, setStudent] = useState<any>(null);
+  const [student, setStudent] = useState<PublicCertificateHolder | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -21,14 +32,11 @@ export const VerifyCertificate = () => {
       }
 
       try {
-        // Fetch user profile and certificates
-        const { data: resultData, error } = await supabase
-          .from('users')
-          .select('name, certificates, xp, level')
-          .eq('id', userId)
-          .limit(1);
-
-        const data = resultData?.[0];
+        // Public RPC: returns only the holder's name and issued certificates,
+        // since RLS hides profiles and certificates from anonymous visitors
+        const { data, error } = await supabase.rpc('get_public_certificates', {
+          p_user_id: userId,
+        });
 
         if (error) throw error;
         if (!data) throw new Error('Student not found');
@@ -98,8 +106,8 @@ export const VerifyCertificate = () => {
               <p className="text-xl font-bold text-white">{student.name}</p>
             </div>
             <div>
-              <p className="text-sm tracking-wider text-gray-500 uppercase">Current Level</p>
-              <p className="text-brand-400 text-xl font-bold">Level {student.level} Student</p>
+              <p className="text-sm tracking-wider text-gray-500 uppercase">Certificates</p>
+              <p className="text-brand-400 text-xl font-bold">{student.certificates.length}</p>
             </div>
           </div>
 
@@ -109,23 +117,14 @@ export const VerifyCertificate = () => {
           </h2>
 
           <div className="space-y-3">
-            {student.certificates && student.certificates.length > 0 ? (
-              student.certificates.map((cert: string, index: number) => {
-                // Extract course name from filename roughly if possible, or just show generic
-                // URL: .../certificates/USER_Coursename_Time.png
-                // Let's try to parse the file name from URL
-                const filename = cert.split('/').pop() || '';
-                const parts = filename.split('_');
-                // parts[0] is user, parts[1] is course... roughly
-                let courseNameDisplay = 'Academic Excellence Course';
-                if (parts.length > 2) {
-                  courseNameDisplay = parts[1].replace(/%20/g, ' '); // simple cleanup
-                }
+            {student.certificates.length > 0 ? (
+              student.certificates.map((cert, index) => {
+                const courseNameDisplay = cert.course_name || 'Academic Excellence Course';
 
                 return (
                   <a
                     key={index}
-                    href={cert}
+                    href={cert.certificate_url || undefined}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="group flex items-center justify-between rounded-lg border border-gray-700 bg-gray-800 p-4 transition hover:bg-gray-700"
