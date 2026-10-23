@@ -97,12 +97,12 @@ export default function ContactPage() {
             <p>
               Visit our website at{' '}
               <a
-                href="https://gradeu.in"
+                href="https://gradeu.sparkstudio.co.in"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-brand-400 hover:underline"
               >
-                www.gradeu.in
+                gradeu.sparkstudio.co.in
               </a>{' '}
               for the latest information about our courses, labs, and features.
             </p>

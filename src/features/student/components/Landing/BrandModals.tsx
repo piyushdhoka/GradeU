@@ -114,7 +114,7 @@ export const ContactUsModal: React.FC<ModalProps> = ({ isOpen, onClose }) => {
               </a>
 
               <a
-                href="https://gradeu.in"
+                href="https://gradeu.sparkstudio.co.in"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="hover:border-brand-400/50 group flex items-center gap-4 rounded-2xl border border-zinc-700/50 bg-zinc-800/50 p-4 transition-all hover:bg-zinc-800"
@@ -124,7 +124,7 @@ export const ContactUsModal: React.FC<ModalProps> = ({ isOpen, onClose }) => {
                 </div>
                 <div>
                   <h4 className="text-sm font-bold text-white">Website</h4>
-                  <p className="text-xs text-zinc-500">www.gradeu.in</p>
+                  <p className="text-xs text-zinc-500">gradeu.sparkstudio.co.in</p>
                 </div>
               </a>
             </div>
