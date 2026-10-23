@@ -12,7 +12,8 @@ export default defineConfig(({ mode }) => {
     return {
         root: rootDir,
         plugins: [react(), tailwindcss()],
-        envPrefix: ['VITE_'],
+        // NEXT_PUBLIC_* so all GradeU apps share one set of public env var names
+        envPrefix: ['VITE_', 'NEXT_PUBLIC_'],
         define: {
             __APP_ENV__: JSON.stringify(env.VITE_APP_ENV),
         },

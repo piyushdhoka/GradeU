@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 
-const rawUrl = import.meta.env.VITE_SUPABASE_URL;
-const rawKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const rawUrl = import.meta.env.NEXT_PUBLIC_SUPABASE_URL;
+const rawKey = import.meta.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
 function normalizeUrl(url?: string) {
   if (!url) return url;
@@ -19,10 +19,10 @@ const supabaseAnonKey = normalizeUrl(rawKey);
 
 if (typeof window !== 'undefined') {
   if (!supabaseUrl || !supabaseAnonKey) {
-    throw new Error('Supabase is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in .env');
+    throw new Error('Supabase is not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in .env');
   }
   if (!/^https:\/\//i.test(supabaseUrl)) {
-    throw new Error('Invalid VITE_SUPABASE_URL. It must start with https://');
+    throw new Error('Invalid NEXT_PUBLIC_SUPABASE_URL. It must start with https://');
   }
 }
 
