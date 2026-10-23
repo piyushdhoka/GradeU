@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useEffect, ReactNode } from 'react
 import { authService } from '@services/authService';
 import type { User } from '@types';
 import { supabase } from '@lib/supabase';
+import type { Session } from '@supabase/supabase-js';
 
 interface AuthContextValue {
   user: (User & { role?: 'student' | 'teacher' | 'admin'; created_at?: string | Date }) | null;
@@ -31,67 +32,62 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     let mounted = true;
-    // Watchdog: ensure we never stay stuck in loading state due to network/cookie issues
-    // Increased to 10s as profile sync can be slow
+    // Watchdog: never stay stuck on the loading screen if the profile request hangs
     const watchdog = setTimeout(() => {
-      if (mounted) {
-        setLoading(false);
-      }
+      if (mounted) setLoading(false);
     }, 10000);
 
-    async function initializeAuth() {
-      try {
-        // 1. Check for existing session from Supabase first
-        const { data: { session } } = await supabase.auth.getSession();
+    const finishLoading = () => {
+      clearTimeout(watchdog);
+      if (mounted) setLoading(false);
+    };
 
-        if (session) {
-          // If we have a session, sync with our DB to get role/profile
-          const syncedUser = await authService.handleAuthStateChange(session);
-          if (mounted && syncedUser) {
-            setUser(syncedUser);
-          }
-        } else {
-          // Fallback: Check localStorage if no Supabase session
-          const localUser = authService.getCurrentUser();
-          if (mounted && localUser) {
-            setUser(localUser);
-          }
-        }
-      } catch (error) {
+    // The signed-in user is an admin only if their profile in the database says so;
+    // anything else is signed out instead of being shown as some other role
+    const syncSession = async (session: Session | null) => {
+      if (!session) {
         if (mounted) setUser(null);
-      } finally {
-        if (mounted) setLoading(false);
-        clearTimeout(watchdog);
+        finishLoading();
+        return;
       }
-    }
 
-    initializeAuth();
-
-    // Listen for auth state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-        if (session) {
-          try {
-            const syncedUser = await authService.handleAuthStateChange(session);
-            if (syncedUser) {
-              setUser(syncedUser);
-            }
-          } catch (error: any) {
-            // Only logout if it's a critical mismatch (like role)
-            if (error.message.includes('Access Denied')) {
-              await authService.logout();
-              setUser(null);
-            }
-          }
+      try {
+        const syncedUser = await authService.handleAuthStateChange(session);
+        if (!mounted) return;
+        if (syncedUser?.role === 'admin') {
+          setUser(syncedUser);
+        } else {
+          await authService.logout();
+          setUser(null);
         }
-      } else if (event === 'SIGNED_OUT') {
-        setUser(null);
-        setLoading(false);
+      } catch {
+        if (mounted) {
+          await authService.logout();
+          setUser(null);
+        }
+      } finally {
+        finishLoading();
+      }
+    };
+
+    // Single source of truth: INITIAL_SESSION covers page load, so there is no
+    // separate getSession() path racing this one.
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_OUT') {
+        if (mounted) setUser(null);
+        finishLoading();
+        return;
+      }
+      if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
+        // Supabase holds its auth lock while this callback runs; awaiting another
+        // Supabase call here deadlocks in browsers, so run the sync on the next tick
+        setTimeout(() => syncSession(session), 0);
       }
     });
 
     return () => {
       mounted = false;
+      clearTimeout(watchdog);
       subscription.unsubscribe();
     };
   }, []);
