@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
+import { checkStaffAccess } from '@/actions/check-staff-access'
 import { Loader2, LogIn, Mail, Lock } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -26,6 +27,12 @@ export default function LoginPage() {
             })
 
             if (error) throw error
+
+            // Only teachers and admins may use this app
+            if (!(await checkStaffAccess())) {
+                await supabase.auth.signOut()
+                throw new Error('This account does not have teacher access.')
+            }
 
             console.log('Logged in:', data)
             // Redirect to dashboard

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getStaffUser } from '@/lib/auth';
 
 // Server-side only API keys (not exposed to client)
 const GEMINI_KEYS = [
@@ -76,7 +77,9 @@ async function callGroq(prompt: string): Promise<string> {
         },
         body: JSON.stringify({
             messages: [{ role: 'user', content: prompt }],
-            model: 'llama3-70b-8192',
+            // llama3-70b-8192 was retired by Groq; gpt-oss is a reasoning model, keep reasoning low
+            model: 'openai/gpt-oss-120b',
+            reasoning_effort: 'low',
             temperature: 0.7,
         })
     });
@@ -91,6 +94,11 @@ async function callGroq(prompt: string): Promise<string> {
 }
 
 export async function POST(request: NextRequest) {
+    // Spends our Gemini/Groq quota, so only signed-in teachers/admins may call it
+    if (!(await getStaffUser())) {
+        return NextResponse.json({ error: 'Teacher access required' }, { status: 401 });
+    }
+
     try {
         const { prompt, provider } = await request.json();
 

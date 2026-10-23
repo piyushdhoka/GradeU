@@ -31,7 +31,7 @@ export async function updateSession(request: NextRequest) {
     } = await supabase.auth.getUser()
 
     // LIST OF PROTECTED ROUTES (require auth)
-    const protectedRoutes = ['/dashboard', '/generate', '/students', '/profile']
+    const protectedRoutes = ['/dashboard', '/generate', '/generated-courses', '/students', '/profile']
     const isProtectedRoute = protectedRoutes.some(route => request.nextUrl.pathname.startsWith(route))
 
     // BLOCK SIGNUP - teachers are created by admin only

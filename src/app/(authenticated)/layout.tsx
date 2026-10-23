@@ -1,12 +1,19 @@
 import Sidebar from "@/components/Layout/Sidebar";
 import TopBar from "@/components/Layout/TopBar";
 import React from "react";
+import { redirect } from "next/navigation";
+import { getStaffUser } from "@/lib/auth";
 
-export default function AuthenticatedLayout({
+export default async function AuthenticatedLayout({
     children,
 }: Readonly<{
     children: React.ReactNode;
 }>) {
+    // Students (or anyone without a teacher/admin profile) never see teacher pages
+    if (!(await getStaffUser())) {
+        redirect("/login");
+    }
+
     return (
         <div className="flex min-h-screen">
             <Sidebar />

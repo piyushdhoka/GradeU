@@ -1,11 +1,16 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { CourseLog, connectMongoDB } from '@/lib/mongodb';
+import { getStaffUser } from '@/lib/auth';
 
 export async function GET(
     req: Request,
     { params }: { params: Promise<{ id: string }> }
 ) {
+    if (!(await getStaffUser())) {
+        return NextResponse.json({ success: false, error: 'Teacher access required' }, { status: 401 });
+    }
+
     const { id: jobId } = await params;
 
     try {

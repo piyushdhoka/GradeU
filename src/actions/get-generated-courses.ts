@@ -1,6 +1,7 @@
 "use server";
 
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { getStaffUser } from "@/lib/auth";
 
 export interface GeneratedCourse {
     id: string;
@@ -28,6 +29,8 @@ export interface GeneratedQuiz {
 }
 
 export async function getGeneratedCourses(): Promise<GeneratedCourse[]> {
+    if (!(await getStaffUser())) return [];
+
     try {
         // 1. Fetch Courses with Creator Name
         const { data: courses, error: coursesError } = await supabaseAdmin

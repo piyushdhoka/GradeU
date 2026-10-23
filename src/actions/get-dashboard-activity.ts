@@ -1,6 +1,7 @@
 "use server";
 
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { getStaffUser } from "@/lib/auth";
 
 export interface ActivityItem {
     id: string;
@@ -27,6 +28,8 @@ function timeAgo(date: Date): string {
 }
 
 export async function getRecentActivity(): Promise<ActivityItem[]> {
+    if (!(await getStaffUser())) return [];
+
     try {
         const activities: ActivityItem[] = [];
 

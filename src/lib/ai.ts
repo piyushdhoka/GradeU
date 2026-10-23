@@ -1,8 +1,9 @@
+// Server-only keys: never use NEXT_PUBLIC_ names, those are inlined into the browser bundle
 const GEMINI_KEYS = [
-    process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY,
-    process.env.GEMINI_API_KEY_1 || process.env.NEXT_PUBLIC_GEMINI_API_KEY_1,
-    process.env.GEMINI_API_KEY_2 || process.env.NEXT_PUBLIC_GEMINI_API_KEY_2,
-    process.env.GEMINI_API_KEY_3 || process.env.NEXT_PUBLIC_GEMINI_API_KEY_3,
+    process.env.GEMINI_API_KEY,
+    process.env.GEMINI_API_KEY_1,
+    process.env.GEMINI_API_KEY_2,
+    process.env.GEMINI_API_KEY_3,
 ].filter(Boolean) as string[];
 
 let currentKeyIndex = 0;

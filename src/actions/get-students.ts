@@ -1,6 +1,7 @@
 "use server";
 
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { getStaffUser } from "@/lib/auth";
 
 export interface StudentData {
     id: string; // purely visual ID for list key or map, or we can use the uuid
@@ -15,6 +16,8 @@ export interface StudentData {
 }
 
 export async function getStudents(): Promise<StudentData[]> {
+    if (!(await getStaffUser())) return [];
+
     try {
         // 1. Fetch all profiles with role 'student'
         const { data: profiles, error: profilesError } = await supabaseAdmin
