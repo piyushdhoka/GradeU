@@ -1,3 +1,5 @@
+import { supabase } from '@lib/supabase';
+
 interface ChatMessage {
   role: 'user' | 'assistant' | 'system';
   content: string;
@@ -13,10 +15,15 @@ interface ChatContext {
 class AiTutorService {
   async chat(messages: ChatMessage[], context: ChatContext) {
     try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
       const response = await fetch('/api/student/ai-tutor', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...(session?.access_token && { Authorization: `Bearer ${session.access_token}` }),
         },
         body: JSON.stringify({ messages, context }),
       });

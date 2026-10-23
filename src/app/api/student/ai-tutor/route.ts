@@ -1,10 +1,31 @@
 import { NextResponse } from 'next/server';
+import { createClient } from '@supabase/supabase-js';
+
+// Use anon key for auth verification
+const supabaseAuth = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
 
 export async function POST(req: Request) {
   try {
+    // Signed-in users only: every call spends our Groq quota
+    const token = req.headers.get('authorization')?.replace('Bearer ', '');
+    if (!token) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const {
+      data: { user },
+      error: authError,
+    } = await supabaseAuth.auth.getUser(token);
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { messages, context } = await req.json();
 
-    if (!process.env.GROQ_API) {
+    if (!process.env.GROQ_API_KEY) {
       return NextResponse.json({ error: 'Groq API key not configured' }, { status: 500 });
     }
 
@@ -26,11 +47,14 @@ Instructions:
     const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${process.env.GROQ_API}`,
+        Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'llama-3.3-70b-versatile',
+        // llama-3.3-70b-versatile was retired by Groq; gpt-oss is a reasoning model, so keep
+        // reasoning low to leave the token budget for the answer
+        model: 'openai/gpt-oss-120b',
+        reasoning_effort: 'low',
         messages: [{ role: 'system', content: systemPrompt }, ...messages],
         temperature: 0.7,
         max_tokens: 1024,

@@ -2,10 +2,6 @@ import mongoose from 'mongoose';
 
 const MONGODB_URI = process.env.MONGODB_URI || process.env.MONGODB_URL || '';
 
-if (!MONGODB_URI) {
-  throw new Error('Please define MONGODB_URI environment variable');
-}
-
 // Global cache to prevent multiple connections in serverless environment
 declare global {
   var mongooseCache: {
@@ -21,6 +17,12 @@ if (!cached) {
 }
 
 async function connectDB(): Promise<typeof mongoose> {
+  // Checked here, not at import, so a missing URI only fails the Mongo-backed
+  // routes instead of the whole build (Mongo is optional)
+  if (!MONGODB_URI) {
+    throw new Error('Please define MONGODB_URI environment variable');
+  }
+
   if (cached.conn) {
     return cached.conn;
   }
