@@ -8,11 +8,12 @@ const GEMINI_KEYS = [
 
 let currentKeyIndex = 0;
 
+// gemini-2.5-flash and text-embedding-004 are unavailable to new API keys (404)
 export async function callGeminiAPI(prompt: string, retryCount = 0): Promise<string> {
     if (GEMINI_KEYS.length === 0) throw new Error('No Gemini API keys found');
 
     const apiKey = GEMINI_KEYS[currentKeyIndex];
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${apiKey}`;
 
     try {
         const response = await fetch(url, {
@@ -62,15 +63,17 @@ export async function generateGeminiEmbedding(text: string, retryCount = 0): Pro
     if (GEMINI_KEYS.length === 0) throw new Error('No Gemini API keys found');
 
     const apiKey = GEMINI_KEYS[currentKeyIndex];
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key=${apiKey}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-001:embedContent?key=${apiKey}`;
 
     try {
         const response = await fetch(url, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                model: "models/text-embedding-004",
-                content: { parts: [{ text }] }
+                model: "models/gemini-embedding-001",
+                content: { parts: [{ text }] },
+                // 768 dims, same as the retired text-embedding-004
+                outputDimensionality: 768
             })
         });
 
